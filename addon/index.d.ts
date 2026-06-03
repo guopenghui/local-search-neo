@@ -36,6 +36,8 @@ export interface TextFileInspection {
   encoding: string;
 }
 
+export type TextPreviewDirection = "start" | "end";
+
 export interface TextPreviewResult extends TextFileInspection {
   text: string;
 }
@@ -50,9 +52,17 @@ export interface EverythingAddon {
 export interface AddonModule {
   everything: EverythingAddon;
   inspectTextFile(file: string, maxBytes?: number): TextFileInspection;
-  readTextPreview(file: string, maxBytes?: number): TextPreviewResult;
+  readTextPreview(
+    file: string,
+    maxBytes?: number,
+    direction?: TextPreviewDirection,
+  ): TextPreviewResult;
 }
 
 export const everything: EverythingAddon;
 export function inspectTextFile(file: string, maxBytes?: number): TextFileInspection;
-export function readTextPreview(file: string, maxBytes?: number): TextPreviewResult;
+export function readTextPreview(
+  file: string,
+  maxBytes?: number,
+  direction?: TextPreviewDirection,
+): TextPreviewResult;

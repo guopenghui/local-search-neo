@@ -55,6 +55,40 @@ const VIDEO_PREVIEW_EXTENSIONS = new Set(["mp4", "webm", "ogv", "mov", "m4v", "m
 
 const AUDIO_PREVIEW_EXTENSIONS = new Set(["mp3", "wav", "flac", "aac", "ogg", "m4a", "opus"]);
 
+const MARKDOWN_PREVIEW_EXTENSIONS = new Set(["md", "markdown", "mdown"]);
+
+const CODE_PREVIEW_LANGUAGE_BY_EXTENSION: Record<string, string> = {
+  bat: "bat",
+  c: "c",
+  cmd: "bat",
+  conf: "properties",
+  cpp: "cpp",
+  cs: "csharp",
+  css: "css",
+  go: "go",
+  h: "c",
+  html: "html",
+  ini: "ini",
+  java: "java",
+  js: "javascript",
+  json: "json",
+  jsx: "jsx",
+  ps1: "powershell",
+  py: "python",
+  rs: "rust",
+  sh: "bash",
+  sql: "sql",
+  toml: "toml",
+  ts: "typescript",
+  tsx: "tsx",
+  vue: "vue",
+  xml: "xml",
+  yaml: "yaml",
+  yml: "yaml",
+};
+
+const LOG_PREVIEW_EXTENSIONS = new Set(["log"]);
+
 const TEXT_PREVIEW_EXTENSIONS = new Set([
   "bat",
   "c",
@@ -151,6 +185,29 @@ export function isVideoPreviewCandidate(file: Pick<FinderResult, "name" | "isDir
 export function isAudioPreviewCandidate(file: Pick<FinderResult, "name" | "isDirectory">): boolean {
   if (file.isDirectory) return false;
   return AUDIO_PREVIEW_EXTENSIONS.has(getExtension(file.name));
+}
+
+export function isMarkdownPreviewCandidate(
+  file: Pick<FinderResult, "name" | "isDirectory">,
+): boolean {
+  if (file.isDirectory) return false;
+  return MARKDOWN_PREVIEW_EXTENSIONS.has(getExtension(file.name));
+}
+
+export function getCodePreviewLanguage(
+  file: Pick<FinderResult, "name" | "isDirectory">,
+): string | undefined {
+  if (file.isDirectory) return undefined;
+  return CODE_PREVIEW_LANGUAGE_BY_EXTENSION[getExtension(file.name)];
+}
+
+export function isCodePreviewCandidate(file: Pick<FinderResult, "name" | "isDirectory">): boolean {
+  return getCodePreviewLanguage(file) !== undefined;
+}
+
+export function isLogPreviewCandidate(file: Pick<FinderResult, "name" | "isDirectory">): boolean {
+  if (file.isDirectory) return false;
+  return LOG_PREVIEW_EXTENSIONS.has(getExtension(file.name));
 }
 
 export function isTextPreviewCandidate(

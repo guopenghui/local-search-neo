@@ -120,8 +120,8 @@ window.services = {
     if (!addon) throw new Error("Everything addon is not available");
     return addon.inspectTextFile(file, maxBytes);
   },
-  readTextPreview(file, maxBytes = 20 * 1024) {
+  readTextPreview(file, maxBytes = 20 * 1024, direction = "start") {
     if (!addon) throw new Error("Everything addon is not available");
-    return addon.readTextPreview(file, maxBytes);
+    return addon.readTextPreview(file, maxBytes, direction);
   },
 };

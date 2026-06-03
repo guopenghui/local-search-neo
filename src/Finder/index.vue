@@ -15,8 +15,12 @@ import {
   DEFAULT_CATEGORIES,
   buildEverythingQuery,
   formatBytes,
+  getCodePreviewLanguage,
   isAudioPreviewCandidate,
+  isCodePreviewCandidate,
   isImagePreviewCandidate,
+  isLogPreviewCandidate,
+  isMarkdownPreviewCandidate,
   isTextPreviewCandidate,
   isVideoPreviewCandidate,
   type FinderCategory,
@@ -30,6 +34,7 @@ const props = defineProps<{
 const PAGE_SIZE = 50;
 const MAX_RESULTS = 100;
 const PREVIEW_BYTES = 20 * 1024;
+const LOG_PREVIEW_BYTES = 10 * 1024;
 
 const queryText = ref("");
 const activeCategoryId = ref("all");
@@ -40,6 +45,7 @@ const previewKind = ref<PreviewKind>("empty");
 const previewContent = ref("");
 const previewSource = ref("");
 const previewEncoding = ref("");
+const previewLanguage = ref("");
 const previewStatus = ref("未开启预览");
 const showCategoryDialog = ref(false);
 const showSettingsDrawer = ref(false);
@@ -294,7 +300,9 @@ function loadPreview() {
     return;
   }
 
-  let shouldPreviewAsText = isTextPreviewCandidate(item);
+  const textPreviewKind = getTextPreviewKind(item);
+  let shouldPreviewAsText = textPreviewKind !== undefined;
+
   if (!shouldPreviewAsText) {
     try {
       shouldPreviewAsText = window.services.isTextFile(item.fullPath);
@@ -308,21 +316,56 @@ function loadPreview() {
     return;
   }
 
+  const textPreviewBytes = isLogPreviewCandidate(item) ? LOG_PREVIEW_BYTES : PREVIEW_BYTES;
+  const textPreviewDirection = isLogPreviewCandidate(item) ? "end" : "start";
+
   try {
-    const preview = window.services.readTextPreview(item.fullPath, PREVIEW_BYTES);
+    const preview = window.services.readTextPreview(
+      item.fullPath,
+      textPreviewBytes,
+      textPreviewDirection,
+    );
     if (!preview.isText) {
       previewStatus.value = "当前格式不支持预览";
       return;
     }
 
-    previewKind.value = "text";
+    previewKind.value = textPreviewKind ?? "text";
     previewContent.value = preview.text;
     previewEncoding.value = preview.encoding;
-    previewStatus.value = `预览前 ${formatBytes(PREVIEW_BYTES)} 内容`;
+    previewLanguage.value = getCodePreviewLanguage(item) ?? "plaintext";
+    previewStatus.value = getTextPreviewStatus(
+      previewKind.value,
+      item,
+      textPreviewBytes,
+      textPreviewDirection,
+    );
   } catch (error: unknown) {
     resetPreview();
     previewStatus.value = error instanceof Error ? error.message : "预览失败";
   }
+}
+
+function getTextPreviewKind(item: {
+  name: string;
+  size?: number;
+  isDirectory?: boolean;
+}): PreviewKind | undefined {
+  if (isMarkdownPreviewCandidate(item)) return "markdown";
+  if (isCodePreviewCandidate(item)) return "code";
+  if (isTextPreviewCandidate(item)) return "text";
+  return undefined;
+}
+
+function getTextPreviewStatus(
+  kind: PreviewKind,
+  item: { name: string; isDirectory?: boolean },
+  bytes: number,
+  direction: "start" | "end",
+) {
+  if (kind === "markdown") return "Markdown 预览";
+  if (kind === "code") return `${getCodePreviewLanguage(item) ?? "plaintext"} · 代码预览`;
+  return `预览${direction === "end" ? "后" : "前"} ${formatBytes(bytes)} 内容`;
 }
 
 function resetPreview() {
@@ -330,6 +373,7 @@ function resetPreview() {
   previewContent.value = "";
   previewSource.value = "";
   previewEncoding.value = "";
+  previewLanguage.value = "";
 }
 
 function handleGlobalPointerdown(event: PointerEvent) {
@@ -426,6 +470,7 @@ function isNativeEditingTarget(target: EventTarget | null) {
       :preview-content="previewContent"
       :preview-source="previewSource"
       :preview-encoding="previewEncoding"
+      :preview-language="previewLanguage"
     />
 
     <CustomCategoryDialog

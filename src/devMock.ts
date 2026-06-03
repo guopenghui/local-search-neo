@@ -77,10 +77,13 @@ export function installDevMock() {
         encoding: "UTF-8",
       };
     },
-    readTextPreview: () => ({
+    readTextPreview: (_file: string, _maxBytes?: number, direction: "start" | "end" = "start") => ({
       isText: true,
       encoding: "UTF-8",
-      text: "[2026-05-23 15:01:31.904] [info] 启动本地搜索插件\n[2026-05-23 15:01:33.101] [info] 收到输入事件\n[2026-05-23 15:01:39.065] [info] 隐藏插件视图",
+      text:
+        direction === "end"
+          ? "[2026-05-23 15:01:39.065] [info] 隐藏插件视图\n[2026-05-23 15:01:40.221] [info] 预览最近日志输出"
+          : "[2026-05-23 15:01:31.904] [info] 启动本地搜索插件\n[2026-05-23 15:01:33.101] [info] 收到输入事件\n[2026-05-23 15:01:39.065] [info] 隐藏插件视图",
     }),
   };
 

@@ -2,11 +2,14 @@ import {
   DEFAULT_CATEGORIES,
   buildEverythingQuery,
   formatBytes,
+  getCodePreviewLanguage,
   getNextSelectedPath,
   getNextVisibleCount,
   getRestoredSelectedPath,
   isAudioPreviewCandidate,
+  isCodePreviewCandidate,
   isImagePreviewCandidate,
+  isMarkdownPreviewCandidate,
   isTextPreviewCandidate,
   isVideoPreviewCandidate,
   sortResults,
@@ -145,6 +148,15 @@ test("preview candidate helpers detect supported file types", () => {
   assert.equal(isAudioPreviewCandidate({ name: "track.flac" }), true);
   assert.equal(isAudioPreviewCandidate({ name: "movie.mp4" }), false);
   assert.equal(isAudioPreviewCandidate({ name: "Music", isDirectory: true }), false);
+
+  assert.equal(isMarkdownPreviewCandidate({ name: "README.md" }), true);
+  assert.equal(isMarkdownPreviewCandidate({ name: "notes.markdown" }), true);
+  assert.equal(isMarkdownPreviewCandidate({ name: "script.ts" }), false);
+
+  assert.equal(isCodePreviewCandidate({ name: "script.ts" }), true);
+  assert.equal(isCodePreviewCandidate({ name: "Component.vue" }), true);
+  assert.equal(isCodePreviewCandidate({ name: "README.md" }), false);
+  assert.equal(getCodePreviewLanguage({ name: "script.ts" }), "typescript");
 });
 
 test("formatBytes returns compact human-readable values", () => {

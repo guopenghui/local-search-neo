@@ -8,6 +8,13 @@ use neon::prelude::*;
 const INSPECT_BYTES: usize = 8 * 1024;
 const PREVIEW_BYTES: usize = 20 * 1024;
 const MAX_READ_BYTES: usize = 1024 * 1024;
+const TAIL_READ_PADDING_BYTES: usize = 8;
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum PreviewDirection {
+    Start,
+    End,
+}
 
 struct TextInfo {
     is_text: bool,
@@ -19,7 +26,7 @@ pub fn inspect_text_file(mut cx: FunctionContext) -> JsResult<JsObject> {
     let max_bytes = optional_usize_arg(&mut cx, 1, INSPECT_BYTES)?;
 
     let bytes = read_file_prefix(&path, max_bytes).or_else(|error| cx.throw_error(error))?;
-    let info = inspect_bytes(&bytes);
+    let info = inspect_bytes_info(&bytes);
 
     let object = cx.empty_object();
     let is_text = cx.boolean(info.is_text);
@@ -34,12 +41,21 @@ pub fn inspect_text_file(mut cx: FunctionContext) -> JsResult<JsObject> {
 pub fn read_text_preview(mut cx: FunctionContext) -> JsResult<JsObject> {
     let path = cx.argument::<JsString>(0)?.value(&mut cx);
     let max_bytes = optional_usize_arg(&mut cx, 1, PREVIEW_BYTES)?.min(MAX_READ_BYTES);
+    let direction = optional_direction_arg(&mut cx, 2)?;
 
-    let read_bytes = max_bytes.max(INSPECT_BYTES).min(MAX_READ_BYTES);
-    let bytes = read_file_prefix(&path, read_bytes).or_else(|error| cx.throw_error(error))?;
-    let info = inspect_bytes(&bytes);
+    let inspect_bytes =
+        read_file_prefix(&path, INSPECT_BYTES).or_else(|error| cx.throw_error(error))?;
+    let info = inspect_bytes_info(&inspect_bytes);
+    let bytes =
+        read_preview_bytes(&path, max_bytes, direction).or_else(|error| cx.throw_error(error))?;
     let text = if info.is_text {
-        truncate_utf8(&decode_bytes(&bytes, info.encoding), max_bytes)
+        let decoded = decode_bytes(&bytes, info.encoding);
+        match direction {
+            PreviewDirection::Start => truncate_utf8_start(&decoded, max_bytes),
+            PreviewDirection::End => {
+                trim_leading_partial_line(&truncate_utf8_end(&decoded, max_bytes))
+            }
+        }
     } else {
         String::new()
     };
@@ -81,15 +97,57 @@ fn optional_usize_arg(
     }
 }
 
+fn optional_direction_arg(cx: &mut FunctionContext, index: usize) -> NeonResult<PreviewDirection> {
+    match cx.argument_opt(index) {
+        Some(value) => {
+            let direction = value.downcast_or_throw::<JsString, _>(cx)?.value(cx);
+            Ok(if direction == "end" {
+                PreviewDirection::End
+            } else {
+                PreviewDirection::Start
+            })
+        }
+        None => Ok(PreviewDirection::Start),
+    }
+}
+
 fn read_file_prefix(path: &str, max_bytes: usize) -> Result<Vec<u8>, String> {
+    read_file_segment(path, max_bytes, PreviewDirection::Start)
+}
+
+fn read_preview_bytes(
+    path: &str,
+    max_bytes: usize,
+    direction: PreviewDirection,
+) -> Result<Vec<u8>, String> {
+    let read_bytes = match direction {
+        PreviewDirection::Start => max_bytes.max(INSPECT_BYTES).min(MAX_READ_BYTES),
+        PreviewDirection::End => max_bytes
+            .saturating_add(TAIL_READ_PADDING_BYTES)
+            .min(MAX_READ_BYTES),
+    };
+
+    read_file_segment(path, read_bytes, direction)
+}
+
+fn read_file_segment(
+    path: &str,
+    max_bytes: usize,
+    direction: PreviewDirection,
+) -> Result<Vec<u8>, String> {
     let metadata = fs::metadata(path).map_err(|error| error.to_string())?;
     if metadata.is_dir() {
         return Err("Cannot preview a directory".to_string());
     }
 
     let read_len = (metadata.len() as usize).min(max_bytes);
+    let offset = match direction {
+        PreviewDirection::Start => 0,
+        PreviewDirection::End => metadata.len().saturating_sub(read_len as u64),
+    };
+
     let mut file = fs::File::open(path).map_err(|error| error.to_string())?;
-    file.seek(SeekFrom::Start(0))
+    file.seek(SeekFrom::Start(offset))
         .map_err(|error| error.to_string())?;
 
     let mut buffer = vec![0; read_len];
@@ -99,7 +157,7 @@ fn read_file_prefix(path: &str, max_bytes: usize) -> Result<Vec<u8>, String> {
     Ok(buffer)
 }
 
-fn inspect_bytes(bytes: &[u8]) -> TextInfo {
+fn inspect_bytes_info(bytes: &[u8]) -> TextInfo {
     let encoding = detect_encoding(bytes);
 
     TextInfo {
@@ -194,7 +252,7 @@ fn utf8_complete_prefix(bytes: &[u8]) -> &[u8] {
     }
 }
 
-fn truncate_utf8(text: &str, max_bytes: usize) -> String {
+fn truncate_utf8_start(text: &str, max_bytes: usize) -> String {
     if text.len() <= max_bytes {
         return text.to_string();
     }
@@ -205,4 +263,24 @@ fn truncate_utf8(text: &str, max_bytes: usize) -> String {
     }
 
     text[..end].to_string()
+}
+
+fn truncate_utf8_end(text: &str, max_bytes: usize) -> String {
+    if text.len() <= max_bytes {
+        return text.to_string();
+    }
+
+    let mut start = text.len() - max_bytes;
+    while start < text.len() && !text.is_char_boundary(start) {
+        start += 1;
+    }
+
+    text[start..].to_string()
+}
+
+fn trim_leading_partial_line(text: &str) -> String {
+    match text.find('\n') {
+        Some(index) if index + 1 < text.len() => text[index + 1..].to_string(),
+        _ => text.to_string(),
+    }
 }

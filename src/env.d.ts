@@ -6,6 +6,7 @@ import type {
   EverythingSortMode,
   EverythingVersion,
   TextFileInspection,
+  TextPreviewDirection,
   TextPreviewResult,
 } from "../addon";
 
@@ -34,7 +35,11 @@ interface Services {
   getFileUrl: (file: string) => string;
   isTextFile: (file: string) => boolean;
   inspectTextFile: (file: string, maxBytes?: number) => TextFileInspection;
-  readTextPreview: (file: string, maxBytes?: number) => TextPreviewResult;
+  readTextPreview: (
+    file: string,
+    maxBytes?: number,
+    direction?: TextPreviewDirection,
+  ) => TextPreviewResult;
 }
 
 declare global {

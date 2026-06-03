@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import AudioPreview from "./preview/AudioPreview.vue";
+import CodePreview from "./preview/CodePreview.vue";
 import EmptyPreview from "./preview/EmptyPreview.vue";
 import ImagePreview from "./preview/ImagePreview.vue";
+import MarkdownPreview from "./preview/MarkdownPreview.vue";
 import TextPreview from "./preview/TextPreview.vue";
 import VideoPreview from "./preview/VideoPreview.vue";
 import { getPreviewTypeLabel, type PreviewKind } from "./preview/previewTypes";
@@ -13,11 +15,17 @@ const props = defineProps<{
   previewContent: string;
   previewSource: string;
   previewEncoding: string;
+  previewLanguage: string;
 }>();
 
 const previewTypeLabel = computed(() => {
-  if (props.previewKind === "text")
+  if (
+    props.previewKind === "text" ||
+    props.previewKind === "markdown" ||
+    props.previewKind === "code"
+  ) {
     return props.previewEncoding || getPreviewTypeLabel(props.previewKind);
+  }
   return getPreviewTypeLabel(props.previewKind);
 });
 </script>
@@ -30,6 +38,15 @@ const previewTypeLabel = computed(() => {
     </header>
 
     <TextPreview v-if="previewKind === 'text' && previewContent" :content="previewContent" />
+    <MarkdownPreview
+      v-else-if="previewKind === 'markdown' && previewContent"
+      :content="previewContent"
+    />
+    <CodePreview
+      v-else-if="previewKind === 'code' && previewContent"
+      :content="previewContent"
+      :language="previewLanguage"
+    />
     <ImagePreview v-else-if="previewKind === 'image' && previewSource" :source="previewSource" />
     <VideoPreview v-else-if="previewKind === 'video' && previewSource" :source="previewSource" />
     <AudioPreview v-else-if="previewKind === 'audio' && previewSource" :source="previewSource" />
