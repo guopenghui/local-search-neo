@@ -71,6 +71,9 @@ export function installDevMock() {
       }
       return `file:///${file.replace(/\\/g, "/")}`;
     },
+    readBinaryFile() {
+      return new Uint8Array();
+    },
     inspectTextFile(file: string) {
       return {
         isText: window.services.isTextFile(file),

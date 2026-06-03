@@ -40,7 +40,7 @@ type PdfRenderTask = {
 
 type PdfJs = {
   GlobalWorkerOptions: { workerSrc: string };
-  getDocument(source: { url: string }): PdfLoadingTask;
+  getDocument(source: { data: Uint8Array; wasmUrl?: string }): PdfLoadingTask;
 };
 
 let pdfDocument: PdfDocument | null = null;
@@ -80,7 +80,12 @@ async function loadPdf() {
   try {
     const pdfjs = await loadPdfjs();
     debugPdf("pdfjs loaded", { token });
-    const task = pdfjs.getDocument({ url: props.source });
+    const data = window.services.readBinaryFile(props.source);
+    debugPdf("pdf data loaded", { token, bytes: data.byteLength });
+    const task = pdfjs.getDocument({
+      data,
+      wasmUrl: getPdfjsWasmUrl(),
+    });
     loadingTask = task;
     debugPdf("loading task created", { token });
 
@@ -101,6 +106,10 @@ async function loadPdf() {
   } finally {
     if (token === renderToken) isLoading.value = false;
   }
+}
+
+function getPdfjsWasmUrl() {
+  return new URL("pdfjs/wasm/", window.location.href).href;
 }
 
 async function loadPdfjs(): Promise<PdfJs> {

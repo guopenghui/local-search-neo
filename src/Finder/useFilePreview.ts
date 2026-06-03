@@ -84,7 +84,7 @@ export function useFilePreview({ selectedItem, previewEnabled }: UseFilePreviewO
 
     if (isPdfPreviewCandidate(item)) {
       previewKind.value = "pdf";
-      previewSource.value = window.services.getFileUrl(item.fullPath);
+      previewSource.value = item.fullPath;
       previewStatus.value = "PDF 预览";
       return true;
     }

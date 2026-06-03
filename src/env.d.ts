@@ -33,6 +33,7 @@ interface Services {
     };
   };
   getFileUrl: (file: string) => string;
+  readBinaryFile: (file: string) => Uint8Array;
   isTextFile: (file: string) => boolean;
   inspectTextFile: (file: string, maxBytes?: number) => TextFileInspection;
   readTextPreview: (

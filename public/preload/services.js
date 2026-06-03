@@ -112,6 +112,9 @@ window.services = {
   getFileUrl(file) {
     return pathToFileURL(file).href;
   },
+  readBinaryFile(file) {
+    return fs.readFileSync(file);
+  },
   isTextFile(file) {
     if (!addon) throw new Error("Everything addon is not available");
     return addon.inspectTextFile(file).isText;
