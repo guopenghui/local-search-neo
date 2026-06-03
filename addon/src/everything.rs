@@ -1,0 +1,192 @@
+use std::sync::LazyLock;
+
+use everything_ipc::wm::{EverythingClient, RequestFlags, Sort};
+use everything_ipc::IpcWindow;
+use neon::prelude::*;
+
+const FILE_ATTRIBUTE_DIRECTORY: u32 = 0x10;
+
+static EVERYTHING: LazyLock<Result<EverythingClient, String>> =
+    LazyLock::new(|| EverythingClient::new().map_err(|error| error.to_string()));
+
+fn with_everything<T>(f: impl FnOnce(&EverythingClient) -> Result<T, String>) -> Result<T, String> {
+    match &*EVERYTHING {
+        Ok(client) => f(client),
+        Err(error) => Err(error.clone()),
+    }
+}
+
+fn is_running(mut cx: FunctionContext) -> JsResult<JsBoolean> {
+    let running = IpcWindow::new()
+        .map(|window| window.is_ipc_available())
+        .unwrap_or(false);
+
+    Ok(cx.boolean(running))
+}
+
+fn is_db_loaded(mut cx: FunctionContext) -> JsResult<JsBoolean> {
+    let loaded = IpcWindow::new()
+        .map(|window| window.is_db_loaded())
+        .unwrap_or(false);
+
+    Ok(cx.boolean(loaded))
+}
+
+fn get_version(mut cx: FunctionContext) -> JsResult<JsObject> {
+    let Some(window) = IpcWindow::new() else {
+        return cx.throw_error("Everything is not running");
+    };
+
+    let version = window.get_version();
+    let object = cx.empty_object();
+
+    let major = cx.number(version.major);
+    object.set(&mut cx, "major", major)?;
+
+    let minor = cx.number(version.minor);
+    object.set(&mut cx, "minor", minor)?;
+
+    let revision = cx.number(version.revision);
+    object.set(&mut cx, "revision", revision)?;
+
+    let build = cx.number(version.build);
+    object.set(&mut cx, "build", build)?;
+
+    let text = cx.string(format!(
+        "{}.{}.{}.{}",
+        version.major, version.minor, version.revision, version.build
+    ));
+    object.set(&mut cx, "text", text)?;
+
+    Ok(object)
+}
+
+fn sort_from_mode(mode: &str) -> Sort {
+    match mode {
+        "name-asc" => Sort::NameAscending,
+        "name-desc" => Sort::NameDescending,
+        "path-asc" => Sort::PathAscending,
+        "path-desc" => Sort::PathDescending,
+        "size-asc" => Sort::SizeAscending,
+        "size-desc" => Sort::SizeDescending,
+        "modified-asc" => Sort::DateModifiedAscending,
+        "modified-desc" => Sort::DateModifiedDescending,
+        _ => Sort::DateModifiedDescending,
+    }
+}
+
+fn filetime_to_unix_ms(low_date_time: u32, high_date_time: u32) -> f64 {
+    const WINDOWS_TO_UNIX_EPOCH_TICKS: u64 = 116_444_736_000_000_000;
+    const TICKS_PER_MILLISECOND: u64 = 10_000;
+
+    let ticks = ((high_date_time as u64) << 32) | low_date_time as u64;
+    if ticks < WINDOWS_TO_UNIX_EPOCH_TICKS {
+        return 0.0;
+    }
+
+    ((ticks - WINDOWS_TO_UNIX_EPOCH_TICKS) / TICKS_PER_MILLISECOND) as f64
+}
+
+fn query(mut cx: FunctionContext) -> JsResult<JsObject> {
+    let search = cx.argument::<JsString>(0)?.value(&mut cx);
+    let max_results = match cx.argument_opt(1) {
+        Some(value) => value.downcast_or_throw::<JsNumber, _>(&mut cx)?.value(&mut cx) as u32,
+        None => 100,
+    };
+    let sort_mode = match cx.argument_opt(2) {
+        Some(value) => value.downcast_or_throw::<JsString, _>(&mut cx)?.value(&mut cx),
+        None => String::from("modified-desc"),
+    };
+    let sort = sort_from_mode(&sort_mode);
+
+    let list = with_everything(|client| {
+        client
+            .query_wait(&search)
+            .request_flags(
+                RequestFlags::FileName
+                    | RequestFlags::Path
+                    | RequestFlags::FullPathAndFileName
+                    | RequestFlags::Size
+                    | RequestFlags::DateModified
+                    | RequestFlags::Attributes,
+            )
+            .sort(sort)
+            .max_results(max_results)
+            .call()
+            .map_err(|error| error.to_string())
+    })
+    .or_else(|error| cx.throw_error(error))?;
+
+    let result = cx.empty_object();
+
+    let total = cx.number(list.total_len() as f64);
+    result.set(&mut cx, "total", total)?;
+
+    let items = JsArray::new(&mut cx, list.len());
+
+    for (index, item) in list.iter().enumerate() {
+        let object = cx.empty_object();
+
+        if let Some(name) = item.get_string(RequestFlags::FileName) {
+            let value = cx.string(name);
+            object.set(&mut cx, "name", value)?;
+        }
+
+        if let Some(path) = item.get_string(RequestFlags::Path) {
+            let value = cx.string(path);
+            object.set(&mut cx, "path", value)?;
+        }
+
+        if let Some(full_path) = item.get_string(RequestFlags::FullPathAndFileName) {
+            let value = cx.string(full_path);
+            object.set(&mut cx, "fullPath", value)?;
+        }
+
+        if let Some(size) = item.get_size(RequestFlags::Size) {
+            let value = cx.number(size as f64);
+            object.set(&mut cx, "size", value)?;
+        }
+
+        if let Some(modified_at) = item.get_time(RequestFlags::DateModified) {
+            let value = cx.number(filetime_to_unix_ms(
+                modified_at.dwLowDateTime,
+                modified_at.dwHighDateTime,
+            ));
+            object.set(&mut cx, "modifiedAt", value)?;
+        }
+
+        if let Some(attributes) = item.get_u32(RequestFlags::Attributes) {
+            let value = cx.number(attributes);
+            object.set(&mut cx, "attributes", value)?;
+
+            let is_directory = cx.boolean((attributes & FILE_ATTRIBUTE_DIRECTORY) != 0);
+            object.set(&mut cx, "isDirectory", is_directory)?;
+        }
+
+        items.set(&mut cx, index as u32, object)?;
+    }
+
+    result.set(&mut cx, "items", items)?;
+
+    Ok(result)
+}
+
+pub fn export(cx: &mut ModuleContext) -> NeonResult<()> {
+    let everything = cx.empty_object();
+
+    let is_running = JsFunction::new(cx, is_running)?;
+    everything.set(cx, "isRunning", is_running)?;
+
+    let is_db_loaded = JsFunction::new(cx, is_db_loaded)?;
+    everything.set(cx, "isDbLoaded", is_db_loaded)?;
+
+    let query = JsFunction::new(cx, query)?;
+    everything.set(cx, "query", query)?;
+
+    let get_version = JsFunction::new(cx, get_version)?;
+    everything.set(cx, "getVersion", get_version)?;
+
+    cx.export_value("everything", everything)?;
+
+    Ok(())
+}

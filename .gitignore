@@ -1,0 +1,5 @@
+node_modules
+dist
+
+*.node
+public/addon-manifest.json
