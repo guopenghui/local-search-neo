@@ -5,6 +5,7 @@ import CodePreview from "./preview/CodePreview.vue";
 import EmptyPreview from "./preview/EmptyPreview.vue";
 import ImagePreview from "./preview/ImagePreview.vue";
 import MarkdownPreview from "./preview/MarkdownPreview.vue";
+import PdfPreview from "./preview/PdfPreview.vue";
 import TextPreview from "./preview/TextPreview.vue";
 import VideoPreview from "./preview/VideoPreview.vue";
 import { getPreviewTypeLabel, type PreviewKind } from "./preview/previewTypes";
@@ -47,6 +48,7 @@ const previewTypeLabel = computed(() => {
       :content="previewContent"
       :language="previewLanguage"
     />
+    <PdfPreview v-else-if="previewKind === 'pdf' && previewSource" :source="previewSource" />
     <ImagePreview v-else-if="previewKind === 'image' && previewSource" :source="previewSource" />
     <VideoPreview v-else-if="previewKind === 'video' && previewSource" :source="previewSource" />
     <AudioPreview v-else-if="previewKind === 'audio' && previewSource" :source="previewSource" />

@@ -55,6 +55,8 @@ const VIDEO_PREVIEW_EXTENSIONS = new Set(["mp4", "webm", "ogv", "mov", "m4v", "m
 
 const AUDIO_PREVIEW_EXTENSIONS = new Set(["mp3", "wav", "flac", "aac", "ogg", "m4a", "opus"]);
 
+const PDF_PREVIEW_EXTENSIONS = new Set(["pdf"]);
+
 const MARKDOWN_PREVIEW_EXTENSIONS = new Set(["md", "markdown", "mdown"]);
 
 const CODE_PREVIEW_LANGUAGE_BY_EXTENSION: Record<string, string> = {
@@ -185,6 +187,11 @@ export function isVideoPreviewCandidate(file: Pick<FinderResult, "name" | "isDir
 export function isAudioPreviewCandidate(file: Pick<FinderResult, "name" | "isDirectory">): boolean {
   if (file.isDirectory) return false;
   return AUDIO_PREVIEW_EXTENSIONS.has(getExtension(file.name));
+}
+
+export function isPdfPreviewCandidate(file: Pick<FinderResult, "name" | "isDirectory">): boolean {
+  if (file.isDirectory) return false;
+  return PDF_PREVIEW_EXTENSIONS.has(getExtension(file.name));
 }
 
 export function isMarkdownPreviewCandidate(

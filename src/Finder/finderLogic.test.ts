@@ -10,6 +10,7 @@ import {
   isCodePreviewCandidate,
   isImagePreviewCandidate,
   isMarkdownPreviewCandidate,
+  isPdfPreviewCandidate,
   isTextPreviewCandidate,
   isVideoPreviewCandidate,
   sortResults,
@@ -148,6 +149,9 @@ test("preview candidate helpers detect supported file types", () => {
   assert.equal(isAudioPreviewCandidate({ name: "track.flac" }), true);
   assert.equal(isAudioPreviewCandidate({ name: "movie.mp4" }), false);
   assert.equal(isAudioPreviewCandidate({ name: "Music", isDirectory: true }), false);
+
+  assert.equal(isPdfPreviewCandidate({ name: "document.pdf" }), true);
+  assert.equal(isPdfPreviewCandidate({ name: "PDFs", isDirectory: true }), false);
 
   assert.equal(isMarkdownPreviewCandidate({ name: "README.md" }), true);
   assert.equal(isMarkdownPreviewCandidate({ name: "notes.markdown" }), true);

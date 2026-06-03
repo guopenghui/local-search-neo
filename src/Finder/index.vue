@@ -6,23 +6,14 @@ import FinderPreviewPane from "./FinderPreviewPane.vue";
 import FinderResultList from "./FinderResultList.vue";
 import FinderSidebar from "./FinderSidebar.vue";
 import SettingsDrawer from "./SettingsDrawer.vue";
-import type { PreviewKind } from "./preview/previewTypes";
 import { useCustomCategories } from "./useCustomCategories";
+import { useFilePreview } from "./useFilePreview";
 import { useFinderSearch } from "./useFinderSearch";
 import { useResultFilters, type ResultFilterInput } from "./useResultFilters";
 import { useSubInput } from "./useSubInput";
 import {
   DEFAULT_CATEGORIES,
   buildEverythingQuery,
-  formatBytes,
-  getCodePreviewLanguage,
-  isAudioPreviewCandidate,
-  isCodePreviewCandidate,
-  isImagePreviewCandidate,
-  isLogPreviewCandidate,
-  isMarkdownPreviewCandidate,
-  isTextPreviewCandidate,
-  isVideoPreviewCandidate,
   type FinderCategory,
   type FinderSortMode,
 } from "./finderLogic";
@@ -33,20 +24,12 @@ const props = defineProps<{
 
 const PAGE_SIZE = 50;
 const MAX_RESULTS = 100;
-const PREVIEW_BYTES = 20 * 1024;
-const LOG_PREVIEW_BYTES = 10 * 1024;
 
 const queryText = ref("");
 const activeCategoryId = ref("all");
 const sortMode = ref<FinderSortMode>("modified-desc");
 const showSortMenu = ref(false);
 const previewEnabled = ref(false);
-const previewKind = ref<PreviewKind>("empty");
-const previewContent = ref("");
-const previewSource = ref("");
-const previewEncoding = ref("");
-const previewLanguage = ref("");
-const previewStatus = ref("未开启预览");
 const showCategoryDialog = ref(false);
 const showSettingsDrawer = ref(false);
 
@@ -84,7 +67,11 @@ const finderSearch = useFinderSearch({
   sortMode,
   resultFilterCount,
   buildQuery: buildFilteredEverythingQuery,
-  onSelectionRestored: loadPreview,
+});
+
+const filePreview = useFilePreview({
+  selectedItem: finderSearch.selectedItem,
+  previewEnabled,
 });
 
 const { bindSubInput, syncSubInputValue, focusSubInput, disposeSubInput } = useSubInput({
@@ -119,7 +106,7 @@ watch([activeCategoryId, sortMode], () => {
 });
 
 watch([finderSearch.selectedItem, previewEnabled], () => {
-  loadPreview();
+  filePreview.loadPreview();
 });
 
 watch(
@@ -255,127 +242,6 @@ function openSelected() {
   }
 }
 
-function loadPreview() {
-  resetPreview();
-
-  if (!previewEnabled.value) {
-    previewStatus.value = "未开启预览";
-    return;
-  }
-
-  const item = finderSearch.selectedItem.value;
-  if (!item) {
-    previewStatus.value = "选择文件后预览";
-    return;
-  }
-
-  if (item.isDirectory) {
-    previewStatus.value = "文件夹不支持预览";
-    return;
-  }
-
-  if (!item.fullPath) {
-    previewStatus.value = "缺少文件路径，无法预览";
-    return;
-  }
-
-  if (isImagePreviewCandidate(item)) {
-    previewKind.value = "image";
-    previewSource.value = window.services.getFileUrl(item.fullPath);
-    previewStatus.value = "图片预览";
-    return;
-  }
-
-  if (isVideoPreviewCandidate(item)) {
-    previewKind.value = "video";
-    previewSource.value = window.services.getFileUrl(item.fullPath);
-    previewStatus.value = "视频预览";
-    return;
-  }
-
-  if (isAudioPreviewCandidate(item)) {
-    previewKind.value = "audio";
-    previewSource.value = window.services.getFileUrl(item.fullPath);
-    previewStatus.value = "音频预览";
-    return;
-  }
-
-  const textPreviewKind = getTextPreviewKind(item);
-  let shouldPreviewAsText = textPreviewKind !== undefined;
-
-  if (!shouldPreviewAsText) {
-    try {
-      shouldPreviewAsText = window.services.isTextFile(item.fullPath);
-    } catch {
-      shouldPreviewAsText = false;
-    }
-  }
-
-  if (!shouldPreviewAsText) {
-    previewStatus.value = "当前格式不支持预览";
-    return;
-  }
-
-  const textPreviewBytes = isLogPreviewCandidate(item) ? LOG_PREVIEW_BYTES : PREVIEW_BYTES;
-  const textPreviewDirection = isLogPreviewCandidate(item) ? "end" : "start";
-
-  try {
-    const preview = window.services.readTextPreview(
-      item.fullPath,
-      textPreviewBytes,
-      textPreviewDirection,
-    );
-    if (!preview.isText) {
-      previewStatus.value = "当前格式不支持预览";
-      return;
-    }
-
-    previewKind.value = textPreviewKind ?? "text";
-    previewContent.value = preview.text;
-    previewEncoding.value = preview.encoding;
-    previewLanguage.value = getCodePreviewLanguage(item) ?? "plaintext";
-    previewStatus.value = getTextPreviewStatus(
-      previewKind.value,
-      item,
-      textPreviewBytes,
-      textPreviewDirection,
-    );
-  } catch (error: unknown) {
-    resetPreview();
-    previewStatus.value = error instanceof Error ? error.message : "预览失败";
-  }
-}
-
-function getTextPreviewKind(item: {
-  name: string;
-  size?: number;
-  isDirectory?: boolean;
-}): PreviewKind | undefined {
-  if (isMarkdownPreviewCandidate(item)) return "markdown";
-  if (isCodePreviewCandidate(item)) return "code";
-  if (isTextPreviewCandidate(item)) return "text";
-  return undefined;
-}
-
-function getTextPreviewStatus(
-  kind: PreviewKind,
-  item: { name: string; isDirectory?: boolean },
-  bytes: number,
-  direction: "start" | "end",
-) {
-  if (kind === "markdown") return "Markdown 预览";
-  if (kind === "code") return `${getCodePreviewLanguage(item) ?? "plaintext"} · 代码预览`;
-  return `预览${direction === "end" ? "后" : "前"} ${formatBytes(bytes)} 内容`;
-}
-
-function resetPreview() {
-  previewKind.value = "empty";
-  previewContent.value = "";
-  previewSource.value = "";
-  previewEncoding.value = "";
-  previewLanguage.value = "";
-}
-
 function handleGlobalPointerdown(event: PointerEvent) {
   if (!showSortMenu.value) return;
   if (event.target instanceof HTMLElement && event.target.closest(".sort-select")) return;
@@ -465,12 +331,12 @@ function isNativeEditingTarget(target: EventTarget | null) {
 
     <FinderPreviewPane
       v-if="previewEnabled"
-      :preview-kind="previewKind"
-      :preview-status="previewStatus"
-      :preview-content="previewContent"
-      :preview-source="previewSource"
-      :preview-encoding="previewEncoding"
-      :preview-language="previewLanguage"
+      :preview-kind="filePreview.previewKind.value"
+      :preview-status="filePreview.previewStatus.value"
+      :preview-content="filePreview.previewContent.value"
+      :preview-source="filePreview.previewSource.value"
+      :preview-encoding="filePreview.previewEncoding.value"
+      :preview-language="filePreview.previewLanguage.value"
     />
 
     <CustomCategoryDialog
