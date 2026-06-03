@@ -5,7 +5,10 @@ import {
   getNextSelectedPath,
   getNextVisibleCount,
   getRestoredSelectedPath,
+  isAudioPreviewCandidate,
+  isImagePreviewCandidate,
   isTextPreviewCandidate,
+  isVideoPreviewCandidate,
   sortResults,
   type FinderCategory,
   type FinderResult,
@@ -120,12 +123,28 @@ test("getRestoredSelectedPath keeps existing visible selection or picks sorted f
   assert.equal(getRestoredSelectedPath([], "D:\\missing.txt"), "");
 });
 
-test("isTextPreviewCandidate allows text-like small files only", () => {
+test("preview candidate helpers detect supported file types", () => {
   assert.equal(isTextPreviewCandidate({ name: "main.log", size: 1024 }), true);
   assert.equal(isTextPreviewCandidate({ name: "notes.md", size: 1024 }), true);
   assert.equal(isTextPreviewCandidate({ name: "image.png", size: 1024 }), false);
   assert.equal(isTextPreviewCandidate({ name: "big.txt", size: 30 * 1024 * 1024 }), false);
   assert.equal(isTextPreviewCandidate({ name: "folder", isDirectory: true }), false);
+
+  assert.equal(isImagePreviewCandidate({ name: "photo.webp" }), true);
+  assert.equal(isImagePreviewCandidate({ name: "movie.mp4" }), false);
+  assert.equal(isImagePreviewCandidate({ name: "Pictures", isDirectory: true }), false);
+
+  assert.equal(isVideoPreviewCandidate({ name: "movie.mp4" }), true);
+  assert.equal(isVideoPreviewCandidate({ name: "clip.webm" }), true);
+  assert.equal(isVideoPreviewCandidate({ name: "sound.ogg" }), false);
+  assert.equal(isVideoPreviewCandidate({ name: "photo.jpg" }), false);
+  assert.equal(isVideoPreviewCandidate({ name: "Videos", isDirectory: true }), false);
+
+  assert.equal(isAudioPreviewCandidate({ name: "sound.mp3" }), true);
+  assert.equal(isAudioPreviewCandidate({ name: "voice.ogg" }), true);
+  assert.equal(isAudioPreviewCandidate({ name: "track.flac" }), true);
+  assert.equal(isAudioPreviewCandidate({ name: "movie.mp4" }), false);
+  assert.equal(isAudioPreviewCandidate({ name: "Music", isDirectory: true }), false);
 });
 
 test("formatBytes returns compact human-readable values", () => {

@@ -1,18 +1,39 @@
 <script setup lang="ts">
-defineProps<{
+import { computed } from "vue";
+import AudioPreview from "./preview/AudioPreview.vue";
+import EmptyPreview from "./preview/EmptyPreview.vue";
+import ImagePreview from "./preview/ImagePreview.vue";
+import TextPreview from "./preview/TextPreview.vue";
+import VideoPreview from "./preview/VideoPreview.vue";
+import { getPreviewTypeLabel, type PreviewKind } from "./preview/previewTypes";
+
+const props = defineProps<{
+  previewKind: PreviewKind;
   previewStatus: string;
   previewContent: string;
+  previewSource: string;
+  previewEncoding: string;
 }>();
+
+const previewTypeLabel = computed(() => {
+  if (props.previewKind === "text")
+    return props.previewEncoding || getPreviewTypeLabel(props.previewKind);
+  return getPreviewTypeLabel(props.previewKind);
+});
 </script>
 
 <template>
   <aside class="preview-pane">
     <header class="preview-header">
-      <span class="preview-encoding">UTF-8</span>
+      <span class="preview-type">{{ previewTypeLabel }}</span>
       <span>{{ previewStatus }}</span>
     </header>
-    <pre v-if="previewContent" class="preview-content">{{ previewContent }}</pre>
-    <div v-else class="preview-empty">{{ previewStatus }}</div>
+
+    <TextPreview v-if="previewKind === 'text' && previewContent" :content="previewContent" />
+    <ImagePreview v-else-if="previewKind === 'image' && previewSource" :source="previewSource" />
+    <VideoPreview v-else-if="previewKind === 'video' && previewSource" :source="previewSource" />
+    <AudioPreview v-else-if="previewKind === 'audio' && previewSource" :source="previewSource" />
+    <EmptyPreview v-else :status="previewStatus" />
   </aside>
 </template>
 
@@ -38,7 +59,9 @@ defineProps<{
   font-size: 12px;
 }
 
-.preview-encoding {
+.preview-type {
+  min-width: 72px;
+  white-space: nowrap;
   color: #9ba1a8;
   font-family: Consolas, "Cascadia Mono", monospace;
 }
@@ -47,25 +70,6 @@ defineProps<{
   margin-left: auto;
   color: #c3c8cf;
   white-space: nowrap;
-}
-
-.preview-content {
-  overflow: auto;
-  margin: 0;
-  padding: 10px 14px;
-  color: #ffffff;
-  font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
-  font-size: 12px;
-  line-height: 1.28;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.preview-empty {
-  display: grid;
-  min-height: 180px;
-  place-items: center;
-  color: #a6abb2;
 }
 
 @media (prefers-color-scheme: light) {
@@ -80,15 +84,6 @@ defineProps<{
 
   .preview-header span:last-child {
     color: #667085;
-  }
-
-  .preview-content {
-    color: #111827;
-    background: #ffffff;
-  }
-
-  .preview-empty {
-    color: #697386;
   }
 }
 

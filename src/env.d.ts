@@ -1,7 +1,13 @@
 /// <reference types="vite/client" />
 /// <reference types="@ztools-center/ztools-api-types" />
 
-import type { EverythingQueryItem, EverythingSortMode, EverythingVersion } from "../addon";
+import type {
+  EverythingQueryItem,
+  EverythingSortMode,
+  EverythingVersion,
+  TextFileInspection,
+  TextPreviewResult,
+} from "../addon";
 
 declare module "*.vue" {
   import type { DefineComponent } from "vue";
@@ -25,7 +31,10 @@ interface Services {
       items: Array<EverythingQueryItem & { fullPath: string; exists?: boolean }>;
     };
   };
-  readTextPreview: (file: string, maxBytes?: number) => string;
+  getFileUrl: (file: string) => string;
+  isTextFile: (file: string) => boolean;
+  inspectTextFile: (file: string, maxBytes?: number) => TextFileInspection;
+  readTextPreview: (file: string, maxBytes?: number) => TextPreviewResult;
 }
 
 declare global {

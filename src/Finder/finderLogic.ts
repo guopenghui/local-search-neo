@@ -40,6 +40,21 @@ export const DEFAULT_CATEGORIES: FinderCategory[] = [
   { id: "archive", label: "压缩文件", kind: "extension", rule: "ext:zip;rar;7z;tar;gz;iso" },
 ];
 
+const IMAGE_PREVIEW_EXTENSIONS = new Set([
+  "jpg",
+  "jpeg",
+  "png",
+  "gif",
+  "webp",
+  "bmp",
+  "svg",
+  "ico",
+]);
+
+const VIDEO_PREVIEW_EXTENSIONS = new Set(["mp4", "webm", "ogv", "mov", "m4v", "mkv", "avi"]);
+
+const AUDIO_PREVIEW_EXTENSIONS = new Set(["mp3", "wav", "flac", "aac", "ogg", "m4a", "opus"]);
+
 const TEXT_PREVIEW_EXTENSIONS = new Set([
   "bat",
   "c",
@@ -123,14 +138,28 @@ export function getRestoredSelectedPath(results: FinderResult[], currentPath: st
   return results[0]?.fullPath ?? "";
 }
 
+export function isImagePreviewCandidate(file: Pick<FinderResult, "name" | "isDirectory">): boolean {
+  if (file.isDirectory) return false;
+  return IMAGE_PREVIEW_EXTENSIONS.has(getExtension(file.name));
+}
+
+export function isVideoPreviewCandidate(file: Pick<FinderResult, "name" | "isDirectory">): boolean {
+  if (file.isDirectory) return false;
+  return VIDEO_PREVIEW_EXTENSIONS.has(getExtension(file.name));
+}
+
+export function isAudioPreviewCandidate(file: Pick<FinderResult, "name" | "isDirectory">): boolean {
+  if (file.isDirectory) return false;
+  return AUDIO_PREVIEW_EXTENSIONS.has(getExtension(file.name));
+}
+
 export function isTextPreviewCandidate(
   file: Pick<FinderResult, "name" | "size" | "isDirectory">,
 ): boolean {
   if (file.isDirectory) return false;
   if ((file.size ?? 0) > MAX_TEXT_PREVIEW_FILE_SIZE) return false;
 
-  const extension = getExtension(file.name);
-  return TEXT_PREVIEW_EXTENSIONS.has(extension);
+  return TEXT_PREVIEW_EXTENSIONS.has(getExtension(file.name));
 }
 
 export function formatBytes(bytes?: number): string {

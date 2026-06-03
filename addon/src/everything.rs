@@ -1,7 +1,7 @@
 use std::sync::LazyLock;
 
-use everything_ipc::wm::{EverythingClient, RequestFlags, Sort};
 use everything_ipc::IpcWindow;
+use everything_ipc::wm::{EverythingClient, RequestFlags, Sort};
 use neon::prelude::*;
 
 const FILE_ATTRIBUTE_DIRECTORY: u32 = 0x10;
@@ -90,11 +90,15 @@ fn filetime_to_unix_ms(low_date_time: u32, high_date_time: u32) -> f64 {
 fn query(mut cx: FunctionContext) -> JsResult<JsObject> {
     let search = cx.argument::<JsString>(0)?.value(&mut cx);
     let max_results = match cx.argument_opt(1) {
-        Some(value) => value.downcast_or_throw::<JsNumber, _>(&mut cx)?.value(&mut cx) as u32,
+        Some(value) => value
+            .downcast_or_throw::<JsNumber, _>(&mut cx)?
+            .value(&mut cx) as u32,
         None => 100,
     };
     let sort_mode = match cx.argument_opt(2) {
-        Some(value) => value.downcast_or_throw::<JsString, _>(&mut cx)?.value(&mut cx),
+        Some(value) => value
+            .downcast_or_throw::<JsString, _>(&mut cx)?
+            .value(&mut cx),
         None => String::from("modified-desc"),
     };
     let sort = sort_from_mode(&sort_mode);

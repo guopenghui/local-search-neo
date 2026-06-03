@@ -6,6 +6,7 @@ import FinderPreviewPane from "./FinderPreviewPane.vue";
 import FinderResultList from "./FinderResultList.vue";
 import FinderSidebar from "./FinderSidebar.vue";
 import SettingsDrawer from "./SettingsDrawer.vue";
+import type { PreviewKind } from "./preview/previewTypes";
 import { useCustomCategories } from "./useCustomCategories";
 import { useFinderSearch } from "./useFinderSearch";
 import { useResultFilters, type ResultFilterInput } from "./useResultFilters";
@@ -14,7 +15,10 @@ import {
   DEFAULT_CATEGORIES,
   buildEverythingQuery,
   formatBytes,
+  isAudioPreviewCandidate,
+  isImagePreviewCandidate,
   isTextPreviewCandidate,
+  isVideoPreviewCandidate,
   type FinderCategory,
   type FinderSortMode,
 } from "./finderLogic";
@@ -32,7 +36,10 @@ const activeCategoryId = ref("all");
 const sortMode = ref<FinderSortMode>("modified-desc");
 const showSortMenu = ref(false);
 const previewEnabled = ref(false);
+const previewKind = ref<PreviewKind>("empty");
 const previewContent = ref("");
+const previewSource = ref("");
+const previewEncoding = ref("");
 const previewStatus = ref("未开启预览");
 const showCategoryDialog = ref(false);
 const showSettingsDrawer = ref(false);
@@ -243,7 +250,7 @@ function openSelected() {
 }
 
 function loadPreview() {
-  previewContent.value = "";
+  resetPreview();
 
   if (!previewEnabled.value) {
     previewStatus.value = "未开启预览";
@@ -256,17 +263,73 @@ function loadPreview() {
     return;
   }
 
-  if (!isTextPreviewCandidate(item)) {
-    previewStatus.value = item.isDirectory ? "文件夹不支持预览" : "当前格式不支持文本预览";
+  if (item.isDirectory) {
+    previewStatus.value = "文件夹不支持预览";
+    return;
+  }
+
+  if (!item.fullPath) {
+    previewStatus.value = "缺少文件路径，无法预览";
+    return;
+  }
+
+  if (isImagePreviewCandidate(item)) {
+    previewKind.value = "image";
+    previewSource.value = window.services.getFileUrl(item.fullPath);
+    previewStatus.value = "图片预览";
+    return;
+  }
+
+  if (isVideoPreviewCandidate(item)) {
+    previewKind.value = "video";
+    previewSource.value = window.services.getFileUrl(item.fullPath);
+    previewStatus.value = "视频预览";
+    return;
+  }
+
+  if (isAudioPreviewCandidate(item)) {
+    previewKind.value = "audio";
+    previewSource.value = window.services.getFileUrl(item.fullPath);
+    previewStatus.value = "音频预览";
+    return;
+  }
+
+  let shouldPreviewAsText = isTextPreviewCandidate(item);
+  if (!shouldPreviewAsText) {
+    try {
+      shouldPreviewAsText = window.services.isTextFile(item.fullPath);
+    } catch {
+      shouldPreviewAsText = false;
+    }
+  }
+
+  if (!shouldPreviewAsText) {
+    previewStatus.value = "当前格式不支持预览";
     return;
   }
 
   try {
-    previewContent.value = window.services.readTextPreview(item.fullPath ?? "", PREVIEW_BYTES);
+    const preview = window.services.readTextPreview(item.fullPath, PREVIEW_BYTES);
+    if (!preview.isText) {
+      previewStatus.value = "当前格式不支持预览";
+      return;
+    }
+
+    previewKind.value = "text";
+    previewContent.value = preview.text;
+    previewEncoding.value = preview.encoding;
     previewStatus.value = `预览前 ${formatBytes(PREVIEW_BYTES)} 内容`;
   } catch (error: unknown) {
+    resetPreview();
     previewStatus.value = error instanceof Error ? error.message : "预览失败";
   }
+}
+
+function resetPreview() {
+  previewKind.value = "empty";
+  previewContent.value = "";
+  previewSource.value = "";
+  previewEncoding.value = "";
 }
 
 function handleGlobalPointerdown(event: PointerEvent) {
@@ -358,8 +421,11 @@ function isNativeEditingTarget(target: EventTarget | null) {
 
     <FinderPreviewPane
       v-if="previewEnabled"
+      :preview-kind="previewKind"
       :preview-status="previewStatus"
       :preview-content="previewContent"
+      :preview-source="previewSource"
+      :preview-encoding="previewEncoding"
     />
 
     <CustomCategoryDialog

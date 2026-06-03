@@ -1,15 +1,17 @@
 const fs = require("node:fs");
 const path = require("node:path");
+const { pathToFileURL } = require("node:url");
 
 /**
  * @typedef {import("../../addon").AddonModule} AddonModule
  * @typedef {import("../../addon").EverythingAddon} EverythingAddon
  * @typedef {import("../../addon").EverythingQueryItem} EverythingQueryItem
- * @typedef {import("../../addon").EverythingQueryResult} EverythingQueryResult
+ * @typedef {import("../../addon").TextFileInspection} TextFileInspection
+ * @typedef {import("../../addon").TextPreviewResult} TextPreviewResult
  */
 
-/** @returns {EverythingAddon | null} */
-function loadEverythingAddon() {
+/** @returns {AddonModule | null} */
+function loadAddon() {
   const manifestAddon = readAddonManifestFile();
   const candidates = [
     manifestAddon ? path.resolve(__dirname, "..", manifestAddon) : undefined,
@@ -20,9 +22,7 @@ function loadEverythingAddon() {
   for (const candidate of candidates) {
     try {
       if (fs.existsSync(candidate)) {
-        /** @type {AddonModule} */
-        const addon = require(candidate);
-        return addon.everything;
+        return require(candidate);
       }
     } catch (error) {
       console.warn("[local-search-neo] Everything addon 加载失败:", candidate, error);
@@ -32,7 +32,8 @@ function loadEverythingAddon() {
   return null;
 }
 
-const everythingAddon = loadEverythingAddon();
+const addon = loadAddon();
+const everythingAddon = addon?.everything ?? null;
 
 function readAddonManifestFile() {
   try {
@@ -108,15 +109,19 @@ window.services = {
       };
     },
   },
+  getFileUrl(file) {
+    return pathToFileURL(file).href;
+  },
+  isTextFile(file) {
+    if (!addon) throw new Error("Everything addon is not available");
+    return addon.inspectTextFile(file).isText;
+  },
+  inspectTextFile(file, maxBytes) {
+    if (!addon) throw new Error("Everything addon is not available");
+    return addon.inspectTextFile(file, maxBytes);
+  },
   readTextPreview(file, maxBytes = 20 * 1024) {
-    const buffer = Buffer.alloc(maxBytes);
-    const fd = fs.openSync(file, "r");
-
-    try {
-      const bytesRead = fs.readSync(fd, buffer, 0, maxBytes, 0);
-      return buffer.subarray(0, bytesRead).toString("utf-8");
-    } finally {
-      fs.closeSync(fd);
-    }
+    if (!addon) throw new Error("Everything addon is not available");
+    return addon.readTextPreview(file, maxBytes);
   },
 };

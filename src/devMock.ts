@@ -9,6 +9,7 @@ export function installDevMock() {
     makeFile("main.log", "C:\\Example\\Logs", 4_960_000, 1716428491904),
     makeFile("core-2026-06-02.log", "C:\\Example\\CrashDumps", 2_400_000, 1716428400000),
     makeFile("SEARCHFILTERHOST.EXE-44162447.pf", "C:\\Windows\\Prefetch", 43_200, 1716328400000),
+    makeFile("README", "C:\\Example\\Project", 5_810, 1716228400000),
     makeFile("session.json", "C:\\Example\\AppData\\Editor", 5_810, 1716228400000),
     makeFile("desktop-manager.log", "C:\\Example\\AppData\\Messenger", 24_120, 1716128400000),
     makeFile("system.log", "C:\\Example\\System", 124_200, 1716028400000),
@@ -16,6 +17,9 @@ export function installDevMock() {
     makeFile("report.pdf", "D:\\Example\\Documents", 544_120, 1715828400000),
     makeFile("budget.xlsx", "D:\\Example\\Documents", 244_120, 1715728400000),
     makeFile("Pictures", "D:\\Example", 0, 1715628400000, true),
+    makeFile("landscape.jpg", "D:\\Example\\Pictures", 1_244_120, 1715528400000),
+    makeFile("demo-video.mp4", "D:\\Example\\Videos", 18_244_120, 1715428400000),
+    makeFile("ambient.mp3", "D:\\Example\\Music", 4_244_120, 1715328400000),
     ...Array.from({ length: 80 }, (_, index) =>
       makeFile(
         `debug-${String(index + 1).padStart(3, "0")}.log`,
@@ -55,8 +59,29 @@ export function installDevMock() {
         return { total: items.length, items };
       },
     },
-    readTextPreview: () =>
-      "[2026-05-23 15:01:31.904] [info] 启动本地搜索插件\\n[2026-05-23 15:01:33.101] [info] 收到输入事件\\n[2026-05-23 15:01:39.065] [info] 隐藏插件视图",
+    isTextFile(file: string) {
+      return (
+        /(?:^|[\\/])(README|LICENSE|CHANGELOG)$/i.test(file) || /\.(txt|log|json|md)$/i.test(file)
+      );
+    },
+    getFileUrl(file: string) {
+      if (/\.(jpg|jpeg|png|gif|webp|bmp|svg|ico)$/i.test(file)) {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360"><defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#2563eb"/><stop offset="1" stop-color="#14b8a6"/></linearGradient></defs><rect width="640" height="360" fill="url(#g)"/><text x="320" y="190" text-anchor="middle" font-family="Arial" font-size="32" fill="white">Image Preview</text></svg>`;
+        return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+      }
+      return `file:///${file.replace(/\\/g, "/")}`;
+    },
+    inspectTextFile(file: string) {
+      return {
+        isText: window.services.isTextFile(file),
+        encoding: "UTF-8",
+      };
+    },
+    readTextPreview: () => ({
+      isText: true,
+      encoding: "UTF-8",
+      text: "[2026-05-23 15:01:31.904] [info] 启动本地搜索插件\n[2026-05-23 15:01:33.101] [info] 收到输入事件\n[2026-05-23 15:01:39.065] [info] 隐藏插件视图",
+    }),
   };
 
   const ztoolsMock = {

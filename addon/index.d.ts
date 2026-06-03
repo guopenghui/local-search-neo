@@ -31,6 +31,15 @@ export interface EverythingQueryResult {
   items: EverythingQueryItem[];
 }
 
+export interface TextFileInspection {
+  isText: boolean;
+  encoding: string;
+}
+
+export interface TextPreviewResult extends TextFileInspection {
+  text: string;
+}
+
 export interface EverythingAddon {
   isRunning(): boolean;
   isDbLoaded(): boolean;
@@ -40,6 +49,10 @@ export interface EverythingAddon {
 
 export interface AddonModule {
   everything: EverythingAddon;
+  inspectTextFile(file: string, maxBytes?: number): TextFileInspection;
+  readTextPreview(file: string, maxBytes?: number): TextPreviewResult;
 }
 
 export const everything: EverythingAddon;
+export function inspectTextFile(file: string, maxBytes?: number): TextFileInspection;
+export function readTextPreview(file: string, maxBytes?: number): TextPreviewResult;
