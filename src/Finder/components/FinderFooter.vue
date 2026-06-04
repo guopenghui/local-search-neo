@@ -1,22 +1,79 @@
 <script setup lang="ts">
-import type { FinderSortMode } from "./finderLogic";
+import { computed, onMounted, onUnmounted, ref } from "vue";
+import type { FinderSortMode } from "../core/finderLogic";
+
+const SORT_OPTIONS: Array<{ value: FinderSortMode; label: string }> = [
+  { value: "modified-desc", label: "按修改时间降序" },
+  { value: "modified-asc", label: "按修改时间升序" },
+  { value: "name-asc", label: "按名称升序" },
+  { value: "name-desc", label: "按名称降序" },
+  { value: "path-asc", label: "按路径升序" },
+  { value: "path-desc", label: "按路径降序" },
+  { value: "size-asc", label: "按大小升序" },
+  { value: "size-desc", label: "按大小降序" },
+];
 
 const previewEnabled = defineModel<boolean>("previewEnabled", { required: true });
+const sortMode = defineModel<FinderSortMode>("sortMode", { required: true });
 
 defineProps<{
-  sortOptions: Array<{ value: FinderSortMode; label: string }>;
-  sortMode: FinderSortMode;
-  showSortMenu: boolean;
-  activeSortLabel: string;
   everythingTotal: number;
-  previewLabel: string;
 }>();
 
 const emit = defineEmits<{
   openSettings: [];
-  toggleSortMenu: [];
-  selectSortMode: [mode: FinderSortMode];
+  requestInputFocus: [];
+  sortMenuOpenChange: [open: boolean];
 }>();
+
+const showSortMenu = ref(false);
+const activeSortLabel = computed(
+  () => SORT_OPTIONS.find((option) => option.value === sortMode.value)?.label ?? "排序",
+);
+const previewLabel = computed(() => (previewEnabled.value ? "关闭文件预览" : "开启文件预览"));
+
+function setSortMenuOpen(open: boolean) {
+  showSortMenu.value = open;
+  emit("sortMenuOpenChange", open);
+}
+
+function toggleSortMenu() {
+  setSortMenuOpen(!showSortMenu.value);
+}
+
+function selectSortMode(mode: FinderSortMode) {
+  sortMode.value = mode;
+  setSortMenuOpen(false);
+  emit("requestInputFocus");
+}
+
+function handleGlobalPointerdown(event: PointerEvent) {
+  if (!showSortMenu.value) return;
+  if (event.target instanceof HTMLElement && event.target.closest(".sort-select")) return;
+  setSortMenuOpen(false);
+}
+
+function handleGlobalKeydown(event: KeyboardEvent) {
+  if (!showSortMenu.value || event.key === "ArrowDown" || event.key === "ArrowUp") return;
+  if (event.key === "Escape" || shouldCloseSortMenuForKey(event)) setSortMenuOpen(false);
+}
+
+function shouldCloseSortMenuForKey(event: KeyboardEvent) {
+  if (event.ctrlKey || event.metaKey || event.altKey) return false;
+  if (event.key === "ArrowLeft" || event.key === "ArrowRight") return true;
+  if (event.key === "Backspace" || event.key === "Delete") return true;
+  return event.key.length === 1;
+}
+
+onMounted(() => {
+  window.addEventListener("pointerdown", handleGlobalPointerdown);
+  window.addEventListener("keydown", handleGlobalKeydown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("pointerdown", handleGlobalPointerdown);
+  window.removeEventListener("keydown", handleGlobalKeydown);
+});
 </script>
 
 <template>
@@ -26,7 +83,7 @@ const emit = defineEmits<{
       type="button"
       title="设置"
       tabindex="-1"
-      @mousedown.prevent
+      @mousedown.left.prevent
       @click="emit('openSettings')"
     >
       <span class="settings-button-icon" aria-hidden="true"></span>
@@ -38,22 +95,22 @@ const emit = defineEmits<{
         tabindex="-1"
         aria-label="排序方式"
         :aria-expanded="showSortMenu"
-        @mousedown.prevent
-        @click="emit('toggleSortMenu')"
+        @mousedown.left.prevent
+        @click="toggleSortMenu"
       >
         <span>{{ activeSortLabel }}</span>
         <span class="sort-trigger-arrow" aria-hidden="true"></span>
       </button>
       <div v-if="showSortMenu" class="sort-menu">
         <button
-          v-for="option in sortOptions"
+          v-for="option in SORT_OPTIONS"
           :key="option.value"
           type="button"
           class="sort-option"
           :class="{ active: option.value === sortMode }"
           tabindex="-1"
-          @mousedown.prevent
-          @click="emit('selectSortMode', option.value)"
+          @mousedown.left.prevent
+          @click="selectSortMode(option.value)"
         >
           {{ option.label }}
         </button>

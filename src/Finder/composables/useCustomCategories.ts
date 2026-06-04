@@ -1,5 +1,5 @@
 import { ref } from "vue";
-import type { FinderCategory } from "./finderLogic";
+import type { FinderCategory } from "../core/finderLogic";
 
 const CUSTOM_CATEGORY_STORAGE_KEY = "local-search-neo:finder:custom-categories";
 

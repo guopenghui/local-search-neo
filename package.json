@@ -13,7 +13,7 @@
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "check": "npm run lint && npm run format:check && npm test",
-    "test": "node scripts/run-ts-tests.cjs src/Finder/finderLogic.test.ts",
+    "test": "node scripts/run-ts-tests.cjs src/Finder/core/finderLogic.test.ts",
     "predev": "npm run prepare:pdfjs && npm run build:addon:dev",
     "dev": "vite",
     "prebuild": "npm run prepare:pdfjs && npm run build:addon",

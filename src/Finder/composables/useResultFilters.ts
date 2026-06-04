@@ -1,5 +1,5 @@
 import { ref } from "vue";
-import type { FinderResult } from "./finderLogic";
+import type { FinderResult } from "../core/finderLogic";
 
 export interface ResultFilter {
   id: string;

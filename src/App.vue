@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import Finder from "./Finder/index.vue";
-import { getFileIconDataUrl } from "./Finder/fileIconCache";
-import { DEFAULT_CATEGORIES, buildEverythingQuery } from "./Finder/finderLogic";
+import { getFileIconDataUrl } from "./Finder/core/fileIconCache";
+import { DEFAULT_CATEGORIES, buildEverythingQuery } from "./Finder/core/finderLogic";
 
 const MAIN_PUSH_RESULT_LIMIT = 6;
 const MAIN_PUSH_FILE_RESULT_LIMIT = MAIN_PUSH_RESULT_LIMIT - 1;

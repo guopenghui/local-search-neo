@@ -1,4 +1,4 @@
-import { computed, nextTick, ref, type ComputedRef, type Ref } from "vue";
+import { computed, nextTick, onUnmounted, ref, type ComputedRef, type Ref } from "vue";
 import {
   getNextSelectedPath,
   getNextVisibleCount,
@@ -6,7 +6,7 @@ import {
   sortResults,
   type FinderResult,
   type FinderSortMode,
-} from "./finderLogic";
+} from "../core/finderLogic";
 
 interface UseFinderSearchOptions {
   pageSize: number;
@@ -38,6 +38,8 @@ export function useFinderSearch({
   );
 
   let searchTimer: number | undefined;
+
+  onUnmounted(clearSearchTimer);
 
   function queueSearch() {
     if (searchTimer) window.clearTimeout(searchTimer);
@@ -100,6 +102,16 @@ export function useFinderSearch({
     selectedPath.value = "";
   }
 
+  function removeResultByPath(fullPath: string) {
+    const beforeLength = results.value.length;
+    results.value = results.value.filter((item) => item.fullPath !== fullPath);
+    if (results.value.length === beforeLength) return;
+
+    everythingTotal.value = Math.max(0, everythingTotal.value - 1);
+    restoreSelection();
+    updateResultStatus();
+  }
+
   function moveSelection(direction: -1 | 1) {
     const paths = sortedResults.value
       .map((item) => item.fullPath)
@@ -150,6 +162,7 @@ export function useFinderSearch({
     updateResultStatus,
     selectItem,
     clearSelection,
+    removeResultByPath,
     moveSelection,
     growVisibleCount,
     resetVisibleCount,

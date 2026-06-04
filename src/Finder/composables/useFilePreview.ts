@@ -1,5 +1,5 @@
-import { ref, type ComputedRef, type Ref } from "vue";
-import type { PreviewKind } from "./preview/previewTypes";
+import { ref, watch, type ComputedRef, type Ref } from "vue";
+import type { PreviewKind } from "../preview/previewTypes";
 import {
   formatBytes,
   getCodePreviewLanguage,
@@ -12,7 +12,7 @@ import {
   isTextPreviewCandidate,
   isVideoPreviewCandidate,
   type FinderResult,
-} from "./finderLogic";
+} from "../core/finderLogic";
 
 const PREVIEW_BYTES = 20 * 1024;
 const LOG_PREVIEW_BYTES = 10 * 1024;
@@ -148,6 +148,8 @@ export function useFilePreview({ selectedItem, previewEnabled }: UseFilePreviewO
     previewEncoding.value = "";
     previewLanguage.value = "";
   }
+
+  watch([selectedItem, previewEnabled], () => loadPreview());
 
   return {
     previewKind,

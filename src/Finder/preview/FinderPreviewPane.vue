@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import AudioPreview from "./preview/AudioPreview.vue";
-import CodePreview from "./preview/CodePreview.vue";
-import EmptyPreview from "./preview/EmptyPreview.vue";
-import ImagePreview from "./preview/ImagePreview.vue";
-import MarkdownPreview from "./preview/MarkdownPreview.vue";
-import PdfPreview from "./preview/PdfPreview.vue";
-import TextPreview from "./preview/TextPreview.vue";
-import VideoPreview from "./preview/VideoPreview.vue";
-import { getPreviewTypeLabel, type PreviewKind } from "./preview/previewTypes";
+import AudioPreview from "./AudioPreview.vue";
+import CodePreview from "./CodePreview.vue";
+import EmptyPreview from "./EmptyPreview.vue";
+import ImagePreview from "./ImagePreview.vue";
+import MarkdownPreview from "./MarkdownPreview.vue";
+import PdfPreview from "./PdfPreview.vue";
+import TextPreview from "./TextPreview.vue";
+import VideoPreview from "./VideoPreview.vue";
+import { getPreviewTypeLabel, type PreviewKind } from "./previewTypes";
 
 const props = defineProps<{
   previewKind: PreviewKind;

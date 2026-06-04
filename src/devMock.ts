@@ -1,5 +1,5 @@
-import type { FinderCategory } from "./Finder/finderLogic";
-import type { FinderResult, FinderSortMode } from "./Finder/finderLogic";
+import type { FinderCategory } from "./Finder/core/finderLogic";
+import type { FinderResult, FinderSortMode } from "./Finder/core/finderLogic";
 
 export function installDevMock() {
   if (typeof window === "undefined" || window.ztools) return;
@@ -128,7 +128,11 @@ export function installDevMock() {
 
       return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
     },
+    copyText() {
+      return true;
+    },
     shellOpenPath() {},
+    async shellTrashItem() {},
     shellShowItemInFolder() {},
     dbStorage: {
       getItem(key: string) {

@@ -1,45 +1,73 @@
 <script setup lang="ts">
-import type { FinderCategory } from "./finderLogic";
+import { computed } from "vue";
+import type { ContextMenuItem } from "../composables/useContextMenu";
+import type { FinderCategory } from "../core/finderLogic";
 
-defineProps<{
+const props = defineProps<{
   categories: FinderCategory[];
   activeCategoryId: string;
 }>();
 
 const emit = defineEmits<{
   select: [category: FinderCategory];
+  "context-menu": [event: MouseEvent, items: ContextMenuItem[]];
   remove: [category: FinderCategory];
   add: [];
 }>();
+
+const builtInCategories = computed(() =>
+  props.categories.filter((category) => category.kind !== "custom"),
+);
+const customCategories = computed(() =>
+  props.categories.filter((category) => category.kind === "custom"),
+);
+
+function openCategoryMenu(event: MouseEvent, category: FinderCategory) {
+  emit("context-menu", event, [
+    {
+      id: "delete-category",
+      label: "删除分组",
+      danger: true,
+      action: () => emit("remove", category),
+    },
+  ]);
+}
 </script>
 
 <template>
   <aside class="finder-sidebar">
     <button
-      v-for="category in categories"
+      v-for="category in builtInCategories"
       :key="category.id"
       class="category-button"
       :class="{ active: category.id === activeCategoryId }"
       tabindex="-1"
-      @mousedown.prevent
+      @mousedown.left.prevent
       @click="emit('select', category)"
     >
       <span>{{ category.label }}</span>
-      <span
-        v-if="category.kind === 'custom'"
-        class="category-remove"
-        title="删除分类"
-        @click.stop="emit('remove', category)"
-      >
-        ×
-      </span>
+    </button>
+
+    <div v-if="customCategories.length > 0" class="category-separator"></div>
+
+    <button
+      v-for="category in customCategories"
+      :key="category.id"
+      class="category-button custom-category-button"
+      :class="{ active: category.id === activeCategoryId }"
+      tabindex="-1"
+      @mousedown.left.prevent
+      @contextmenu.prevent.stop="openCategoryMenu($event, category)"
+      @click="emit('select', category)"
+    >
+      <span>{{ category.label }}</span>
     </button>
 
     <button
       class="add-category"
       title="添加分类"
       tabindex="-1"
-      @mousedown.prevent
+      @mousedown.left.prevent
       @click="emit('add')"
     >
       +
@@ -97,10 +125,14 @@ const emit = defineEmits<{
   background: #383a3d;
 }
 
-.category-remove {
-  position: absolute;
-  right: 4px;
-  color: #858b92;
+.custom-category-button {
+  color: #d4d8df;
+}
+
+.category-separator {
+  height: 1px;
+  margin: 6px 6px;
+  background: #444a53;
 }
 
 .add-category {
@@ -129,8 +161,12 @@ const emit = defineEmits<{
     background: #dfe5ec;
   }
 
-  .category-remove {
-    color: #7a8491;
+  .custom-category-button {
+    color: #374151;
+  }
+
+  .category-separator {
+    background: #d7dee8;
   }
 
   .add-category {

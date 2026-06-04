@@ -1,22 +1,26 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import CustomCategoryDialog from "./CustomCategoryDialog.vue";
-import FinderFooter from "./FinderFooter.vue";
-import FinderPreviewPane from "./FinderPreviewPane.vue";
-import FinderResultList from "./FinderResultList.vue";
-import FinderSidebar from "./FinderSidebar.vue";
-import SettingsDrawer from "./SettingsDrawer.vue";
-import { useCustomCategories } from "./useCustomCategories";
-import { useFilePreview } from "./useFilePreview";
-import { useFinderSearch } from "./useFinderSearch";
-import { useResultFilters, type ResultFilterInput } from "./useResultFilters";
-import { useSubInput } from "./useSubInput";
-import {
-  DEFAULT_CATEGORIES,
-  buildEverythingQuery,
-  type FinderCategory,
-  type FinderSortMode,
-} from "./finderLogic";
+import { onMounted, ref, watch } from "vue";
+import ConfirmDialog from "../components/ConfirmDialog.vue";
+import { useConfirmDialog } from "../components/useConfirmDialog";
+import ContextMenu from "./components/ContextMenu.vue";
+import CustomCategoryDialog from "./components/CustomCategoryDialog.vue";
+import FinderFooter from "./components/FinderFooter.vue";
+import FinderResultList from "./components/FinderResultList.vue";
+import FinderSidebar from "./components/FinderSidebar.vue";
+import SettingsDrawer from "./components/SettingsDrawer.vue";
+import { useContextMenu } from "./composables/useContextMenu";
+import { useFilePreview } from "./composables/useFilePreview";
+import { useFinderCategories } from "./composables/useFinderCategories";
+import { useFinderEnterAction } from "./composables/useFinderEnterAction";
+import { useFinderFocus } from "./composables/useFinderFocus";
+import { useFinderKeyboard } from "./composables/useFinderKeyboard";
+import { useFinderQuery } from "./composables/useFinderQuery";
+import { useFinderSearch } from "./composables/useFinderSearch";
+import { useFinderSettings } from "./composables/useFinderSettings";
+import { useResultActions } from "./composables/useResultActions";
+import { useSubInput } from "./composables/useSubInput";
+import type { FinderSortMode } from "./core/finderLogic";
+import FinderPreviewPane from "./preview/FinderPreviewPane.vue";
 
 const props = defineProps<{
   enterAction: Record<string, unknown>;
@@ -26,87 +30,94 @@ const PAGE_SIZE = 50;
 const MAX_RESULTS = 100;
 
 const queryText = ref("");
-const activeCategoryId = ref("all");
 const sortMode = ref<FinderSortMode>("modified-desc");
-const showSortMenu = ref(false);
 const previewEnabled = ref(false);
-const showCategoryDialog = ref(false);
-const showSettingsDrawer = ref(false);
+const footerSortMenuOpen = ref(false);
 
-const sortOptions: Array<{ value: FinderSortMode; label: string }> = [
-  { value: "modified-desc", label: "按修改时间降序" },
-  { value: "modified-asc", label: "按修改时间升序" },
-  { value: "name-asc", label: "按名称升序" },
-  { value: "name-desc", label: "按名称降序" },
-  { value: "path-asc", label: "按路径升序" },
-  { value: "path-desc", label: "按路径降序" },
-  { value: "size-asc", label: "按大小升序" },
-  { value: "size-desc", label: "按大小降序" },
-];
+const { bindSubInput, syncSubInputValue, focusSubInput } = useSubInput({
+  queryText,
+  onInput: queueSearch,
+});
 
-const { customCategories, loadCustomCategories, addCustomCategory, removeCustomCategory } =
-  useCustomCategories();
-const { resultFilters, loadResultFilters, addResultFilter, removeResultFilter, buildQueryFilter } =
-  useResultFilters();
-
-const categories = computed(() => [...DEFAULT_CATEGORIES, ...customCategories.value]);
-const activeCategory = computed(
-  () =>
-    categories.value.find((category) => category.id === activeCategoryId.value) ??
-    DEFAULT_CATEGORIES[0],
-);
-const previewLabel = computed(() => (previewEnabled.value ? "关闭文件预览" : "开启文件预览"));
-const activeSortLabel = computed(
-  () => sortOptions.find((option) => option.value === sortMode.value)?.label ?? "排序",
-);
-const resultFilterCount = computed(() => resultFilters.value.length);
-
+const { releaseFinderFocus } = useFinderFocus(focusSubInput);
+const {
+  activeCategoryId,
+  activeCategory,
+  categories,
+  showCategoryDialog,
+  loadCustomCategories,
+  selectCategory,
+  handleRemoveCustomCategory,
+  openCategoryDialog,
+  closeCategoryDialog,
+  handleAddCustomCategory,
+} = useFinderCategories({ releaseFinderFocus, focusSubInput });
+const {
+  resultFilters,
+  resultFilterCount,
+  showSettingsDrawer,
+  loadResultFilters,
+  buildQueryFilter,
+  openSettingsDrawer,
+  closeSettingsDrawer,
+  handleAddResultFilter,
+  handleRemoveResultFilter,
+} = useFinderSettings({ focusSubInput });
+const { buildFilteredEverythingQuery } = useFinderQuery({
+  queryText,
+  activeCategory,
+  buildQueryFilter,
+});
 const finderSearch = useFinderSearch({
   pageSize: PAGE_SIZE,
   maxResults: MAX_RESULTS,
   sortMode,
   resultFilterCount,
   buildQuery: buildFilteredEverythingQuery,
+  onSelectionRestored: scrollSelectedIntoView,
 });
-
 const filePreview = useFilePreview({
   selectedItem: finderSearch.selectedItem,
   previewEnabled,
 });
-
-const { bindSubInput, syncSubInputValue, focusSubInput, disposeSubInput } = useSubInput({
-  queryText,
-  onInput: finderSearch.queueSearch,
+const contextMenu = useContextMenu();
+const confirmDialog = useConfirmDialog();
+const resultActions = useResultActions({
+  confirm: confirmDialog.confirm,
+  onTrashed: (fullPath) => {
+    finderSearch.removeResultByPath(fullPath);
+    window.setTimeout(() => finderSearch.queueSearch(), 800);
+  },
 });
 
-watch(
-  () => props.enterAction,
-  (enterAction) => {
-    const payload = getRecordValue(enterAction, "payload");
-    const option = getRecordValue(enterAction, "option");
-    const incomingQuery =
-      getStringValue(payload, "query") ??
-      getStringValue(payload, "text") ??
-      getStringValue(option, "query") ??
-      "";
-    const incomingPath =
-      getStringValue(payload, "selectedPath") ?? getStringValue(option, "fullPath");
+useFinderEnterAction({
+  enterAction: () => props.enterAction,
+  queryText,
+  selectedPath: finderSearch.selectedPath,
+  syncSubInputValue,
+  queueSearch: finderSearch.queueSearch,
+});
 
-    queryText.value = incomingQuery;
-    syncSubInputValue();
-    finderSearch.selectedPath.value = incomingPath ?? "";
-    finderSearch.queueSearch();
+useFinderKeyboard({
+  isNavigationBlocked: () =>
+    showCategoryDialog.value ||
+    showSettingsDrawer.value ||
+    footerSortMenuOpen.value ||
+    contextMenu.visible.value,
+  closeTransientOverlays: contextMenu.close,
+  focusSubInput,
+  moveSelection: finderSearch.moveSelection,
+  openSelection: () => resultActions.open(finderSearch.selectedItem.value),
+  showSelectionInFolder: () => {
+    const selectedItem = finderSearch.selectedItem.value;
+    if (selectedItem) resultActions.showInFolder(selectedItem);
   },
-  { immediate: true },
-);
+  scrollSelectedIntoView,
+});
 
 watch([activeCategoryId, sortMode], () => {
   finderSearch.resetVisibleCount();
   if (activeCategoryId.value) finderSearch.queueSearch();
-});
-
-watch([finderSearch.selectedItem, previewEnabled], () => {
-  filePreview.loadPreview();
 });
 
 watch(
@@ -124,105 +135,16 @@ onMounted(() => {
   loadResultFilters();
   bindSubInput();
   syncSubInputValue();
-  window.addEventListener("keydown", handleKeydown);
-  window.addEventListener("pointerdown", handleGlobalPointerdown);
   finderSearch.queueSearch();
 });
 
-onUnmounted(() => {
-  disposeSubInput();
-  window.removeEventListener("keydown", handleKeydown);
-  window.removeEventListener("pointerdown", handleGlobalPointerdown);
-  finderSearch.clearSearchTimer();
-});
-
-function buildFilteredEverythingQuery() {
-  return [buildEverythingQuery(queryText.value, activeCategory.value), buildQueryFilter()]
-    .filter(Boolean)
-    .join(" ");
-}
-
-function getRecordValue(record: Record<string, unknown>, key: string): Record<string, unknown> {
-  const value = record[key];
-  return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
-}
-
-function getStringValue(record: Record<string, unknown>, key: string): string | undefined {
-  const value = record[key];
-  return typeof value === "string" ? value : undefined;
-}
-
-function releaseFinderFocus() {
-  const activeElement = document.activeElement;
-  if (activeElement instanceof HTMLElement && activeElement.closest(".finder-shell")) {
-    activeElement.blur();
-  }
-  focusSubInput();
-}
-
-function selectCategory(category: FinderCategory) {
-  activeCategoryId.value = category.id;
-  releaseFinderFocus();
-}
-
-function handleRemoveCustomCategory(category: FinderCategory) {
-  removeCustomCategory(category);
-  if (activeCategoryId.value === category.id) activeCategoryId.value = "all";
-}
-
-function openCategoryDialog() {
-  showCategoryDialog.value = true;
-  releaseFinderFocus();
-}
-
-function closeCategoryDialog() {
-  showCategoryDialog.value = false;
-  focusSubInput();
-}
-
-function handleAddCustomCategory(input: Pick<FinderCategory, "label" | "rule">) {
-  try {
-    const category = addCustomCategory(input.label, input.rule);
-    activeCategoryId.value = category.id;
-  } catch (error) {
-    console.warn("[local-search-neo] 保存自定义过滤器失败:", error);
-  }
-
-  closeCategoryDialog();
-}
-
-function openSettingsDrawer() {
-  showSettingsDrawer.value = true;
-}
-
-function closeSettingsDrawer() {
-  showSettingsDrawer.value = false;
-  focusSubInput();
-}
-
-function handleAddResultFilter(input: ResultFilterInput) {
-  try {
-    addResultFilter(input);
-  } catch (error) {
-    console.warn("[local-search-neo] 保存结果过滤器失败:", error);
-  }
-}
-
-function handleRemoveResultFilter(id: string) {
-  try {
-    removeResultFilter(id);
-  } catch (error) {
-    console.warn("[local-search-neo] 删除结果过滤器失败:", error);
-  }
+function queueSearch() {
+  finderSearch.queueSearch();
 }
 
 function selectItem(item: { fullPath?: string }) {
   finderSearch.selectedPath.value = item.fullPath ?? "";
   releaseFinderFocus();
-}
-
-function handleNearBottom() {
-  finderSearch.growVisibleCount();
 }
 
 function scrollSelectedIntoView() {
@@ -235,62 +157,6 @@ function scrollSelectedIntoView() {
     block: "nearest",
   });
 }
-
-function openSelected() {
-  if (finderSearch.selectedItem.value?.fullPath) {
-    window.ztools.shellOpenPath(finderSearch.selectedItem.value.fullPath);
-  }
-}
-
-function handleGlobalPointerdown(event: PointerEvent) {
-  if (!showSortMenu.value) return;
-  if (event.target instanceof HTMLElement && event.target.closest(".sort-select")) return;
-  showSortMenu.value = false;
-}
-
-function toggleSortMenu() {
-  showSortMenu.value = !showSortMenu.value;
-}
-
-function selectSortMode(mode: FinderSortMode) {
-  sortMode.value = mode;
-  showSortMenu.value = false;
-  focusSubInput();
-}
-
-function handleKeydown(event: KeyboardEvent) {
-  if (isNativeEditingTarget(event.target)) return;
-
-  if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-    if (showCategoryDialog.value || showSettingsDrawer.value || showSortMenu.value) return;
-    event.preventDefault();
-    finderSearch.moveSelection(event.key === "ArrowDown" ? 1 : -1);
-    nextTick(() => scrollSelectedIntoView());
-    return;
-  }
-
-  if (shouldFocusSubInput(event)) {
-    showSortMenu.value = false;
-    focusSubInput();
-  }
-}
-
-function shouldFocusSubInput(event: KeyboardEvent) {
-  if (event.ctrlKey || event.metaKey || event.altKey) return false;
-  if (event.key === "ArrowLeft" || event.key === "ArrowRight") return true;
-  if (event.key === "Backspace" || event.key === "Delete") return true;
-  return event.key.length === 1;
-}
-
-function isNativeEditingTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) return false;
-  if (target.isContentEditable) return true;
-  return (
-    target instanceof HTMLInputElement ||
-    target instanceof HTMLTextAreaElement ||
-    target instanceof HTMLSelectElement
-  );
-}
 </script>
 
 <template>
@@ -299,6 +165,7 @@ function isNativeEditingTarget(target: EventTarget | null) {
       :categories="categories"
       :active-category-id="activeCategoryId"
       @select="selectCategory"
+      @context-menu="contextMenu.open"
       @remove="handleRemoveCustomCategory"
       @add="openCategoryDialog"
     />
@@ -310,22 +177,20 @@ function isNativeEditingTarget(target: EventTarget | null) {
         :is-loading="finderSearch.isLoading.value"
         :status-text="finderSearch.statusText.value"
         :preview-open="previewEnabled"
-        @near-bottom="handleNearBottom"
+        :actions="resultActions"
+        @near-bottom="finderSearch.growVisibleCount"
         @select="selectItem"
-        @open="openSelected"
+        @context-menu="contextMenu.open"
+        @open="resultActions.open(finderSearch.selectedItem.value)"
       />
 
       <FinderFooter
         v-model:preview-enabled="previewEnabled"
-        :sort-options="sortOptions"
-        :sort-mode="sortMode"
-        :show-sort-menu="showSortMenu"
-        :active-sort-label="activeSortLabel"
+        v-model:sort-mode="sortMode"
         :everything-total="finderSearch.everythingTotal.value"
-        :preview-label="previewLabel"
         @open-settings="openSettingsDrawer"
-        @toggle-sort-menu="toggleSortMenu"
-        @select-sort-mode="selectSortMode"
+        @request-input-focus="focusSubInput"
+        @sort-menu-open-change="footerSortMenuOpen = $event"
       />
     </section>
 
@@ -351,6 +216,25 @@ function isNativeEditingTarget(target: EventTarget | null) {
       @close="closeSettingsDrawer"
       @add-result-filter="handleAddResultFilter"
       @remove-result-filter="handleRemoveResultFilter"
+    />
+
+    <ContextMenu
+      :visible="contextMenu.visible.value"
+      :x="contextMenu.x.value"
+      :y="contextMenu.y.value"
+      :items="contextMenu.items.value"
+      @select="contextMenu.select"
+    />
+
+    <ConfirmDialog
+      :open="confirmDialog.state.open"
+      :title="confirmDialog.state.title"
+      :message="confirmDialog.state.message"
+      :confirm-text="confirmDialog.state.confirmText"
+      :cancel-text="confirmDialog.state.cancelText"
+      :danger="confirmDialog.state.danger"
+      @confirm="confirmDialog.accept"
+      @cancel="confirmDialog.cancel"
     />
   </main>
 </template>

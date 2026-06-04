@@ -1,19 +1,23 @@
 <script setup lang="ts">
-import { getFileIconUrl } from "./fileIconCache";
-import { formatBytes, type FinderResult } from "./finderLogic";
+import type { ContextMenuItem } from "../composables/useContextMenu";
+import type { ResultActions } from "../composables/useResultActions";
+import { getFileIconUrl } from "../core/fileIconCache";
+import { formatBytes, type FinderResult } from "../core/finderLogic";
 
-defineProps<{
+const props = defineProps<{
   visibleResults: FinderResult[];
   selectedPath: string;
   isLoading: boolean;
   statusText: string;
   previewOpen: boolean;
+  actions: ResultActions;
 }>();
 
 const emit = defineEmits<{
   nearBottom: [];
   select: [item: FinderResult];
   open: [];
+  "context-menu": [event: MouseEvent, items: ContextMenuItem[]];
 }>();
 
 function handleListScroll(event: Event) {
@@ -41,6 +45,41 @@ function formatModified(value?: number) {
     date.getMinutes(),
   )}:${pad(date.getSeconds())}`;
 }
+
+function openResultMenu(event: MouseEvent, item: FinderResult) {
+  emit("select", item);
+  const hasFullPath = !!item.fullPath;
+  const hasDirectoryPath = !!item.path;
+
+  emit("context-menu", event, [
+    {
+      id: "show-in-folder",
+      label: "打开所在目录",
+      disabled: !hasFullPath,
+      action: () => props.actions.showInFolder(item),
+    },
+    {
+      id: "copy-full-path",
+      label: "复制路径",
+      disabled: !hasFullPath,
+      action: () => props.actions.copyFullPath(item),
+    },
+    {
+      id: "copy-directory-path",
+      label: "复制所在路径",
+      disabled: !hasDirectoryPath,
+      action: () => props.actions.copyDirectoryPath(item),
+    },
+    { id: "separator-delete", label: "", separator: true },
+    {
+      id: "trash-item",
+      label: "删除（回收站）",
+      danger: true,
+      disabled: !hasFullPath,
+      action: () => props.actions.trash(item),
+    },
+  ]);
+}
 </script>
 
 <template>
@@ -52,7 +91,8 @@ function formatModified(value?: number) {
       class="result-row"
       :class="{ selected: item.fullPath === selectedPath }"
       tabindex="-1"
-      @mousedown.prevent
+      @mousedown.left.prevent
+      @contextmenu.prevent.stop="openResultMenu($event, item)"
       @click="emit('select', item)"
       @dblclick="emit('open')"
     >

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import type { FinderCategory } from "./finderLogic";
+import type { FinderCategory } from "../core/finderLogic";
 
 const props = defineProps<{
   open: boolean;
