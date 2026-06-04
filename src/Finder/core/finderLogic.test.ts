@@ -22,7 +22,7 @@ import {
   filterResults,
   parseFilterExtensions,
   type ResultFilter,
-} from "../composables/useResultFilters";
+} from "./resultFilters";
 
 declare const test: (name: string, fn: () => void) => void;
 declare const assert: typeof import("node:assert/strict");

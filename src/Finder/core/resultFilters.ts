@@ -1,5 +1,4 @@
-import { ref } from "vue";
-import type { FinderResult } from "../core/finderLogic";
+import type { FinderResult } from "./finderLogic";
 
 export interface ResultFilter {
   id: string;
@@ -10,50 +9,6 @@ export interface ResultFilter {
 export interface ResultFilterInput {
   directory?: string;
   extensions?: string;
-}
-
-const RESULT_FILTER_STORAGE_KEY = "local-search-neo:finder:result-filters";
-
-export function useResultFilters(storageKey = RESULT_FILTER_STORAGE_KEY) {
-  const resultFilters = ref<ResultFilter[]>([]);
-
-  function loadResultFilters() {
-    try {
-      const stored = window.ztools.dbStorage.getItem<unknown>(storageKey);
-      resultFilters.value = Array.isArray(stored)
-        ? stored.map(normalizeStoredFilter).filter(isResultFilter)
-        : [];
-    } catch {
-      resultFilters.value = [];
-    }
-  }
-
-  function saveResultFilters() {
-    window.ztools.dbStorage.setItem(storageKey, resultFilters.value);
-  }
-
-  function addResultFilter(input: ResultFilterInput) {
-    const filter = createResultFilter(input);
-    resultFilters.value = [...resultFilters.value, filter];
-    saveResultFilters();
-  }
-
-  function removeResultFilter(id: string) {
-    resultFilters.value = resultFilters.value.filter((filter) => filter.id !== id);
-    saveResultFilters();
-  }
-
-  function buildQueryFilter() {
-    return buildResultFilterQuery(resultFilters.value);
-  }
-
-  return {
-    resultFilters,
-    loadResultFilters,
-    addResultFilter,
-    removeResultFilter,
-    buildQueryFilter,
-  };
 }
 
 export function buildResultFilterQuery(filters: ResultFilter[]): string {
@@ -110,40 +65,12 @@ function ensureDirectorySearchPath(directory: string): string {
   return normalized.endsWith("\\") ? normalized : `${normalized}\\`;
 }
 
-function createResultFilter(input: ResultFilterInput): ResultFilter {
+export function createResultFilter(input: ResultFilterInput): ResultFilter {
   return {
     id: `filter-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     directory: normalizeDisplayDirectory(input.directory ?? ""),
     extensions: parseFilterExtensions(input.extensions),
   };
-}
-
-function normalizeStoredFilter(value: unknown): ResultFilter | null {
-  if (!value || typeof value !== "object") return null;
-
-  const record = value as Record<string, unknown>;
-  const id =
-    typeof record.id === "string" && record.id
-      ? record.id
-      : `filter-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const directory =
-    typeof record.directory === "string" ? normalizeDisplayDirectory(record.directory) : "";
-  const extensions = Array.isArray(record.extensions)
-    ? [
-        ...new Set(
-          record.extensions
-            .filter((item): item is string => typeof item === "string")
-            .map((item) => item.trim().replace(/^\./, "").toLowerCase())
-            .filter(Boolean),
-        ),
-      ]
-    : parseFilterExtensions(typeof record.extensions === "string" ? record.extensions : "");
-
-  return { id, directory, extensions };
-}
-
-function isResultFilter(value: ResultFilter | null): value is ResultFilter {
-  return value !== null;
 }
 
 function matchesDirectory(result: FinderResult, directory: string): boolean {

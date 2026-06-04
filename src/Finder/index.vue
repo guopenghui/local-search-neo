@@ -17,9 +17,9 @@ import { useFinderKeyboard } from "./composables/useFinderKeyboard";
 import { useFinderQuery } from "./composables/useFinderQuery";
 import { useFinderSearch } from "./composables/useFinderSearch";
 import { useFinderSettings } from "./composables/useFinderSettings";
+import { usePersistStorage } from "./composables/usePersistStorage";
 import { useResultActions } from "./composables/useResultActions";
 import { useSubInput } from "./composables/useSubInput";
-import type { FinderSortMode } from "./core/finderLogic";
 import FinderPreviewPane from "./preview/FinderPreviewPane.vue";
 
 const props = defineProps<{
@@ -30,9 +30,8 @@ const PAGE_SIZE = 50;
 const MAX_RESULTS = 100;
 
 const queryText = ref("");
-const sortMode = ref<FinderSortMode>("modified-desc");
-const previewEnabled = ref(false);
 const footerSortMenuOpen = ref(false);
+const { loadPersistStorage, previewEnabled, sortMode } = usePersistStorage();
 
 const { bindSubInput, syncSubInputValue, focusSubInput } = useSubInput({
   queryText,
@@ -45,7 +44,6 @@ const {
   activeCategory,
   categories,
   showCategoryDialog,
-  loadCustomCategories,
   selectCategory,
   handleRemoveCustomCategory,
   openCategoryDialog,
@@ -56,7 +54,6 @@ const {
   resultFilters,
   resultFilterCount,
   showSettingsDrawer,
-  loadResultFilters,
   buildQueryFilter,
   openSettingsDrawer,
   closeSettingsDrawer,
@@ -131,8 +128,7 @@ watch(
 
 onMounted(() => {
   window.ztools.setExpendHeight(650);
-  loadCustomCategories();
-  loadResultFilters();
+  loadPersistStorage();
   bindSubInput();
   syncSubInputValue();
   finderSearch.queueSearch();
@@ -185,8 +181,6 @@ function scrollSelectedIntoView() {
       />
 
       <FinderFooter
-        v-model:preview-enabled="previewEnabled"
-        v-model:sort-mode="sortMode"
         :everything-total="finderSearch.everythingTotal.value"
         @open-settings="openSettingsDrawer"
         @request-input-focus="focusSubInput"

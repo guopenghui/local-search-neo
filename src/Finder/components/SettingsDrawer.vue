@@ -4,7 +4,7 @@ import {
   formatFilterExtensions,
   type ResultFilter,
   type ResultFilterInput,
-} from "../composables/useResultFilters";
+} from "../core/resultFilters";
 
 const props = defineProps<{
   open: boolean;

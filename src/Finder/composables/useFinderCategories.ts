@@ -1,6 +1,6 @@
 import { computed, ref } from "vue";
 import { DEFAULT_CATEGORIES, type FinderCategory } from "../core/finderLogic";
-import { useCustomCategories } from "./useCustomCategories";
+import { usePersistStorage } from "./usePersistStorage";
 
 interface UseFinderCategoriesOptions {
   releaseFinderFocus: () => void;
@@ -13,8 +13,7 @@ export function useFinderCategories({
 }: UseFinderCategoriesOptions) {
   const activeCategoryId = ref("all");
   const showCategoryDialog = ref(false);
-  const { customCategories, loadCustomCategories, addCustomCategory, removeCustomCategory } =
-    useCustomCategories();
+  const { customCategories, addCustomCategory, removeCustomCategory } = usePersistStorage();
 
   const categories = computed(() => [...DEFAULT_CATEGORIES, ...customCategories.value]);
   const activeCategory = computed(
@@ -59,7 +58,6 @@ export function useFinderCategories({
     activeCategory,
     categories,
     showCategoryDialog,
-    loadCustomCategories,
     selectCategory,
     handleRemoveCustomCategory,
     openCategoryDialog,

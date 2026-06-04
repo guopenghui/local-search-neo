@@ -1,5 +1,6 @@
 import { computed, ref } from "vue";
-import { useResultFilters, type ResultFilterInput } from "./useResultFilters";
+import type { ResultFilterInput } from "../core/resultFilters";
+import { usePersistStorage } from "./usePersistStorage";
 
 interface UseFinderSettingsOptions {
   focusSubInput: () => void;
@@ -7,13 +8,8 @@ interface UseFinderSettingsOptions {
 
 export function useFinderSettings({ focusSubInput }: UseFinderSettingsOptions) {
   const showSettingsDrawer = ref(false);
-  const {
-    resultFilters,
-    loadResultFilters,
-    addResultFilter,
-    removeResultFilter,
-    buildQueryFilter,
-  } = useResultFilters();
+  const { resultFilters, addResultFilter, removeResultFilter, buildQueryFilter } =
+    usePersistStorage();
   const resultFilterCount = computed(() => resultFilters.value.length);
 
   function openSettingsDrawer() {
@@ -45,7 +41,6 @@ export function useFinderSettings({ focusSubInput }: UseFinderSettingsOptions) {
     resultFilters,
     resultFilterCount,
     showSettingsDrawer,
-    loadResultFilters,
     buildQueryFilter,
     openSettingsDrawer,
     closeSettingsDrawer,

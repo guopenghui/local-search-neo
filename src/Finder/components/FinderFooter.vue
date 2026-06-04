@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
+import { usePersistStorage } from "../composables/usePersistStorage";
 import type { FinderSortMode } from "../core/finderLogic";
 
 const SORT_OPTIONS: Array<{ value: FinderSortMode; label: string }> = [
@@ -13,8 +14,7 @@ const SORT_OPTIONS: Array<{ value: FinderSortMode; label: string }> = [
   { value: "size-desc", label: "按大小降序" },
 ];
 
-const previewEnabled = defineModel<boolean>("previewEnabled", { required: true });
-const sortMode = defineModel<FinderSortMode>("sortMode", { required: true });
+const { previewEnabled, sortMode } = usePersistStorage();
 
 defineProps<{
   everythingTotal: number;
