@@ -132,6 +132,7 @@ function displayDirectory(directory: string) {
   color: #f5f7fa;
   background: #2d2f32;
   border-top: 1px solid #55585c;
+  border-radius: 12px 12px 0 0;
   box-shadow: 0 -16px 40px rgb(0 0 0 / 35%);
 }
 
@@ -211,6 +212,7 @@ function displayDirectory(directory: string) {
   width: 30px;
   height: 30px;
   background: transparent;
+  border-radius: 6px;
   color: #cbd1d8;
   font-size: 24px;
   line-height: 1;
@@ -259,6 +261,7 @@ function displayDirectory(directory: string) {
   color: #ffffff;
   background: #1f2022;
   border: 1px solid #55585c;
+  border-radius: 6px;
   font-family: Consolas, "Cascadia Mono", "Microsoft YaHei Mono", monospace;
 }
 
@@ -283,12 +286,14 @@ function displayDirectory(directory: string) {
   height: 34px;
   padding: 0 14px;
   background: #5f6eea;
+  border-radius: 6px;
 }
 
 .filter-list {
   display: grid;
   overflow: hidden;
   border: 1px solid #47494c;
+  border-radius: 8px;
 }
 
 .filter-list-header,
@@ -332,6 +337,7 @@ function displayDirectory(directory: string) {
   height: 26px;
   color: #ffb4b4;
   background: transparent;
+  border-radius: 5px;
 }
 
 .empty-filter {
@@ -367,6 +373,10 @@ function displayDirectory(directory: string) {
 
   .drawer-close {
     color: #4f5b6a;
+  }
+
+  .drawer-close:hover {
+    background: #edf2f7;
   }
 
   .filter-form label {

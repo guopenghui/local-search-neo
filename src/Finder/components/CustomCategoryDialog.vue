@@ -80,6 +80,7 @@ function resetForm() {
   padding: 18px;
   background: #303234;
   border: 1px solid #55585c;
+  border-radius: 10px;
 }
 
 .category-dialog h2 {
@@ -101,6 +102,7 @@ function resetForm() {
   color: #ffffff;
   background: #1f2022;
   border: 1px solid #55585c;
+  border-radius: 6px;
   font-family: Consolas, "Cascadia Mono", "Microsoft YaHei Mono", monospace;
 }
 
@@ -128,6 +130,8 @@ function resetForm() {
   padding: 0 14px;
   color: #ffffff;
   background: #5f6eea;
+  border: 0;
+  border-radius: 6px;
   cursor: pointer;
 }
 

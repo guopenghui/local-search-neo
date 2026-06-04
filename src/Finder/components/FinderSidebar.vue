@@ -117,8 +117,7 @@ function openCategoryMenu(event: MouseEvent, category: FinderCategory) {
 }
 
 .category-button.active {
-  color: #a88cff;
-  font-weight: 700;
+  color: #30a1d3;
 }
 
 .category-button:hover {
@@ -154,7 +153,7 @@ function openCategoryMenu(event: MouseEvent, category: FinderCategory) {
   }
 
   .category-button.active {
-    color: #5b45d6;
+    color: #167fae;
   }
 
   .category-button:hover {

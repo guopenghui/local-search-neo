@@ -55,7 +55,7 @@ async function renderCode() {
     const language = await resolveLanguage(highlighter, props.language);
     const theme = window.matchMedia("(prefers-color-scheme: light)").matches
       ? "one-light"
-      : "one-dark-pro";
+      : "catppuccin-frappe";
 
     highlightedHtml.value = highlighter.codeToHtml(props.content, {
       lang: language,
@@ -76,7 +76,7 @@ async function createHighlighter() {
     import("shiki/core"),
     import("shiki/engine/javascript"),
     import("shiki/dist/themes/one-light.mjs") as Promise<ThemeModule>,
-    import("shiki/dist/themes/one-dark-pro.mjs") as Promise<ThemeModule>,
+    import("shiki/dist/themes/catppuccin-frappe.mjs") as Promise<ThemeModule>,
   ]);
 
   return core.createHighlighterCore({
@@ -113,7 +113,7 @@ async function resolveLanguage(highlighter: HighlighterCore, language: string) {
   overflow: auto;
   min-width: 0;
   min-height: 0;
-  background: #0d1117;
+  background: #303446;
 }
 
 .code-highlight {

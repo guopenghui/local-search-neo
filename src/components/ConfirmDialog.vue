@@ -52,6 +52,7 @@ const emit = defineEmits<{
   color: #f5f7fa;
   background: #303234;
   border: 1px solid #55585c;
+  border-radius: 10px;
   box-shadow: 0 18px 48px rgb(0 0 0 / 35%);
 }
 
@@ -80,6 +81,7 @@ const emit = defineEmits<{
   padding: 0 14px;
   color: #ffffff;
   border: 0;
+  border-radius: 6px;
   font: inherit;
   cursor: pointer;
 }

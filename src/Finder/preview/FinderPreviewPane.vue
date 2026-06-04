@@ -65,6 +65,7 @@ const previewTypeLabel = computed(() => {
   max-height: 100%;
   overflow: hidden;
   background: #121315;
+  user-select: text;
 }
 
 .preview-header {

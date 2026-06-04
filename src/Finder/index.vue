@@ -244,6 +244,7 @@ function scrollSelectedIntoView() {
   background: #2f3133;
   color: #f5f7fa;
   font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+  user-select: none;
 }
 
 .finder-shell.preview-open {

@@ -179,7 +179,8 @@ onUnmounted(() => {
   height: 18px;
   display: block;
   background: currentColor;
-  mask: url("../assets/settings.svg") center / contain no-repeat;
+  mask: url("../../assets/settings.svg") center / contain no-repeat;
+  -webkit-mask: url("../../assets/settings.svg") center / contain no-repeat;
 }
 
 .settings-button:hover {
