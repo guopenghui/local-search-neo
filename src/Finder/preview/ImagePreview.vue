@@ -5,6 +5,10 @@ const props = defineProps<{
   source: string;
 }>();
 
+const emit = defineEmits<{
+  "context-menu": [event: MouseEvent];
+}>();
+
 const imageSize = shallowRef<{ width: number; height: number } | null>(null);
 const isSvg = computed(() => /\.svg(?:$|[?#])/i.test(props.source));
 const imageSizeLabel = computed(() => {
@@ -29,7 +33,7 @@ function updateImageSize(event: Event) {
 </script>
 
 <template>
-  <div class="image-preview">
+  <div class="image-preview" @contextmenu.prevent.stop="emit('context-menu', $event)">
     <header v-if="imageSizeLabel" class="image-info-bar">
       <span>{{ imageSizeLabel }}</span>
     </header>

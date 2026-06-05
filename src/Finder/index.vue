@@ -153,6 +153,20 @@ function scrollSelectedIntoView() {
     block: "nearest",
   });
 }
+
+function openImagePreviewMenu(event: MouseEvent) {
+  const imagePath = finderSearch.selectedItem.value?.fullPath ?? "";
+  contextMenu.open(event, [
+    {
+      id: "copy-preview-image",
+      label: "复制图片",
+      disabled: !imagePath,
+      action: () => {
+        window.ztools.copyImage(imagePath);
+      },
+    },
+  ]);
+}
 </script>
 
 <template>
@@ -198,6 +212,7 @@ function scrollSelectedIntoView() {
       :preview-source="filePreview.previewSource.value"
       :preview-encoding="filePreview.previewEncoding.value"
       :preview-language="filePreview.previewLanguage.value"
+      @image-context-menu="openImagePreviewMenu"
     />
 
     <CustomCategoryDialog

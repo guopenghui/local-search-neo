@@ -18,6 +18,10 @@ defineProps<{
   previewEncoding: string;
   previewLanguage: string;
 }>();
+
+const emit = defineEmits<{
+  "image-context-menu": [event: MouseEvent];
+}>();
 </script>
 
 <template>
@@ -45,7 +49,11 @@ defineProps<{
         :status="previewStatus"
       />
       <PdfPreview v-else-if="previewKind === 'pdf' && previewSource" :source="previewSource" />
-      <ImagePreview v-else-if="previewKind === 'image' && previewSource" :source="previewSource" />
+      <ImagePreview
+        v-else-if="previewKind === 'image' && previewSource"
+        :source="previewSource"
+        @context-menu="emit('image-context-menu', $event)"
+      />
       <VideoPreview v-else-if="previewKind === 'video' && previewSource" :source="previewSource" />
       <AudioPreview v-else-if="previewKind === 'audio' && previewSource" :source="previewSource" />
       <EmptyPreview v-else :status="previewStatus" />
