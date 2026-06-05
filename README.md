@@ -38,21 +38,36 @@ npm run build
 
 ```text
 .
-├── addon/                    # Neon / Rust addon
-│   ├── src/everything.rs     # Everything IPC 导出
+├── addon/                         # Neon / Rust addon
+│   ├── src/
+│   │   ├── everything.rs          # Everything IPC 查询导出
+│   │   ├── file_tree.rs           # 目录 / 压缩包树打印
+│   │   ├── text_preview.rs        # 文本检测和文本预览读取
+│   │   └── lib.rs                 # Neon 模块入口
+│   ├── index.d.ts                 # addon 导出类型
 │   └── package.json
 ├── public/
-│   ├── plugin.json           # ZTools 插件配置
-│   └── preload/services.js   # 预加载服务
+│   ├── plugin.json                # ZTools 插件配置
+│   └── preload/services.js        # 预加载服务，挂载 window.services
 ├── scripts/
-│   └── copy-addon.cjs        # 复制 addon 到 public
+│   ├── copy-addon.cjs             # 复制 addon 到 public
+│   ├── test-everything-addon.cjs  # 验证 addon / Everything 查询
+│   └── benchmark-everything-addon.cjs
+│                                      # Everything 查询性能压测
 ├── src/
-│   ├── App.vue               # 插件入口
-│   ├── Finder/               # 文件搜索界面和逻辑
-│   ├── assets/               # 前端资源
-│   ├── devMock.ts            # 浏览器开发 mock
-│   ├── env.d.ts              # 类型声明
+│   ├── App.vue                    # 插件入口和 mainPush 处理
+│   ├── Finder/
+│   │   ├── index.vue              # Finder 主布局
+│   │   ├── components/            # 侧栏、结果列表、底栏、设置等组件
+│   │   ├── composables/           # 搜索、预览、键盘、设置等组合逻辑
+│   │   ├── core/                  # 纯逻辑、类型和单测
+│   │   └── preview/               # 图片、视频、PDF、文本、目录树等预览组件
+│   ├── assets/                    # 前端资源
+│   ├── components/                # 通用组件
+│   ├── devMock.ts                 # 浏览器开发 mock
+│   ├── env.d.ts                   # window.services 等类型声明
 │   └── main.ts
+├── AGENTS.md                      # Agent 开发提示
 ├── package.json
 └── vite.config.js
 ```
