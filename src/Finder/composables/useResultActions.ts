@@ -16,6 +16,7 @@ export interface ResultActions {
   showInFolder(item: FinderResult): void;
   copyFullPath(item: FinderResult): void;
   copyDirectoryPath(item: FinderResult): void;
+  copyFile(item: FinderResult): void;
   trash(item: FinderResult): Promise<void>;
 }
 
@@ -34,6 +35,10 @@ export function useResultActions({ confirm, onTrashed }: UseResultActionsOptions
 
   function copyDirectoryPath(item: FinderResult) {
     if (item.path) window.ztools.copyText(item.path);
+  }
+
+  function copyFile(item: FinderResult) {
+    if (item.fullPath) window.ztools.copyFile(item.fullPath);
   }
 
   async function trash(item: FinderResult) {
@@ -56,6 +61,7 @@ export function useResultActions({ confirm, onTrashed }: UseResultActionsOptions
     showInFolder,
     copyFullPath,
     copyDirectoryPath,
+    copyFile,
     trash,
   };
 }

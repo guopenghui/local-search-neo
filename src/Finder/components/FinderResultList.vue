@@ -74,6 +74,12 @@ function openResultMenu(event: MouseEvent, item: FinderResult) {
       disabled: !hasDirectoryPath,
       action: () => props.actions.copyDirectoryPath(item),
     },
+    {
+      id: "copy-file",
+      label: "复制文件",
+      disabled: !hasFullPath,
+      action: () => props.actions.copyFile(item),
+    },
     { id: "separator-delete", label: "", separator: true },
     {
       id: "trash-item",

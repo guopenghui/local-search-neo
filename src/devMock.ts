@@ -157,6 +157,9 @@ export function installDevMock() {
     copyImage() {
       return true;
     },
+    copyFile() {
+      return true;
+    },
     shellOpenPath() {},
     async shellTrashItem() {},
     shellShowItemInFolder() {},
