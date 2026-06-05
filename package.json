@@ -18,7 +18,8 @@
     "predev": "npm run prepare:pdfjs && npm run build:addon",
     "dev": "vite",
     "prebuild": "npm run prepare:pdfjs && npm run build:addon",
-    "build": "vue-tsc && vite build"
+    "build": "vue-tsc && vite build",
+    "postbuild": "node scripts/cleanup-dist-addon.cjs"
   },
   "dependencies": {
     "markdown-it": "^14.2.0",
