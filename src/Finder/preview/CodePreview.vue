@@ -103,17 +103,45 @@ async function resolveLanguage(highlighter: HighlighterCore, language: string) {
 
 <template>
   <div class="code-preview">
-    <div v-if="highlightedHtml" class="code-highlight" v-html="highlightedHtml"></div>
-    <pre v-else class="code-fallback">{{ content }}</pre>
+    <header class="code-info-bar">
+      <span>{{ language }}</span>
+    </header>
+    <div class="code-body">
+      <div v-if="highlightedHtml" class="code-highlight" v-html="highlightedHtml"></div>
+      <pre v-else class="code-fallback">{{ content }}</pre>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .code-preview {
-  overflow: auto;
+  display: grid;
+  grid-template-rows: 30px minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
   background: #303446;
+}
+
+.code-info-bar {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 0 12px;
+  color: #c3c8cf;
+  border-bottom: 1px solid #282a2d;
+  font-size: 12px;
+}
+
+.code-info-bar span {
+  min-width: 72px;
+  color: #9ba1a8;
+  font-family: Consolas, "Cascadia Mono", monospace;
+}
+
+.code-body {
+  overflow: auto;
+  min-width: 0;
+  min-height: 0;
 }
 
 .code-highlight {
@@ -145,6 +173,15 @@ async function resolveLanguage(highlighter: HighlighterCore, language: string) {
 @media (prefers-color-scheme: light) {
   .code-preview {
     background: #ffffff;
+  }
+
+  .code-info-bar {
+    color: #667085;
+    border-bottom-color: #d9dee7;
+  }
+
+  .code-info-bar span {
+    color: #4f5b6a;
   }
 
   .code-fallback {

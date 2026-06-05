@@ -120,8 +120,8 @@ function openCategoryMenu(event: MouseEvent, category: FinderCategory) {
   color: #30a1d3;
 }
 
-.category-button:hover {
-  background: #383a3d;
+.category-button:not(:disabled):active {
+  opacity: 1;
 }
 
 .custom-category-button {
@@ -154,10 +154,6 @@ function openCategoryMenu(event: MouseEvent, category: FinderCategory) {
 
   .category-button.active {
     color: #167fae;
-  }
-
-  .category-button:hover {
-    background: #dfe5ec;
   }
 
   .custom-category-button {

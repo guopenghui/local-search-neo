@@ -190,5 +190,5 @@ function getTextPreviewStatus(
 ) {
   if (kind === "markdown") return "Markdown 预览";
   if (kind === "code") return `${getCodePreviewLanguage(item) ?? "plaintext"} · 代码预览`;
-  return `预览${direction === "end" ? "后" : "前"} ${formatBytes(bytes)} 内容`;
+  return `显示${direction === "end" ? "后" : "前"} ${formatBytes(bytes)} 内容`;
 }

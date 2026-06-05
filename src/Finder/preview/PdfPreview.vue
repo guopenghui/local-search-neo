@@ -327,12 +327,26 @@ function clearCanvas() {
 <template>
   <div class="pdf-preview">
     <div class="pdf-toolbar">
-      <button type="button" :disabled="pageNumber <= 1 || isLoading" @click="goPreviousPage">
-        上一页
+      <button
+        type="button"
+        class="pdf-page-button"
+        :disabled="pageNumber <= 1 || isLoading"
+        title="上一页"
+        aria-label="上一页"
+        @click="goPreviousPage"
+      >
+        <span class="pdf-page-icon previous" aria-hidden="true"></span>
       </button>
-      <span>{{ pageNumber }} / {{ pageCount || "-" }}</span>
-      <button type="button" :disabled="pageNumber >= pageCount || isLoading" @click="goNextPage">
-        下一页
+      <span class="pdf-page-count">{{ pageNumber }} / {{ pageCount || "-" }}</span>
+      <button
+        type="button"
+        class="pdf-page-button"
+        :disabled="pageNumber >= pageCount || isLoading"
+        title="下一页"
+        aria-label="下一页"
+        @click="goNextPage"
+      >
+        <span class="pdf-page-icon next" aria-hidden="true"></span>
       </button>
     </div>
 
@@ -346,7 +360,7 @@ function clearCanvas() {
 <style scoped>
 .pdf-preview {
   display: grid;
-  grid-template-rows: 36px minmax(0, 1fr);
+  grid-template-rows: 30px minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
   background: #0f1012;
@@ -362,9 +376,12 @@ function clearCanvas() {
   font-size: 12px;
 }
 
-.pdf-toolbar button {
-  height: 24px;
-  padding: 0 10px;
+.pdf-page-button {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 22px;
+  padding: 0;
   color: #e5e7eb;
   background: #34373b;
   border: 1px solid #555b63;
@@ -372,9 +389,36 @@ function clearCanvas() {
   cursor: pointer;
 }
 
-.pdf-toolbar button:disabled {
+.pdf-page-button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.pdf-page-button:focus,
+.pdf-page-button:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.pdf-page-icon {
+  width: 7px;
+  height: 7px;
+  border-top: 1.5px solid currentColor;
+  border-left: 1.5px solid currentColor;
+}
+
+.pdf-page-icon.previous {
+  transform: translateX(2px) rotate(-45deg);
+}
+
+.pdf-page-icon.next {
+  transform: translateX(-2px) rotate(135deg);
+}
+
+.pdf-page-count {
+  min-width: 54px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
 .pdf-page-shell {
@@ -411,7 +455,7 @@ function clearCanvas() {
     border-bottom-color: #d9dee7;
   }
 
-  .pdf-toolbar button {
+  .pdf-page-button {
     color: #1f2937;
     background: #ffffff;
     border-color: #c8d0da;

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from "vue";
 import AudioPreview from "./AudioPreview.vue";
 import CodePreview from "./CodePreview.vue";
 import EmptyPreview from "./EmptyPreview.vue";
@@ -8,9 +7,9 @@ import MarkdownPreview from "./MarkdownPreview.vue";
 import PdfPreview from "./PdfPreview.vue";
 import TextPreview from "./TextPreview.vue";
 import VideoPreview from "./VideoPreview.vue";
-import { getPreviewTypeLabel, type PreviewKind } from "./previewTypes";
+import type { PreviewKind } from "./previewTypes";
 
-const props = defineProps<{
+defineProps<{
   previewKind: PreviewKind;
   previewStatus: string;
   previewContent: string;
@@ -18,48 +17,40 @@ const props = defineProps<{
   previewEncoding: string;
   previewLanguage: string;
 }>();
-
-const previewTypeLabel = computed(() => {
-  if (
-    props.previewKind === "text" ||
-    props.previewKind === "markdown" ||
-    props.previewKind === "code"
-  ) {
-    return props.previewEncoding || getPreviewTypeLabel(props.previewKind);
-  }
-  return getPreviewTypeLabel(props.previewKind);
-});
 </script>
 
 <template>
   <aside class="preview-pane">
-    <header class="preview-header">
-      <span class="preview-type">{{ previewTypeLabel }}</span>
-      <span>{{ previewStatus }}</span>
-    </header>
-
-    <TextPreview v-if="previewKind === 'text' && previewContent" :content="previewContent" />
-    <MarkdownPreview
-      v-else-if="previewKind === 'markdown' && previewContent"
-      :content="previewContent"
-    />
-    <CodePreview
-      v-else-if="previewKind === 'code' && previewContent"
-      :content="previewContent"
-      :language="previewLanguage"
-    />
-    <PdfPreview v-else-if="previewKind === 'pdf' && previewSource" :source="previewSource" />
-    <ImagePreview v-else-if="previewKind === 'image' && previewSource" :source="previewSource" />
-    <VideoPreview v-else-if="previewKind === 'video' && previewSource" :source="previewSource" />
-    <AudioPreview v-else-if="previewKind === 'audio' && previewSource" :source="previewSource" />
-    <EmptyPreview v-else :status="previewStatus" />
+    <div class="preview-body">
+      <TextPreview
+        v-if="previewKind === 'text' && previewContent"
+        :content="previewContent"
+        :encoding="previewEncoding"
+        :status="previewStatus"
+      />
+      <MarkdownPreview
+        v-else-if="previewKind === 'markdown' && previewContent"
+        :content="previewContent"
+      />
+      <CodePreview
+        v-else-if="previewKind === 'code' && previewContent"
+        :content="previewContent"
+        :language="previewLanguage"
+      />
+      <PdfPreview v-else-if="previewKind === 'pdf' && previewSource" :source="previewSource" />
+      <ImagePreview v-else-if="previewKind === 'image' && previewSource" :source="previewSource" />
+      <VideoPreview v-else-if="previewKind === 'video' && previewSource" :source="previewSource" />
+      <AudioPreview v-else-if="previewKind === 'audio' && previewSource" :source="previewSource" />
+      <EmptyPreview v-else :status="previewStatus" />
+    </div>
   </aside>
 </template>
 
 <style scoped>
 .preview-pane {
   display: grid;
-  grid-template-rows: 30px minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
   min-width: 0;
   min-height: 0;
   max-height: 100%;
@@ -68,42 +59,35 @@ const previewTypeLabel = computed(() => {
   user-select: text;
 }
 
-.preview-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+.preview-body {
+  display: grid;
+  width: 100%;
+  height: 100%;
   min-width: 0;
-  padding: 0 12px;
-  color: #ffffff;
-  border-bottom: 1px solid #282a2d;
-  font-size: 12px;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.preview-type {
-  min-width: 72px;
-  white-space: nowrap;
-  color: #9ba1a8;
-  font-family: Consolas, "Cascadia Mono", monospace;
+.preview-body > :deep(*) {
+  min-width: 0;
+  min-height: 0;
 }
 
-.preview-header span:last-child {
-  margin-left: auto;
-  color: #c3c8cf;
-  white-space: nowrap;
+.preview-body > :deep(.image-preview),
+.preview-body > :deep(.preview-media-shell),
+.preview-body > :deep(.preview-audio-shell),
+.preview-body > :deep(.text-preview),
+.preview-body > :deep(.code-preview),
+.preview-body > :deep(.markdown-preview),
+.preview-body > :deep(.pdf-preview) {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
 }
 
 @media (prefers-color-scheme: light) {
   .preview-pane {
     background: #ffffff;
-  }
-
-  .preview-header {
-    color: #111827;
-    border-bottom-color: #d9dee7;
-  }
-
-  .preview-header span:last-child {
-    color: #667085;
   }
 }
 

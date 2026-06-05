@@ -180,14 +180,15 @@ function scrollSelectedIntoView() {
         @context-menu="contextMenu.open"
         @open="resultActions.open(finderSearch.selectedItem.value)"
       />
-
-      <FinderFooter
-        :everything-total="finderSearch.everythingTotal.value"
-        @open-settings="openSettingsDrawer"
-        @request-input-focus="focusSubInput"
-        @sort-menu-open-change="footerSortMenuOpen = $event"
-      />
     </section>
+
+    <FinderFooter
+      class="finder-footer-bar"
+      :everything-total="finderSearch.everythingTotal.value"
+      @open-settings="openSettingsDrawer"
+      @request-input-focus="focusSubInput"
+      @sort-menu-open-change="footerSortMenuOpen = $event"
+    />
 
     <FinderPreviewPane
       v-if="previewEnabled"
@@ -239,10 +240,13 @@ function scrollSelectedIntoView() {
 
 <style scoped>
 .finder-shell {
+  --result-list-width: 315px;
+
   display: grid;
   grid-template-columns: 64px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) 42px;
   height: 100vh;
-  min-height: 520px;
+  min-height: 0;
   max-height: 100vh;
   overflow: hidden;
   background: #2f3133;
@@ -252,16 +256,31 @@ function scrollSelectedIntoView() {
 }
 
 .finder-shell.preview-open {
-  grid-template-columns: 64px minmax(260px, 0.82fr) minmax(460px, 1.18fr);
+  grid-template-columns: 64px var(--result-list-width) minmax(0, 1fr);
+}
+
+.finder-sidebar {
+  grid-row: 1 / -1;
 }
 
 .finder-main {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) 42px;
+  grid-column: 2;
+  grid-row: 1;
   min-width: 0;
   min-height: 0;
   max-height: 100%;
   overflow: visible;
+}
+
+.preview-pane {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.finder-footer-bar {
+  grid-column: 2 / -1;
+  grid-row: 2;
+  min-width: 0;
 }
 
 .preview-open .finder-main {
@@ -281,11 +300,13 @@ function scrollSelectedIntoView() {
 
 @media (max-width: 760px) {
   .finder-shell {
+    --result-list-width: 270px;
+
     grid-template-columns: 60px minmax(0, 1fr);
   }
 
   .finder-shell.preview-open {
-    grid-template-columns: 60px minmax(180px, 0.86fr) minmax(280px, 1.14fr);
+    grid-template-columns: 60px var(--result-list-width) minmax(0, 1fr);
   }
 }
 

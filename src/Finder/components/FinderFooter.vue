@@ -77,7 +77,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <footer class="finder-footer" :class="{ 'preview-open': previewEnabled }">
+  <footer class="finder-footer">
     <button
       class="settings-button"
       type="button"
@@ -312,22 +312,6 @@ onUnmounted(() => {
   grid-column: 4;
   justify-self: end;
   color: #aeb4bb;
-}
-
-.finder-footer.preview-open {
-  grid-template-columns: max-content minmax(12px, 1fr) max-content;
-}
-
-.finder-footer.preview-open .preview-toggle {
-  min-width: 44px;
-}
-
-.finder-footer.preview-open .preview-toggle > span:first-child {
-  display: none;
-}
-
-.finder-footer.preview-open .result-count {
-  display: none;
 }
 
 @media (prefers-color-scheme: light) {
