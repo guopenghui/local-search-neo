@@ -5,6 +5,8 @@ import type {
   EverythingQueryItem,
   EverythingSortMode,
   EverythingVersion,
+  FileTreeOptions,
+  FileTreeResult,
   TextFileInspection,
   TextPreviewDirection,
   TextPreviewResult,
@@ -52,6 +54,8 @@ interface Services {
     maxBytes?: number,
     direction?: TextPreviewDirection,
   ) => TextPreviewResult;
+  printDirectoryTree: (directory: string, options?: FileTreeOptions) => FileTreeResult;
+  printArchiveTree: (file: string, options?: FileTreeOptions) => FileTreeResult;
 }
 
 declare global {

@@ -100,6 +100,14 @@ export function installDevMock() {
           ? "[2026-05-23 15:01:39.065] [info] 隐藏插件视图\n[2026-05-23 15:01:40.221] [info] 预览最近日志输出"
           : "[2026-05-23 15:01:31.904] [info] 启动本地搜索插件\n[2026-05-23 15:01:33.101] [info] 收到输入事件\n[2026-05-23 15:01:39.065] [info] 隐藏插件视图",
     }),
+    printDirectoryTree: (directory: string) => ({
+      text: `${directory.split(/[\\/]/).pop() ?? directory}/\n├── src/\n│   ├── App.vue\n│   └── main.ts\n└── package.json`,
+      truncated: false,
+    }),
+    printArchiveTree: (file: string) => ({
+      text: `${file.split(/[\\/]/).pop() ?? file}/\n├── src/\n│   └── main.ts\n└── README.md`,
+      truncated: false,
+    }),
   };
 
   const ztoolsMock = {

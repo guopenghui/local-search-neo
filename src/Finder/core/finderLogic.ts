@@ -57,6 +57,8 @@ const AUDIO_PREVIEW_EXTENSIONS = new Set(["mp3", "wav", "flac", "aac", "ogg", "m
 
 const PDF_PREVIEW_EXTENSIONS = new Set(["pdf"]);
 
+const ARCHIVE_TREE_PREVIEW_EXTENSIONS = new Set(["zip", "tar", "tgz"]);
+
 const MARKDOWN_PREVIEW_EXTENSIONS = new Set(["md", "markdown", "mdown"]);
 
 const CODE_PREVIEW_LANGUAGE_BY_EXTENSION: Record<string, string> = {
@@ -200,6 +202,17 @@ export function isPdfPreviewCandidate(
 ): boolean {
   if (file.isDirectory) return false;
   return PDF_PREVIEW_EXTENSIONS.has(getResultExtension(file));
+}
+
+export function isArchiveTreePreviewCandidate(
+  file: Pick<FinderResult, "name" | "extension" | "isDirectory">,
+): boolean {
+  if (file.isDirectory) return false;
+  const normalizedName = file.name.toLowerCase();
+  return (
+    ARCHIVE_TREE_PREVIEW_EXTENSIONS.has(getResultExtension(file)) ||
+    normalizedName.endsWith(".tar.gz")
+  );
 }
 
 export function isMarkdownPreviewCandidate(

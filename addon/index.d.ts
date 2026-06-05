@@ -41,6 +41,16 @@ export interface TextPreviewResult extends TextFileInspection {
   text: string;
 }
 
+export interface FileTreeOptions {
+  maxDepth?: number;
+  maxItemsPerLevel?: number | number[];
+}
+
+export interface FileTreeResult {
+  text: string;
+  truncated: boolean;
+}
+
 export interface EverythingAddon {
   isRunning(): boolean;
   isDbLoaded(): boolean;
@@ -56,6 +66,8 @@ export interface AddonModule {
     maxBytes?: number,
     direction?: TextPreviewDirection,
   ): TextPreviewResult;
+  printDirectoryTree(directory: string, options?: FileTreeOptions): FileTreeResult;
+  printArchiveTree(file: string, options?: FileTreeOptions): FileTreeResult;
 }
 
 export const everything: EverythingAddon;
@@ -65,3 +77,5 @@ export function readTextPreview(
   maxBytes?: number,
   direction?: TextPreviewDirection,
 ): TextPreviewResult;
+export function printDirectoryTree(directory: string, options?: FileTreeOptions): FileTreeResult;
+export function printArchiveTree(file: string, options?: FileTreeOptions): FileTreeResult;

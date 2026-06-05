@@ -6,6 +6,7 @@ import ImagePreview from "./ImagePreview.vue";
 import MarkdownPreview from "./MarkdownPreview.vue";
 import PdfPreview from "./PdfPreview.vue";
 import TextPreview from "./TextPreview.vue";
+import TreePreview from "./TreePreview.vue";
 import VideoPreview from "./VideoPreview.vue";
 import type { PreviewKind } from "./previewTypes";
 
@@ -36,6 +37,12 @@ defineProps<{
         v-else-if="previewKind === 'code' && previewContent"
         :content="previewContent"
         :language="previewLanguage"
+      />
+      <TreePreview
+        v-else-if="previewKind === 'tree' && previewContent"
+        :content="previewContent"
+        :label="previewLanguage"
+        :status="previewStatus"
       />
       <PdfPreview v-else-if="previewKind === 'pdf' && previewSource" :source="previewSource" />
       <ImagePreview v-else-if="previewKind === 'image' && previewSource" :source="previewSource" />
@@ -78,6 +85,7 @@ defineProps<{
 .preview-body > :deep(.preview-audio-shell),
 .preview-body > :deep(.text-preview),
 .preview-body > :deep(.code-preview),
+.preview-body > :deep(.tree-preview),
 .preview-body > :deep(.markdown-preview),
 .preview-body > :deep(.pdf-preview) {
   width: 100%;

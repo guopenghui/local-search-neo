@@ -10,7 +10,7 @@ Neon addon，用于向 Node.js / ZTools preload 暴露 Everything IPC 能力。
 const { everything } = require("./index.node");
 ```
 
-类型定义维护在 `index.d.ts`。修改 `src/everything.rs` 导出结构时，需要同步更新该类型文件。
+类型定义维护在 `index.d.ts`。修改 addon 导出结构时，需要同步更新该类型文件。
 
 `everything` 包含：
 
@@ -18,6 +18,15 @@ const { everything } = require("./index.node");
 - `isDbLoaded()`
 - `getVersion()`
 - `query(search, maxResults?, sortMode?)`
+
+顶层还导出：
+
+- `inspectTextFile(file, maxBytes?)`
+- `readTextPreview(file, maxBytes?, direction?)`
+- `printDirectoryTree(directory, options?)`
+- `printArchiveTree(file, options?)`
+
+`printDirectoryTree()` / `printArchiveTree()` 默认打印 2 层，第一层最多 50 项，第二层最多 20 项，超出时使用 `...` 表示。压缩包树当前支持 `.zip`、`.tar`、`.tar.gz`、`.tgz`。
 
 `query()` 返回：
 

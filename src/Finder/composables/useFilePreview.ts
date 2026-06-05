@@ -3,6 +3,7 @@ import type { PreviewKind } from "../preview/previewTypes";
 import {
   formatBytes,
   getCodePreviewLanguage,
+  isArchiveTreePreviewCandidate,
   isAudioPreviewCandidate,
   isCodePreviewCandidate,
   isImagePreviewCandidate,
@@ -62,11 +63,12 @@ export function useFilePreview({ selectedItem, previewEnabled }: UseFilePreviewO
 
     const previewItem = { ...item, ...fileInfo };
     if (previewItem.isDirectory) {
-      previewStatus.value = "文件夹不支持预览";
+      loadDirectoryTreePreview(previewItem);
       return;
     }
 
     if (loadMediaPreview(previewItem)) return;
+    if (loadArchiveTreePreview(previewItem)) return;
     loadTextLikePreview(previewItem);
   }
 
@@ -102,6 +104,36 @@ export function useFilePreview({ selectedItem, previewEnabled }: UseFilePreviewO
     }
 
     return false;
+  }
+
+  function loadDirectoryTreePreview(item: FinderResult) {
+    if (!item.fullPath) return;
+
+    try {
+      const tree = window.services.printDirectoryTree(item.fullPath);
+      previewKind.value = "tree";
+      previewContent.value = tree.text;
+      previewLanguage.value = "目录";
+      previewStatus.value = tree.truncated ? "目录结构 · 已截断" : "目录结构";
+    } catch (error: unknown) {
+      previewStatus.value = error instanceof Error ? error.message : "目录预览失败";
+    }
+  }
+
+  function loadArchiveTreePreview(item: FinderResult) {
+    if (!item.fullPath || !isArchiveTreePreviewCandidate(item)) return false;
+
+    try {
+      const tree = window.services.printArchiveTree(item.fullPath);
+      previewKind.value = "tree";
+      previewContent.value = tree.text;
+      previewLanguage.value = "压缩包";
+      previewStatus.value = tree.truncated ? "文件结构 · 已截断" : "文件结构";
+      return true;
+    } catch (error: unknown) {
+      previewStatus.value = error instanceof Error ? error.message : "压缩包预览失败";
+      return true;
+    }
   }
 
   function loadTextLikePreview(item: FinderResult) {

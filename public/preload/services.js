@@ -105,4 +105,12 @@ window.services = {
     if (!addon) throw new Error("Everything addon is not available");
     return addon.readTextPreview(file, maxBytes, direction);
   },
+  printDirectoryTree(directory, options) {
+    if (!addon) throw new Error("Everything addon is not available");
+    return addon.printDirectoryTree(directory, options);
+  },
+  printArchiveTree(file, options) {
+    if (!addon) throw new Error("Everything addon is not available");
+    return addon.printArchiveTree(file, options);
+  },
 };

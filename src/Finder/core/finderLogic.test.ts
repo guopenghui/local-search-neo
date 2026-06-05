@@ -6,6 +6,7 @@ import {
   getNextSelectedPath,
   getNextVisibleCount,
   getRestoredSelectedPath,
+  isArchiveTreePreviewCandidate,
   isAudioPreviewCandidate,
   isCodePreviewCandidate,
   isImagePreviewCandidate,
@@ -152,6 +153,13 @@ test("preview candidate helpers detect supported file types", () => {
 
   assert.equal(isPdfPreviewCandidate({ name: "document.pdf" }), true);
   assert.equal(isPdfPreviewCandidate({ name: "PDFs", isDirectory: true }), false);
+
+  assert.equal(isArchiveTreePreviewCandidate({ name: "archive.zip" }), true);
+  assert.equal(isArchiveTreePreviewCandidate({ name: "source.tar" }), true);
+  assert.equal(isArchiveTreePreviewCandidate({ name: "source.tar.gz" }), true);
+  assert.equal(isArchiveTreePreviewCandidate({ name: "source.tgz" }), true);
+  assert.equal(isArchiveTreePreviewCandidate({ name: "archive.rar" }), false);
+  assert.equal(isArchiveTreePreviewCandidate({ name: "Archives", isDirectory: true }), false);
 
   assert.equal(isMarkdownPreviewCandidate({ name: "README.md" }), true);
   assert.equal(isMarkdownPreviewCandidate({ name: "notes.markdown" }), true);
