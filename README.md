@@ -24,7 +24,7 @@ npm install
 npm run dev
 ```
 
-`dev` 前会自动编译 debug addon，并复制到 `public/addon.node`。
+`dev` 前会自动编译 release addon，并复制到 `public/addon.node`。addon 始终使用 release 构建，以保证性能测试和实际运行一致。
 
 ### 构建
 
@@ -60,11 +60,11 @@ npm run build
 ## addon 调试
 
 ```bash
-npm --prefix addon run build-release
-npm --prefix addon run test:everything -- "*.exe" 3
+npm run build:addon
+npm run test:everything-addon -- --query "*.exe" --max-results 3
 ```
 
-`test:everything` 会直接 require `addon/index.node` 并验证：
+`test:everything-addon` 会直接 require `addon/index.node` 并验证：
 
 - `isRunning()`
 - `isDbLoaded()`

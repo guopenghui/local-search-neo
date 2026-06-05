@@ -11,9 +11,9 @@ export interface FinderResult {
   name: string;
   path?: string;
   fullPath?: string;
+  extension?: string;
   size?: number;
   modifiedAt?: number;
-  attributes?: number;
   isDirectory?: boolean;
 }
 
@@ -174,56 +174,68 @@ export function getRestoredSelectedPath(results: FinderResult[], currentPath: st
   return results[0]?.fullPath ?? "";
 }
 
-export function isImagePreviewCandidate(file: Pick<FinderResult, "name" | "isDirectory">): boolean {
+export function isImagePreviewCandidate(
+  file: Pick<FinderResult, "name" | "extension" | "isDirectory">,
+): boolean {
   if (file.isDirectory) return false;
-  return IMAGE_PREVIEW_EXTENSIONS.has(getExtension(file.name));
+  return IMAGE_PREVIEW_EXTENSIONS.has(getResultExtension(file));
 }
 
-export function isVideoPreviewCandidate(file: Pick<FinderResult, "name" | "isDirectory">): boolean {
+export function isVideoPreviewCandidate(
+  file: Pick<FinderResult, "name" | "extension" | "isDirectory">,
+): boolean {
   if (file.isDirectory) return false;
-  return VIDEO_PREVIEW_EXTENSIONS.has(getExtension(file.name));
+  return VIDEO_PREVIEW_EXTENSIONS.has(getResultExtension(file));
 }
 
-export function isAudioPreviewCandidate(file: Pick<FinderResult, "name" | "isDirectory">): boolean {
+export function isAudioPreviewCandidate(
+  file: Pick<FinderResult, "name" | "extension" | "isDirectory">,
+): boolean {
   if (file.isDirectory) return false;
-  return AUDIO_PREVIEW_EXTENSIONS.has(getExtension(file.name));
+  return AUDIO_PREVIEW_EXTENSIONS.has(getResultExtension(file));
 }
 
-export function isPdfPreviewCandidate(file: Pick<FinderResult, "name" | "isDirectory">): boolean {
+export function isPdfPreviewCandidate(
+  file: Pick<FinderResult, "name" | "extension" | "isDirectory">,
+): boolean {
   if (file.isDirectory) return false;
-  return PDF_PREVIEW_EXTENSIONS.has(getExtension(file.name));
+  return PDF_PREVIEW_EXTENSIONS.has(getResultExtension(file));
 }
 
 export function isMarkdownPreviewCandidate(
-  file: Pick<FinderResult, "name" | "isDirectory">,
+  file: Pick<FinderResult, "name" | "extension" | "isDirectory">,
 ): boolean {
   if (file.isDirectory) return false;
-  return MARKDOWN_PREVIEW_EXTENSIONS.has(getExtension(file.name));
+  return MARKDOWN_PREVIEW_EXTENSIONS.has(getResultExtension(file));
 }
 
 export function getCodePreviewLanguage(
-  file: Pick<FinderResult, "name" | "isDirectory">,
+  file: Pick<FinderResult, "name" | "extension" | "isDirectory">,
 ): string | undefined {
   if (file.isDirectory) return undefined;
-  return CODE_PREVIEW_LANGUAGE_BY_EXTENSION[getExtension(file.name)];
+  return CODE_PREVIEW_LANGUAGE_BY_EXTENSION[getResultExtension(file)];
 }
 
-export function isCodePreviewCandidate(file: Pick<FinderResult, "name" | "isDirectory">): boolean {
+export function isCodePreviewCandidate(
+  file: Pick<FinderResult, "name" | "extension" | "isDirectory">,
+): boolean {
   return getCodePreviewLanguage(file) !== undefined;
 }
 
-export function isLogPreviewCandidate(file: Pick<FinderResult, "name" | "isDirectory">): boolean {
+export function isLogPreviewCandidate(
+  file: Pick<FinderResult, "name" | "extension" | "isDirectory">,
+): boolean {
   if (file.isDirectory) return false;
-  return LOG_PREVIEW_EXTENSIONS.has(getExtension(file.name));
+  return LOG_PREVIEW_EXTENSIONS.has(getResultExtension(file));
 }
 
 export function isTextPreviewCandidate(
-  file: Pick<FinderResult, "name" | "size" | "isDirectory">,
+  file: Pick<FinderResult, "name" | "extension" | "size" | "isDirectory">,
 ): boolean {
   if (file.isDirectory) return false;
   if ((file.size ?? 0) > MAX_TEXT_PREVIEW_FILE_SIZE) return false;
 
-  return TEXT_PREVIEW_EXTENSIONS.has(getExtension(file.name));
+  return TEXT_PREVIEW_EXTENSIONS.has(getResultExtension(file));
 }
 
 export function formatBytes(bytes?: number): string {
@@ -269,6 +281,10 @@ function compareText(left: string, right: string): number {
 
 function compareNumber(left: number, right: number): number {
   return left === right ? 0 : left > right ? 1 : -1;
+}
+
+function getResultExtension(file: Pick<FinderResult, "name" | "extension">): string {
+  return (file.extension || getExtension(file.name)).toLowerCase();
 }
 
 function getExtension(name: string): string {

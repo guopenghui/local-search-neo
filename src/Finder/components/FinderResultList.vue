@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ContextMenuItem } from "../composables/useContextMenu";
+import { useFileIcons } from "../composables/useFileIcons";
 import type { ResultActions } from "../composables/useResultActions";
-import { getFileIconUrl } from "../core/fileIconCache";
 import { formatBytes, type FinderResult } from "../core/finderLogic";
 
 const props = defineProps<{
@@ -10,6 +10,7 @@ const props = defineProps<{
   isLoading: boolean;
   statusText: string;
   previewOpen: boolean;
+  isFolderQuery: boolean;
   actions: ResultActions;
 }>();
 
@@ -20,19 +21,22 @@ const emit = defineEmits<{
   "context-menu": [event: MouseEvent, items: ContextMenuItem[]];
 }>();
 
+const { displayItem, iconFor } = useFileIcons({
+  visibleResults: () => props.visibleResults,
+  isFolderQuery: () => props.isFolderQuery,
+});
+
 function handleListScroll(event: Event) {
   const element = event.currentTarget as HTMLElement;
   const distanceToBottom = element.scrollHeight - element.scrollTop - element.clientHeight;
   if (distanceToBottom < 120) emit("nearBottom");
 }
 
-function iconFor(item: FinderResult) {
-  return getFileIconUrl(item);
-}
-
 function fileInitial(item: FinderResult) {
-  if (item.isDirectory) return "DIR";
-  const extension = item.name.includes(".") ? item.name.split(".").pop() : "";
+  const display = displayItem(item);
+  if (display.isDirectory) return "DIR";
+  const extension =
+    display.extension || (display.name.includes(".") ? display.name.split(".").pop() : "");
   return (extension || "FILE").slice(0, 4).toUpperCase();
 }
 

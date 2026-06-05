@@ -8,9 +8,18 @@ interface UseFinderSettingsOptions {
 
 export function useFinderSettings({ focusSubInput }: UseFinderSettingsOptions) {
   const showSettingsDrawer = ref(false);
-  const { resultFilters, addResultFilter, removeResultFilter, buildQueryFilter } =
-    usePersistStorage();
-  const resultFilterCount = computed(() => resultFilters.value.length);
+  const {
+    resultFilters,
+    resultFiltersEnabled,
+    setResultFiltersEnabled,
+    addResultFilter,
+    removeResultFilter,
+    toggleResultFilter,
+    buildQueryFilter,
+  } = usePersistStorage();
+  const resultFilterCount = computed(() =>
+    resultFiltersEnabled.value ? resultFilters.value.filter((filter) => filter.enabled).length : 0,
+  );
 
   function openSettingsDrawer() {
     showSettingsDrawer.value = true;
@@ -37,8 +46,25 @@ export function useFinderSettings({ focusSubInput }: UseFinderSettingsOptions) {
     }
   }
 
+  function handleSetResultFiltersEnabled(enabled: boolean) {
+    try {
+      setResultFiltersEnabled(enabled);
+    } catch (error) {
+      console.warn("[local-search-neo] 保存结果过滤器总开关失败:", error);
+    }
+  }
+
+  function handleToggleResultFilter(id: string, enabled: boolean) {
+    try {
+      toggleResultFilter(id, enabled);
+    } catch (error) {
+      console.warn("[local-search-neo] 保存结果过滤器开关失败:", error);
+    }
+  }
+
   return {
     resultFilters,
+    resultFiltersEnabled,
     resultFilterCount,
     showSettingsDrawer,
     buildQueryFilter,
@@ -46,5 +72,7 @@ export function useFinderSettings({ focusSubInput }: UseFinderSettingsOptions) {
     closeSettingsDrawer,
     handleAddResultFilter,
     handleRemoveResultFilter,
+    handleSetResultFiltersEnabled,
+    handleToggleResultFilter,
   };
 }

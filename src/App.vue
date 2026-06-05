@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import Finder from "./Finder/index.vue";
-import { getFileIconDataUrl } from "./Finder/core/fileIconCache";
+import { getFileIconDataUrl, warmUpFileIconCache } from "./Finder/core/fileIconCache";
 import { DEFAULT_CATEGORIES, buildEverythingQuery } from "./Finder/core/finderLogic";
 
 const MAIN_PUSH_RESULT_LIMIT = 6;
@@ -15,6 +15,8 @@ type MainPushSearchResult = MainPushResult & {
 const enterAction = ref<Record<string, unknown>>({});
 
 onMounted(() => {
+  warmUpFileIconCache();
+
   window.ztools.onPluginEnter((action) => {
     enterAction.value = action;
     window.ztools.subInputFocus();

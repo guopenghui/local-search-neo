@@ -1,10 +1,8 @@
 use std::sync::LazyLock;
 
 use everything_ipc::IpcWindow;
-use everything_ipc::wm::{EverythingClient, RequestFlags, Sort};
+use everything_ipc::wm::{EverythingClient, QueryList, RequestFlags, Sort};
 use neon::prelude::*;
-
-const FILE_ATTRIBUTE_DIRECTORY: u32 = 0x10;
 
 static EVERYTHING: LazyLock<Result<EverythingClient, String>> =
     LazyLock::new(|| EverythingClient::new().map_err(|error| error.to_string()));
@@ -87,6 +85,32 @@ fn filetime_to_unix_ms(low_date_time: u32, high_date_time: u32) -> f64 {
     ((ticks - WINDOWS_TO_UNIX_EPOCH_TICKS) / TICKS_PER_MILLISECOND) as f64
 }
 
+fn query_flags(
+    search: &str,
+    max_results: u32,
+    sort: Sort,
+    request_flags: RequestFlags,
+) -> Result<QueryList, String> {
+    with_everything(|client| {
+        client
+            .query_wait(search)
+            .request_flags(request_flags)
+            .sort(sort)
+            .max_results(max_results)
+            .call()
+            .map_err(|error| error.to_string())
+    })
+}
+
+fn default_request_flags() -> RequestFlags {
+    RequestFlags::FileName
+        | RequestFlags::Path
+        | RequestFlags::FullPathAndFileName
+        | RequestFlags::Extension
+        | RequestFlags::Size
+        | RequestFlags::DateModified
+}
+
 fn query(mut cx: FunctionContext) -> JsResult<JsObject> {
     let search = cx.argument::<JsString>(0)?.value(&mut cx);
     let max_results = match cx.argument_opt(1) {
@@ -103,23 +127,8 @@ fn query(mut cx: FunctionContext) -> JsResult<JsObject> {
     };
     let sort = sort_from_mode(&sort_mode);
 
-    let list = with_everything(|client| {
-        client
-            .query_wait(&search)
-            .request_flags(
-                RequestFlags::FileName
-                    | RequestFlags::Path
-                    | RequestFlags::FullPathAndFileName
-                    | RequestFlags::Size
-                    | RequestFlags::DateModified
-                    | RequestFlags::Attributes,
-            )
-            .sort(sort)
-            .max_results(max_results)
-            .call()
-            .map_err(|error| error.to_string())
-    })
-    .or_else(|error| cx.throw_error(error))?;
+    let list = query_flags(&search, max_results, sort, default_request_flags())
+        .or_else(|error| cx.throw_error(error))?;
 
     let result = cx.empty_object();
 
@@ -141,9 +150,15 @@ fn query(mut cx: FunctionContext) -> JsResult<JsObject> {
             object.set(&mut cx, "path", value)?;
         }
 
-        if let Some(full_path) = item.get_string(RequestFlags::FullPathAndFileName) {
+        let full_path = item.get_string(RequestFlags::FullPathAndFileName);
+        if let Some(full_path) = &full_path {
             let value = cx.string(full_path);
             object.set(&mut cx, "fullPath", value)?;
+        }
+
+        if let Some(extension) = item.get_string(RequestFlags::Extension) {
+            let value = cx.string(extension);
+            object.set(&mut cx, "extension", value)?;
         }
 
         if let Some(size) = item.get_size(RequestFlags::Size) {
@@ -157,14 +172,6 @@ fn query(mut cx: FunctionContext) -> JsResult<JsObject> {
                 modified_at.dwHighDateTime,
             ));
             object.set(&mut cx, "modifiedAt", value)?;
-        }
-
-        if let Some(attributes) = item.get_u32(RequestFlags::Attributes) {
-            let value = cx.number(attributes);
-            object.set(&mut cx, "attributes", value)?;
-
-            let is_directory = cx.boolean((attributes & FILE_ATTRIBUTE_DIRECTORY) != 0);
-            object.set(&mut cx, "isDirectory", is_directory)?;
         }
 
         items.set(&mut cx, index as u32, object)?;

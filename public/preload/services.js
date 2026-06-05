@@ -2,13 +2,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 
-/**
- * @typedef {import("../../addon").AddonModule} AddonModule
- * @typedef {import("../../addon").EverythingAddon} EverythingAddon
- * @typedef {import("../../addon").EverythingQueryItem} EverythingQueryItem
- * @typedef {import("../../addon").TextFileInspection} TextFileInspection
- * @typedef {import("../../addon").TextPreviewResult} TextPreviewResult
- */
+/** @typedef {import("../../addon").AddonModule} AddonModule */
 
 /** @returns {AddonModule | null} */
 function loadAddon() {
@@ -45,43 +39,14 @@ function readAddonManifestFile() {
   }
 }
 
-/**
- * @param {string} file
- * @returns {{ fullPath: string, name: string, path: string, size: number, modifiedAt: number, isDirectory: boolean, exists: true }}
- */
-function statFileInfo(file) {
-  const stat = fs.statSync(file);
+function getFallbackFileInfo(file) {
   return {
     fullPath: file,
     name: path.basename(file),
     path: path.dirname(file),
-    size: stat.size,
-    modifiedAt: stat.mtimeMs,
-    isDirectory: stat.isDirectory(),
-    exists: true,
+    exists: false,
+    isDirectory: false,
   };
-}
-
-/**
- * @param {EverythingQueryItem} item
- * @returns {EverythingQueryItem & { fullPath: string, exists: boolean }}
- */
-function enrichEverythingItem(item) {
-  const fullPath = item.fullPath || path.join(item.path || "", item.name || "");
-  try {
-    return {
-      ...item,
-      ...statFileInfo(fullPath),
-      fullPath,
-    };
-  } catch {
-    return {
-      ...item,
-      fullPath,
-      exists: false,
-      isDirectory: item.isDirectory ?? false,
-    };
-  }
 }
 
 // 通过 window 对象向渲染进程注入 nodejs 能力
@@ -102,13 +67,26 @@ window.services = {
     },
     query(search, maxResults = 100, sortMode = "modified-desc") {
       if (!everythingAddon) throw new Error("Everything addon is not available");
-      const result = everythingAddon.query(search, maxResults, sortMode);
-      return {
-        total: result.total,
-        items: result.items.map(enrichEverythingItem),
-      };
+      return everythingAddon.query(search, maxResults, sortMode);
     },
   },
+  async getFileInfo(file) {
+    try {
+      const stat = await fs.promises.stat(file);
+      return {
+        fullPath: file,
+        name: path.basename(file),
+        path: path.dirname(file),
+        size: stat.size,
+        modifiedAt: stat.mtimeMs,
+        isDirectory: stat.isDirectory(),
+        exists: true,
+      };
+    } catch {
+      return getFallbackFileInfo(file);
+    }
+  },
+
   getFileUrl(file) {
     return pathToFileURL(file).href;
   },

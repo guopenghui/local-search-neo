@@ -53,16 +53,15 @@ const { everything } = require("./index.node");
 ## 构建
 
 ```bash
-npm run build
 npm run build-release
 ```
 
-根项目的 `npm run dev` / `npm run build` 会自动编译 addon 并复制 `index.node` 到 `public/addon.node`。
+addon 始终使用 release 构建。根项目的 `npm run dev` / `npm run build` 会自动编译 release addon 并复制 `index.node` 到 `public/addon.node`。
 
 ## 简单验证
 
 ```bash
-npm run test:everything -- "*.exe" 3
+npm run test:everything -- --query "*.exe" --max-results 3
 ```
 
-该脚本会打印导出方法、Everything 状态、版本信息和查询结果。
+该脚本会调用根项目 `scripts/test-everything-addon.cjs`，打印导出方法、Everything 状态、版本信息和查询结果。

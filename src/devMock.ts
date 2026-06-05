@@ -59,6 +59,18 @@ export function installDevMock() {
         return { total: items.length, items };
       },
     },
+    async getFileInfo(file: string) {
+      const item = mockFiles.find((item) => item.fullPath === file);
+      return {
+        fullPath: file,
+        name: item?.name ?? file.split(/[\\/]/).pop() ?? file,
+        path: item?.path ?? "",
+        size: item?.size,
+        modifiedAt: item?.modifiedAt,
+        isDirectory: item?.isDirectory ?? false,
+        exists: !!item,
+      };
+    },
     isTextFile(file: string) {
       return (
         /(?:^|[\\/])(README|LICENSE|CHANGELOG)$/i.test(file) || /\.(txt|log|json|md)$/i.test(file)
@@ -119,11 +131,14 @@ export function installDevMock() {
       return true;
     },
     getFileIcon(filePath: string) {
-      const isDirectory = mockFiles.some((item) => item.fullPath === filePath && item.isDirectory);
-      const label = isDirectory
-        ? "DIR"
-        : (filePath.split(".").pop() || "FILE").slice(0, 4).toUpperCase();
-      const color = isDirectory ? "#f59e0b" : "#2563eb";
+      const fileName = filePath.split(/[\\/]/).pop() ?? filePath;
+      const extensionIndex = fileName.lastIndexOf(".");
+      const extension = extensionIndex > 0 ? fileName.slice(extensionIndex + 1) : "";
+      const isDirectory =
+        filePath === "C:\\Windows" ||
+        mockFiles.some((item) => item.fullPath === filePath && item.isDirectory);
+      const label = isDirectory ? "DIR" : (extension || "FILE").slice(0, 4).toUpperCase();
+      const color = isDirectory ? "#f59e0b" : extension ? "#2563eb" : "#64748b";
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="${color}"/><text x="16" y="20" text-anchor="middle" font-family="Arial" font-size="8" fill="white">${label}</text></svg>`;
 
       return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
@@ -167,7 +182,6 @@ function makeFile(
     size,
     modifiedAt,
     isDirectory,
-    exists: true,
   };
 }
 

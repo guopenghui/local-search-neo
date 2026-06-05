@@ -10,6 +10,7 @@ import {
 interface FinderPreferences {
   previewEnabled: boolean;
   sortMode: FinderSortMode;
+  resultFiltersEnabled: boolean;
 }
 
 const PREFERENCES_STORAGE_KEY = "preferences";
@@ -19,6 +20,7 @@ const RESULT_FILTERS_STORAGE_KEY = "resultFilters";
 const DEFAULT_PREFERENCES: FinderPreferences = {
   previewEnabled: false,
   sortMode: "modified-desc",
+  resultFiltersEnabled: true,
 };
 
 const preferences = shallowRef<FinderPreferences>({ ...DEFAULT_PREFERENCES });
@@ -33,23 +35,27 @@ const sortMode = computed({
   get: () => preferences.value.sortMode,
   set: setSortMode,
 });
+const resultFiltersEnabled = computed({
+  get: () => preferences.value.resultFiltersEnabled,
+  set: setResultFiltersEnabled,
+});
 
 let loaded = false;
 
 export function usePersistStorage() {
   return {
     loadPersistStorage,
-    preferences,
     previewEnabled,
     sortMode,
+    resultFiltersEnabled,
     customCategories,
     resultFilters,
-    setPreviewEnabled,
-    setSortMode,
+    setResultFiltersEnabled,
     addCustomCategory,
     removeCustomCategory,
     addResultFilter,
     removeResultFilter,
+    toggleResultFilter,
     buildQueryFilter,
   };
 }
@@ -72,7 +78,7 @@ function loadPreferences() {
       return;
     }
 
-    preferences.value = { ...stored };
+    preferences.value = { ...DEFAULT_PREFERENCES, ...stored };
   } catch (error) {
     console.warn("[local-search-neo] 读取偏好设置失败:", error);
     preferences.value = { ...DEFAULT_PREFERENCES };
@@ -107,6 +113,7 @@ function loadResultFilters() {
     resultFilters.value = stored.map((filter) => ({
       ...filter,
       extensions: [...filter.extensions],
+      enabled: filter.enabled ?? true,
     }));
   } catch (error) {
     console.warn("[local-search-neo] 读取结果过滤器失败:", error);
@@ -126,6 +133,14 @@ function setSortMode(value: FinderSortMode) {
   preferences.value = {
     ...preferences.value,
     sortMode: value,
+  };
+  savePreferences();
+}
+
+function setResultFiltersEnabled(value: boolean) {
+  preferences.value = {
+    ...preferences.value,
+    resultFiltersEnabled: value,
   };
   savePreferences();
 }
@@ -159,16 +174,21 @@ function removeResultFilter(id: string) {
   saveResultFilters();
 }
 
+function toggleResultFilter(id: string, enabled: boolean) {
+  resultFilters.value = resultFilters.value.map((filter) =>
+    filter.id === id ? { ...filter, enabled } : filter,
+  );
+  saveResultFilters();
+}
+
 function buildQueryFilter() {
+  if (!preferences.value.resultFiltersEnabled) return "";
   return buildResultFilterQuery(resultFilters.value);
 }
 
 function savePreferences() {
   try {
-    window.ztools.dbStorage.setItem(PREFERENCES_STORAGE_KEY, {
-      previewEnabled: preferences.value.previewEnabled,
-      sortMode: preferences.value.sortMode,
-    });
+    window.ztools.dbStorage.setItem(PREFERENCES_STORAGE_KEY, preferences.value);
   } catch (error) {
     console.warn("[local-search-neo] 保存偏好设置失败:", error);
   }
@@ -192,6 +212,7 @@ function saveResultFilters() {
       resultFilters.value.map((filter) => ({
         ...filter,
         extensions: [...filter.extensions],
+        enabled: filter.enabled,
       })),
     );
   } catch (error) {

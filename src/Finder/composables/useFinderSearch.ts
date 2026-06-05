@@ -38,16 +38,20 @@ export function useFinderSearch({
   );
 
   let searchTimer: number | undefined;
+  let searchSequence = 0;
 
   onUnmounted(clearSearchTimer);
 
   function queueSearch() {
     if (searchTimer) window.clearTimeout(searchTimer);
-    searchTimer = window.setTimeout(() => runSearch(), 120);
+    searchTimer = window.setTimeout(() => runSearch(), 60);
   }
 
   function runSearch() {
+    clearSearchTimer();
+    searchSequence += 1;
     const everythingQuery = buildQuery();
+    const currentSortMode = sortMode.value;
 
     if (!window.services.everything.isAvailable()) {
       results.value = [];
@@ -60,7 +64,7 @@ export function useFinderSearch({
     visibleCount.value = pageSize;
 
     try {
-      const result = window.services.everything.query(everythingQuery, maxResults, sortMode.value);
+      const result = window.services.everything.query(everythingQuery, maxResults, currentSortMode);
       results.value = result.items;
       everythingTotal.value = result.total;
       updateResultStatus();

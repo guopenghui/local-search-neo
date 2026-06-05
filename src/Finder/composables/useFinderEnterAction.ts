@@ -5,7 +5,7 @@ interface UseFinderEnterActionOptions {
   queryText: Ref<string>;
   selectedPath: Ref<string>;
   syncSubInputValue: () => void;
-  queueSearch: () => void;
+  search: () => void;
 }
 
 export function useFinderEnterAction({
@@ -13,28 +13,24 @@ export function useFinderEnterAction({
   queryText,
   selectedPath,
   syncSubInputValue,
-  queueSearch,
+  search,
 }: UseFinderEnterActionOptions) {
-  watch(
-    enterAction,
-    (action) => {
-      const payload = getRecordValue(action, "payload");
-      const option = getRecordValue(action, "option");
-      const incomingQuery =
-        getStringValue(payload, "query") ??
-        getStringValue(payload, "text") ??
-        getStringValue(option, "query") ??
-        "";
-      const incomingPath =
-        getStringValue(payload, "selectedPath") ?? getStringValue(option, "fullPath");
+  watch(enterAction, (action) => {
+    const payload = getRecordValue(action, "payload");
+    const option = getRecordValue(action, "option");
+    const incomingQuery =
+      getStringValue(payload, "query") ??
+      getStringValue(payload, "text") ??
+      getStringValue(option, "query") ??
+      "";
+    const incomingPath =
+      getStringValue(payload, "selectedPath") ?? getStringValue(option, "fullPath");
 
-      queryText.value = incomingQuery;
-      syncSubInputValue();
-      selectedPath.value = incomingPath ?? "";
-      queueSearch();
-    },
-    { immediate: true },
-  );
+    queryText.value = incomingQuery;
+    syncSubInputValue();
+    selectedPath.value = incomingPath ?? "";
+    search();
+  });
 }
 
 function getRecordValue(record: Record<string, unknown>, key: string): Record<string, unknown> {

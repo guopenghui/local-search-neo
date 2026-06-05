@@ -176,10 +176,10 @@ test("parseFilterExtensions normalizes extension input", () => {
 
 test("buildResultFilterQuery creates Everything exclusion terms", () => {
   const filters: ResultFilter[] = [
-    { id: "1", directory: String.raw`C:\Temp`, extensions: ["log", "tmp"] },
-    { id: "2", directory: String.raw`D:\Cache`, extensions: [] },
-    { id: "3", directory: "", extensions: ["bak"] },
-    { id: "4", directory: "", extensions: [] },
+    { id: "1", directory: String.raw`C:\Temp`, extensions: ["log", "tmp"], enabled: true },
+    { id: "2", directory: String.raw`D:\Cache`, extensions: [], enabled: true },
+    { id: "3", directory: "", extensions: ["bak"], enabled: true },
+    { id: "4", directory: "", extensions: [], enabled: true },
   ];
 
   assert.equal(
@@ -190,10 +190,15 @@ test("buildResultFilterQuery creates Everything exclusion terms", () => {
 
 test("filterResults mirrors result filter matching semantics", () => {
   const filters: ResultFilter[] = [
-    { id: "1", directory: String.raw`C:\alpha`, extensions: ["log"] },
+    { id: "1", directory: String.raw`C:\alpha`, extensions: ["log"], enabled: true },
   ];
   assert.deepEqual(
     filterResults(sampleResults, filters).map((item) => item.name),
     ["b.txt", "folder"],
+  );
+
+  assert.deepEqual(
+    filterResults(sampleResults, [{ ...filters[0], enabled: false }]).map((item) => item.name),
+    ["b.txt", "a.log", "folder"],
   );
 });

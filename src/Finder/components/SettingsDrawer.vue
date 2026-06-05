@@ -9,12 +9,15 @@ import {
 const props = defineProps<{
   open: boolean;
   filters: ResultFilter[];
+  resultFiltersEnabled: boolean;
 }>();
 
 const emit = defineEmits<{
   close: [];
   addResultFilter: [filter: ResultFilterInput];
   removeResultFilter: [id: string];
+  setResultFiltersEnabled: [enabled: boolean];
+  toggleResultFilter: [id: string, enabled: boolean];
 }>();
 
 const directory = ref("");
@@ -48,6 +51,18 @@ function closeDrawer() {
 function displayDirectory(directory: string) {
   return directory || "*";
 }
+
+function handleResultFiltersEnabledChange(event: Event) {
+  emit("setResultFiltersEnabled", readChecked(event));
+}
+
+function handleFilterEnabledChange(id: string, event: Event) {
+  emit("toggleResultFilter", id, readChecked(event));
+}
+
+function readChecked(event: Event) {
+  return event.target instanceof HTMLInputElement && event.target.checked;
+}
 </script>
 
 <template>
@@ -63,8 +78,21 @@ function displayDirectory(directory: string) {
         </header>
 
         <section class="settings-section">
-          <h3>结果过滤器</h3>
-          <p>隐藏指定目录下的指定后缀。留空表示 *。</p>
+          <div class="filter-section-header">
+            <div>
+              <h3>结果过滤器</h3>
+              <p>隐藏指定目录下的指定后缀。留空表示 *。</p>
+            </div>
+            <label class="filter-switch master-filter-switch">
+              <input
+                type="checkbox"
+                :checked="resultFiltersEnabled"
+                @change="handleResultFiltersEnabledChange"
+              />
+              <span class="switch-track"></span>
+              <span>启用过滤</span>
+            </label>
+          </div>
 
           <form class="filter-form" @submit.prevent="submitFilter">
             <label>
@@ -84,12 +112,27 @@ function displayDirectory(directory: string) {
 
           <div class="filter-list">
             <div class="filter-list-header">
+              <span>启用</span>
               <span>目录</span>
               <span>后缀</span>
               <span></span>
             </div>
             <div v-if="filters.length === 0" class="empty-filter">暂无过滤器</div>
-            <div v-for="filter in filters" :key="filter.id" class="filter-row">
+            <div
+              v-for="filter in filters"
+              :key="filter.id"
+              class="filter-row"
+              :class="{ disabled: !resultFiltersEnabled || !filter.enabled }"
+            >
+              <label class="filter-switch compact-filter-switch" title="启用该过滤器">
+                <input
+                  type="checkbox"
+                  :checked="filter.enabled"
+                  :disabled="!resultFiltersEnabled"
+                  @change="handleFilterEnabledChange(filter.id, $event)"
+                />
+                <span class="switch-track"></span>
+              </label>
               <span class="filter-directory" :title="displayDirectory(filter.directory)">{{
                 displayDirectory(filter.directory)
               }}</span>
@@ -239,6 +282,70 @@ function displayDirectory(directory: string) {
   font-size: 12px;
 }
 
+.filter-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.filter-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #cbd1d8;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.filter-switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.switch-track {
+  position: relative;
+  width: 32px;
+  height: 16px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #6c7178;
+  transition: background-color 0.15s ease;
+}
+
+.switch-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #f2f4f7;
+  transition: transform 0.15s ease;
+}
+
+.filter-switch input:checked + .switch-track {
+  background: #30a1d3;
+}
+
+.filter-switch input:checked + .switch-track::after {
+  transform: translateX(16px);
+}
+
+.filter-switch input:disabled + .switch-track {
+  opacity: 0.45;
+}
+
+.master-filter-switch {
+  white-space: nowrap;
+}
+
+.compact-filter-switch {
+  justify-self: start;
+}
+
 .filter-form {
   display: grid;
   grid-template-columns: minmax(180px, 1fr) minmax(160px, 280px) max-content;
@@ -299,7 +406,7 @@ function displayDirectory(directory: string) {
 .filter-list-header,
 .filter-row {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(120px, 220px) 64px;
+  grid-template-columns: 46px minmax(180px, 1fr) minmax(120px, 220px) 64px;
   gap: 10px;
   align-items: center;
   min-height: 34px;
@@ -316,6 +423,11 @@ function displayDirectory(directory: string) {
   border-top: 1px solid #3f4246;
   background: #303234;
   font-size: 13px;
+}
+
+.filter-row.disabled .filter-directory,
+.filter-row.disabled .filter-extensions {
+  opacity: 0.5;
 }
 
 .filter-directory {
@@ -379,8 +491,17 @@ function displayDirectory(directory: string) {
     background: #edf2f7;
   }
 
-  .filter-form label {
+  .filter-form label,
+  .filter-switch {
     color: #4f5b6a;
+  }
+
+  .switch-track {
+    background: #b9c2ce;
+  }
+
+  .filter-switch input:checked + .switch-track {
+    background: #167fae;
   }
 
   .filter-form input {

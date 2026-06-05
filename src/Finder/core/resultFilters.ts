@@ -4,6 +4,7 @@ export interface ResultFilter {
   id: string;
   directory: string;
   extensions: string[];
+  enabled: boolean;
 }
 
 export interface ResultFilterInput {
@@ -12,12 +13,19 @@ export interface ResultFilterInput {
 }
 
 export function buildResultFilterQuery(filters: ResultFilter[]): string {
-  return filters.map(buildResultFilterExclusion).filter(Boolean).join(" ");
+  return filters
+    .filter((filter) => filter.enabled)
+    .map(buildResultFilterExclusion)
+    .filter(Boolean)
+    .join(" ");
 }
 
 export function filterResults(results: FinderResult[], filters: ResultFilter[]): FinderResult[] {
-  if (filters.length === 0) return results;
-  return results.filter((result) => !filters.some((filter) => matchesResultFilter(result, filter)));
+  const enabledFilters = filters.filter((filter) => filter.enabled);
+  if (enabledFilters.length === 0) return results;
+  return results.filter(
+    (result) => !enabledFilters.some((filter) => matchesResultFilter(result, filter)),
+  );
 }
 
 export function matchesResultFilter(result: FinderResult, filter: ResultFilter): boolean {
@@ -70,6 +78,7 @@ export function createResultFilter(input: ResultFilterInput): ResultFilter {
     id: `filter-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     directory: normalizeDisplayDirectory(input.directory ?? ""),
     extensions: parseFilterExtensions(input.extensions),
+    enabled: true,
   };
 }
 

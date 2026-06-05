@@ -30,7 +30,10 @@ export function useFilePreview({ selectedItem, previewEnabled }: UseFilePreviewO
   const previewLanguage = ref("");
   const previewStatus = ref("未开启预览");
 
-  function loadPreview() {
+  let previewLoadSequence = 0;
+
+  async function loadPreview() {
+    const sequence = ++previewLoadSequence;
     resetPreview();
 
     if (!previewEnabled.value) {
@@ -44,18 +47,27 @@ export function useFilePreview({ selectedItem, previewEnabled }: UseFilePreviewO
       return;
     }
 
-    if (item.isDirectory) {
-      previewStatus.value = "文件夹不支持预览";
-      return;
-    }
-
     if (!item.fullPath) {
       previewStatus.value = "缺少文件路径，无法预览";
       return;
     }
 
-    if (loadMediaPreview(item)) return;
-    loadTextLikePreview(item);
+    const fileInfo = await window.services.getFileInfo(item.fullPath);
+    if (sequence !== previewLoadSequence) return;
+
+    if (!fileInfo.exists) {
+      previewStatus.value = "文件不存在，无法预览";
+      return;
+    }
+
+    const previewItem = { ...item, ...fileInfo };
+    if (previewItem.isDirectory) {
+      previewStatus.value = "文件夹不支持预览";
+      return;
+    }
+
+    if (loadMediaPreview(previewItem)) return;
+    loadTextLikePreview(previewItem);
   }
 
   function loadMediaPreview(item: FinderResult) {
@@ -149,7 +161,7 @@ export function useFilePreview({ selectedItem, previewEnabled }: UseFilePreviewO
     previewLanguage.value = "";
   }
 
-  watch([selectedItem, previewEnabled], () => loadPreview());
+  watch([selectedItem, previewEnabled], () => void loadPreview());
 
   return {
     previewKind,
@@ -158,13 +170,11 @@ export function useFilePreview({ selectedItem, previewEnabled }: UseFilePreviewO
     previewEncoding,
     previewLanguage,
     previewStatus,
-    loadPreview,
-    resetPreview,
   };
 }
 
 function getTextPreviewKind(
-  item: Pick<FinderResult, "name" | "size" | "isDirectory">,
+  item: Pick<FinderResult, "name" | "extension" | "size" | "isDirectory">,
 ): PreviewKind | undefined {
   if (isMarkdownPreviewCandidate(item)) return "markdown";
   if (isCodePreviewCandidate(item)) return "code";
@@ -174,7 +184,7 @@ function getTextPreviewKind(
 
 function getTextPreviewStatus(
   kind: PreviewKind,
-  item: Pick<FinderResult, "name" | "isDirectory">,
+  item: Pick<FinderResult, "name" | "extension" | "isDirectory">,
   bytes: number,
   direction: "start" | "end",
 ) {

@@ -17,6 +17,16 @@ declare module "*.vue" {
 }
 
 // Preload services 类型声明（对应 public/preload/services.js）
+interface FileInfo {
+  fullPath: string;
+  name: string;
+  path: string;
+  size?: number;
+  modifiedAt?: number;
+  isDirectory: boolean;
+  exists: boolean;
+}
+
 interface Services {
   everything: {
     isAvailable: () => boolean;
@@ -29,9 +39,10 @@ interface Services {
       sortMode?: EverythingSortMode,
     ) => {
       total: number;
-      items: Array<EverythingQueryItem & { fullPath: string; exists?: boolean }>;
+      items: EverythingQueryItem[];
     };
   };
+  getFileInfo: (file: string) => Promise<FileInfo>;
   getFileUrl: (file: string) => string;
   readBinaryFile: (file: string) => Uint8Array;
   isTextFile: (file: string) => boolean;

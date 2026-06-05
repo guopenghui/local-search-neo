@@ -20,10 +20,9 @@ export interface EverythingQueryItem {
   name: string;
   path: string;
   fullPath: string;
+  extension?: string;
   size?: number;
   modifiedAt?: number;
-  attributes?: number;
-  isDirectory?: boolean;
 }
 
 export interface EverythingQueryResult {

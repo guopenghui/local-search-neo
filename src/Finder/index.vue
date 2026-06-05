@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import ConfirmDialog from "../components/ConfirmDialog.vue";
 import { useConfirmDialog } from "../components/useConfirmDialog";
 import ContextMenu from "./components/ContextMenu.vue";
@@ -52,6 +52,7 @@ const {
 } = useFinderCategories({ releaseFinderFocus, focusSubInput });
 const {
   resultFilters,
+  resultFiltersEnabled,
   resultFilterCount,
   showSettingsDrawer,
   buildQueryFilter,
@@ -59,12 +60,15 @@ const {
   closeSettingsDrawer,
   handleAddResultFilter,
   handleRemoveResultFilter,
+  handleSetResultFiltersEnabled,
+  handleToggleResultFilter,
 } = useFinderSettings({ focusSubInput });
 const { buildFilteredEverythingQuery } = useFinderQuery({
   queryText,
   activeCategory,
   buildQueryFilter,
 });
+const isFolderQuery = computed(() => /(?:^|\s)folder:/i.test(buildFilteredEverythingQuery()));
 const finderSearch = useFinderSearch({
   pageSize: PAGE_SIZE,
   maxResults: MAX_RESULTS,
@@ -83,7 +87,7 @@ const resultActions = useResultActions({
   confirm: confirmDialog.confirm,
   onTrashed: (fullPath) => {
     finderSearch.removeResultByPath(fullPath);
-    window.setTimeout(() => finderSearch.queueSearch(), 800);
+    finderSearch.runSearch();
   },
 });
 
@@ -92,7 +96,7 @@ useFinderEnterAction({
   queryText,
   selectedPath: finderSearch.selectedPath,
   syncSubInputValue,
-  queueSearch: finderSearch.queueSearch,
+  search: finderSearch.runSearch,
 });
 
 useFinderKeyboard({
@@ -114,24 +118,20 @@ useFinderKeyboard({
 
 watch([activeCategoryId, sortMode], () => {
   finderSearch.resetVisibleCount();
-  if (activeCategoryId.value) finderSearch.queueSearch();
+  if (activeCategoryId.value) finderSearch.runSearch();
 });
 
-watch(
-  resultFilters,
-  () => {
-    finderSearch.resetVisibleCount();
-    finderSearch.queueSearch();
-  },
-  { deep: true },
-);
+watch([resultFilters, resultFilterCount], () => {
+  finderSearch.resetVisibleCount();
+  finderSearch.runSearch();
+});
 
 onMounted(() => {
   window.ztools.setExpendHeight(650);
   loadPersistStorage();
   bindSubInput();
   syncSubInputValue();
-  finderSearch.queueSearch();
+  finderSearch.runSearch();
 });
 
 function queueSearch() {
@@ -173,6 +173,7 @@ function scrollSelectedIntoView() {
         :is-loading="finderSearch.isLoading.value"
         :status-text="finderSearch.statusText.value"
         :preview-open="previewEnabled"
+        :is-folder-query="isFolderQuery"
         :actions="resultActions"
         @near-bottom="finderSearch.growVisibleCount"
         @select="selectItem"
@@ -207,9 +208,12 @@ function scrollSelectedIntoView() {
     <SettingsDrawer
       :open="showSettingsDrawer"
       :filters="resultFilters"
+      :result-filters-enabled="resultFiltersEnabled"
       @close="closeSettingsDrawer"
       @add-result-filter="handleAddResultFilter"
       @remove-result-filter="handleRemoveResultFilter"
+      @set-result-filters-enabled="handleSetResultFiltersEnabled"
+      @toggle-result-filter="handleToggleResultFilter"
     />
 
     <ContextMenu

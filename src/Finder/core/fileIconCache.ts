@@ -6,8 +6,13 @@ interface IconCacheEntry {
   dataUrl?: string;
 }
 
-const DIRECTORY_CACHE_KEY = "directory";
-const PATH_CACHE_LIMIT = 300;
+type IconFile = Pick<FinderResult, "name" | "extension" | "fullPath" | "isDirectory">;
+
+const FOLDER_CACHE_KEY = "folder";
+const UNKNOWN_CACHE_KEY = "unknown";
+const WINDOWS_FOLDER_ICON_PATH = "C:\\Windows";
+const UNKNOWN_FILE_ICON_PATH = "C:\\__local_search_neo_unknown_icon__";
+const EXTENSION_ICON_PATH_PREFIX = "C:\\__local_search_neo_icon__.";
 
 // 这些类型的图标通常取决于文件本身、快捷方式目标或可执行资源，不能只按后缀共享。
 const PATH_DEPENDENT_EXTENSIONS = new Set([
@@ -24,64 +29,92 @@ const PATH_DEPENDENT_EXTENSIONS = new Set([
 ]);
 
 const sharedIconCache = new Map<string, IconCacheEntry>();
-const pathIconCache = new Map<string, IconCacheEntry | null>();
 const iconUrlByHash = new Map<string, string>();
 
-export function getFileIconUrl(
-  file: Pick<FinderResult, "name" | "fullPath" | "isDirectory">,
-): string {
-  return getFileIconEntry(file)?.url ?? "";
+export function warmUpFileIconCache() {
+  loadSharedIcon(UNKNOWN_CACHE_KEY, UNKNOWN_FILE_ICON_PATH);
+  loadSharedIcon(FOLDER_CACHE_KEY, WINDOWS_FOLDER_ICON_PATH);
 }
 
-export function getFileIconDataUrl(
-  file: Pick<FinderResult, "name" | "fullPath" | "isDirectory">,
-): string {
-  return getFileIconEntry(file)?.dataUrl ?? "";
+export function getUnknownFileIconUrl(): string {
+  return loadSharedIcon(UNKNOWN_CACHE_KEY, UNKNOWN_FILE_ICON_PATH)?.url ?? "";
 }
 
-function getFileIconEntry(
-  file: Pick<FinderResult, "name" | "fullPath" | "isDirectory">,
-): IconCacheEntry | null {
-  const fullPath = file.fullPath;
-  if (!fullPath) return null;
+export function getFolderFileIconUrl(): string {
+  return loadSharedIcon(FOLDER_CACHE_KEY, WINDOWS_FOLDER_ICON_PATH)?.url ?? getUnknownFileIconUrl();
+}
 
-  const sharedCacheKey = getSharedCacheKey(file);
-  if (sharedCacheKey) {
-    const cached = sharedIconCache.get(sharedCacheKey);
-    if (cached) return cached;
-  } else {
-    const cached = pathIconCache.get(fullPath);
-    if (cached !== undefined) return cached;
+export function getCachedFileIconUrl(file: IconFile): string {
+  return getCachedFileIconEntry(file)?.url ?? "";
+}
+
+export function getDisplayFileIconUrl(file: IconFile): string {
+  if (file.isDirectory) return getFolderFileIconUrl();
+
+  const cachedUrl = getCachedFileIconUrl(file);
+  return cachedUrl || getUnknownFileIconUrl();
+}
+
+export function loadFileIconUrl(file: IconFile): string {
+  return getFileIconEntry(file)?.url ?? getUnknownFileIconUrl();
+}
+
+export function getFileIconDataUrl(file: IconFile): string {
+  return getFileIconEntry(file)?.dataUrl ?? getSharedIconDataUrl(UNKNOWN_CACHE_KEY);
+}
+
+export function shouldLoadFileIcon(file: IconFile): boolean {
+  if (file.isDirectory) return !sharedIconCache.has(FOLDER_CACHE_KEY);
+
+  const extension = getResultExtension(file);
+  if (!extension) return false;
+  if (PATH_DEPENDENT_EXTENSIONS.has(extension)) return !!file.fullPath;
+
+  return !sharedIconCache.has(getExtensionCacheKey(extension));
+}
+
+function getFileIconEntry(file: IconFile): IconCacheEntry | null {
+  if (file.isDirectory) return loadSharedIcon(FOLDER_CACHE_KEY, WINDOWS_FOLDER_ICON_PATH);
+
+  const extension = getResultExtension(file);
+  if (!extension) return loadSharedIcon(UNKNOWN_CACHE_KEY, UNKNOWN_FILE_ICON_PATH);
+
+  if (PATH_DEPENDENT_EXTENSIONS.has(extension)) {
+    return file.fullPath ? readIcon(file.fullPath) : null;
   }
 
-  const entry = readIcon(fullPath);
+  return loadSharedIcon(getExtensionCacheKey(extension), getExtensionIconPath(extension));
+}
 
-  if (sharedCacheKey) {
-    if (entry) sharedIconCache.set(sharedCacheKey, entry);
+function getCachedFileIconEntry(file: IconFile): IconCacheEntry | null {
+  if (file.isDirectory) return sharedIconCache.get(FOLDER_CACHE_KEY) ?? null;
+
+  const extension = getResultExtension(file);
+  if (!extension) return sharedIconCache.get(UNKNOWN_CACHE_KEY) ?? null;
+  if (PATH_DEPENDENT_EXTENSIONS.has(extension)) return null;
+
+  return sharedIconCache.get(getExtensionCacheKey(extension)) ?? null;
+}
+
+function loadSharedIcon(cacheKey: string, iconPath: string): IconCacheEntry | null {
+  const cached = sharedIconCache.get(cacheKey);
+  if (cached) return cached;
+
+  const entry = readIcon(iconPath);
+  if (entry) {
+    sharedIconCache.set(cacheKey, entry);
     return entry;
   }
 
-  rememberPathIcon(fullPath, entry);
-  return entry;
+  if (cacheKey === UNKNOWN_CACHE_KEY) return null;
+
+  const fallback = loadSharedIcon(UNKNOWN_CACHE_KEY, UNKNOWN_FILE_ICON_PATH);
+  if (fallback) sharedIconCache.set(cacheKey, fallback);
+  return fallback;
 }
 
-export function clearFileIconCache() {
-  for (const url of iconUrlByHash.values()) {
-    URL.revokeObjectURL(url);
-  }
-
-  sharedIconCache.clear();
-  pathIconCache.clear();
-  iconUrlByHash.clear();
-}
-
-function getSharedCacheKey(file: Pick<FinderResult, "name" | "fullPath" | "isDirectory">): string {
-  if (file.isDirectory) return DIRECTORY_CACHE_KEY;
-
-  const extension = getExtension(file.name || file.fullPath || "");
-  if (!extension || PATH_DEPENDENT_EXTENSIONS.has(extension)) return "";
-
-  return `ext:${extension}`;
+function getSharedIconDataUrl(cacheKey: string): string {
+  return sharedIconCache.get(cacheKey)?.dataUrl ?? "";
 }
 
 function readIcon(fullPath: string): IconCacheEntry | null {
@@ -103,17 +136,12 @@ function readIcon(fullPath: string): IconCacheEntry | null {
   }
 }
 
-function rememberPathIcon(fullPath: string, entry: IconCacheEntry | null) {
-  if (pathIconCache.has(fullPath)) {
-    pathIconCache.delete(fullPath);
-  }
+function getExtensionCacheKey(extension: string): string {
+  return `ext:${extension}`;
+}
 
-  pathIconCache.set(fullPath, entry);
-
-  if (pathIconCache.size <= PATH_CACHE_LIMIT) return;
-
-  const oldestKey = pathIconCache.keys().next().value;
-  if (oldestKey) pathIconCache.delete(oldestKey);
+function getExtensionIconPath(extension: string): string {
+  return `${EXTENSION_ICON_PATH_PREFIX}${extension}`;
 }
 
 function dataUrlToObjectUrl(dataUrl: string): string {
@@ -144,6 +172,10 @@ function hashIcon(icon: string): string {
   }
 
   return `${icon.length}:${(hash >>> 0).toString(16)}`;
+}
+
+function getResultExtension(file: Pick<FinderResult, "name" | "extension" | "fullPath">): string {
+  return (file.extension || getExtension(file.name || file.fullPath || "")).toLowerCase();
 }
 
 function getExtension(name: string): string {
