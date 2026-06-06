@@ -18,12 +18,6 @@ import {
   type FinderCategory,
   type FinderResult,
 } from "./finderLogic";
-import {
-  buildResultFilterQuery,
-  filterResults,
-  parseFilterExtensions,
-  type ResultFilter,
-} from "./resultFilters";
 
 declare const test: (name: string, fn: () => void) => void;
 declare const assert: typeof import("node:assert/strict");
@@ -177,37 +171,4 @@ test("formatBytes returns compact human-readable values", () => {
   assert.equal(formatBytes(512), "512 B");
   assert.equal(formatBytes(1536), "1.5 KB");
   assert.equal(formatBytes(5 * 1024 * 1024), "5 MB");
-});
-
-test("parseFilterExtensions normalizes extension input", () => {
-  assert.deepEqual(parseFilterExtensions(".log; tmp，TXT txt"), ["log", "tmp", "txt"]);
-});
-
-test("buildResultFilterQuery creates Everything exclusion terms", () => {
-  const filters: ResultFilter[] = [
-    { id: "1", directory: String.raw`C:\Temp`, extensions: ["log", "tmp"], enabled: true },
-    { id: "2", directory: String.raw`D:\Cache`, extensions: [], enabled: true },
-    { id: "3", directory: "", extensions: ["bak"], enabled: true },
-    { id: "4", directory: "", extensions: [], enabled: true },
-  ];
-
-  assert.equal(
-    buildResultFilterQuery(filters),
-    String.raw`!<"C:\Temp\" ext:log;tmp> !<"D:\Cache\"> !<ext:bak> !*`,
-  );
-});
-
-test("filterResults mirrors result filter matching semantics", () => {
-  const filters: ResultFilter[] = [
-    { id: "1", directory: String.raw`C:\alpha`, extensions: ["log"], enabled: true },
-  ];
-  assert.deepEqual(
-    filterResults(sampleResults, filters).map((item) => item.name),
-    ["b.txt", "folder"],
-  );
-
-  assert.deepEqual(
-    filterResults(sampleResults, [{ ...filters[0], enabled: false }]).map((item) => item.name),
-    ["b.txt", "a.log", "folder"],
-  );
 });

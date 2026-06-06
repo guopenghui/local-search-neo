@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import type { ContextMenuItem } from "../composables/useContextMenu";
 import type { FinderCategory } from "../core/finderLogic";
 
 const props = defineProps<{
@@ -10,9 +9,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   select: [category: FinderCategory];
-  "context-menu": [event: MouseEvent, items: ContextMenuItem[]];
-  remove: [category: FinderCategory];
-  add: [];
+  openSettings: [];
 }>();
 
 const builtInCategories = computed(() =>
@@ -21,17 +18,6 @@ const builtInCategories = computed(() =>
 const customCategories = computed(() =>
   props.categories.filter((category) => category.kind === "custom"),
 );
-
-function openCategoryMenu(event: MouseEvent, category: FinderCategory) {
-  emit("context-menu", event, [
-    {
-      id: "delete-category",
-      label: "删除分组",
-      danger: true,
-      action: () => emit("remove", category),
-    },
-  ]);
-}
 </script>
 
 <template>
@@ -57,20 +43,19 @@ function openCategoryMenu(event: MouseEvent, category: FinderCategory) {
       :class="{ active: category.id === activeCategoryId }"
       tabindex="-1"
       @mousedown.left.prevent
-      @contextmenu.prevent.stop="openCategoryMenu($event, category)"
       @click="emit('select', category)"
     >
       <span>{{ category.label }}</span>
     </button>
 
     <button
-      class="add-category"
-      title="添加分类"
+      class="sidebar-settings"
+      title="设置"
       tabindex="-1"
       @mousedown.left.prevent
-      @click="emit('add')"
+      @click="emit('openSettings')"
     >
-      +
+      <span class="sidebar-settings-icon" aria-hidden="true"></span>
     </button>
   </aside>
 </template>
@@ -89,7 +74,7 @@ function openCategoryMenu(event: MouseEvent, category: FinderCategory) {
 }
 
 .category-button,
-.add-category {
+.sidebar-settings {
   border: 0;
   background: transparent;
   color: inherit;
@@ -98,8 +83,8 @@ function openCategoryMenu(event: MouseEvent, category: FinderCategory) {
 
 .category-button:focus,
 .category-button:focus-visible,
-.add-category:focus,
-.add-category:focus-visible {
+.sidebar-settings:focus,
+.sidebar-settings:focus-visible {
   outline: none;
 }
 
@@ -134,12 +119,28 @@ function openCategoryMenu(event: MouseEvent, category: FinderCategory) {
   background: #444a53;
 }
 
-.add-category {
-  margin-top: auto;
+.sidebar-settings {
+  display: grid;
+  place-items: center;
+  width: 100%;
   height: 34px;
+  margin-top: auto;
   color: #d5d9df;
   cursor: pointer;
-  font-size: 22px;
+  border-radius: 4px;
+}
+
+.sidebar-settings:hover {
+  background: #3a3d42;
+}
+
+.sidebar-settings-icon {
+  width: 18px;
+  height: 18px;
+  display: block;
+  background: currentColor;
+  mask: url("../../assets/settings.svg") center / contain no-repeat;
+  -webkit-mask: url("../../assets/settings.svg") center / contain no-repeat;
 }
 
 @media (prefers-color-scheme: light) {
@@ -164,8 +165,12 @@ function openCategoryMenu(event: MouseEvent, category: FinderCategory) {
     background: #d7dee8;
   }
 
-  .add-category {
+  .sidebar-settings {
     color: #4f5b6a;
+  }
+
+  .sidebar-settings:hover {
+    background: #dce3ec;
   }
 }
 </style>

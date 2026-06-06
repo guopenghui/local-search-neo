@@ -1,45 +1,41 @@
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { DEFAULT_CATEGORIES, type FinderCategory } from "../core/finderLogic";
 import { usePersistStorage } from "./usePersistStorage";
 
 interface UseFinderCategoriesOptions {
   releaseFinderFocus: () => void;
-  focusSubInput: () => void;
 }
 
-export function useFinderCategories({
-  releaseFinderFocus,
-  focusSubInput,
-}: UseFinderCategoriesOptions) {
+export function useFinderCategories({ releaseFinderFocus }: UseFinderCategoriesOptions) {
   const activeCategoryId = ref("all");
-  const showCategoryDialog = ref(false);
-  const { customCategories, addCustomCategory, removeCustomCategory } = usePersistStorage();
+  const {
+    customCategories,
+    addCustomCategory,
+    updateCustomCategory,
+    removeCustomCategory,
+    isCategoryEnabled,
+    setCategoryEnabled,
+  } = usePersistStorage();
 
-  const categories = computed(() => [...DEFAULT_CATEGORIES, ...customCategories.value]);
+  const allCategories = computed(() =>
+    [...DEFAULT_CATEGORIES, ...customCategories.value].map((category) => ({
+      ...category,
+      enabled: isCategoryEnabled(category.id),
+    })),
+  );
+  const categories = computed(() => allCategories.value.filter((category) => category.enabled));
   const activeCategory = computed(
     () =>
       categories.value.find((category) => category.id === activeCategoryId.value) ??
+      categories.value[0] ??
       DEFAULT_CATEGORIES[0],
   );
+
+  watch(categories, ensureActiveCategoryVisible, { immediate: true });
 
   function selectCategory(category: FinderCategory) {
     activeCategoryId.value = category.id;
     releaseFinderFocus();
-  }
-
-  function handleRemoveCustomCategory(category: FinderCategory) {
-    removeCustomCategory(category);
-    if (activeCategoryId.value === category.id) activeCategoryId.value = "all";
-  }
-
-  function openCategoryDialog() {
-    showCategoryDialog.value = true;
-    releaseFinderFocus();
-  }
-
-  function closeCategoryDialog() {
-    showCategoryDialog.value = false;
-    focusSubInput();
   }
 
   function handleAddCustomCategory(input: Pick<FinderCategory, "label" | "rule">) {
@@ -47,21 +43,54 @@ export function useFinderCategories({
       const category = addCustomCategory(input.label, input.rule);
       activeCategoryId.value = category.id;
     } catch (error) {
-      console.warn("[local-search-neo] 保存自定义过滤器失败:", error);
+      console.warn("[local-search-neo] 保存自定义分组失败:", error);
     }
+  }
 
-    closeCategoryDialog();
+  function handleUpdateCustomCategory(id: string, input: Pick<FinderCategory, "label" | "rule">) {
+    if (!customCategories.value.some((category) => category.id === id)) return;
+
+    try {
+      updateCustomCategory(id, input);
+    } catch (error) {
+      console.warn("[local-search-neo] 更新自定义分组失败:", error);
+    }
+  }
+
+  function handleRemoveCustomCategory(category: FinderCategory) {
+    if (category.kind !== "custom") return;
+
+    try {
+      removeCustomCategory(category);
+      ensureActiveCategoryVisible();
+    } catch (error) {
+      console.warn("[local-search-neo] 删除自定义分组失败:", error);
+    }
+  }
+
+  function handleSetCategoryEnabled(id: string, enabled: boolean) {
+    try {
+      setCategoryEnabled(id, enabled);
+      ensureActiveCategoryVisible();
+    } catch (error) {
+      console.warn("[local-search-neo] 保存分组启用状态失败:", error);
+    }
+  }
+
+  function ensureActiveCategoryVisible() {
+    if (categories.value.some((category) => category.id === activeCategoryId.value)) return;
+    activeCategoryId.value = categories.value[0]?.id ?? "all";
   }
 
   return {
     activeCategoryId,
     activeCategory,
     categories,
-    showCategoryDialog,
+    allCategories,
     selectCategory,
-    handleRemoveCustomCategory,
-    openCategoryDialog,
-    closeCategoryDialog,
     handleAddCustomCategory,
+    handleUpdateCustomCategory,
+    handleRemoveCustomCategory,
+    handleSetCategoryEnabled,
   };
 }

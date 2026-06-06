@@ -5,6 +5,7 @@ export interface FinderCategory {
   label: string;
   kind: CategoryKind;
   rule: string;
+  enabled?: boolean;
 }
 
 export interface FinderResult {

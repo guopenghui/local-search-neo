@@ -1,4 +1,4 @@
-import { computed, nextTick, onUnmounted, ref, type ComputedRef, type Ref } from "vue";
+import { computed, nextTick, onUnmounted, ref, type Ref } from "vue";
 import {
   getNextSelectedPath,
   getNextVisibleCount,
@@ -13,7 +13,6 @@ interface UseFinderSearchOptions {
   maxResults: number;
   buildQuery: () => string;
   sortMode: Ref<FinderSortMode>;
-  resultFilterCount: ComputedRef<number>;
   onSelectionRestored?: () => void;
 }
 
@@ -22,7 +21,6 @@ export function useFinderSearch({
   maxResults,
   buildQuery,
   sortMode,
-  resultFilterCount,
   onSelectionRestored,
 }: UseFinderSearchOptions) {
   const results = ref<FinderResult[]>([]);
@@ -80,17 +78,13 @@ export function useFinderSearch({
 
   function updateResultStatus() {
     const loadedCount = results.value.length;
-    const filterCount = resultFilterCount.value;
 
     if (loadedCount === 0) {
-      statusText.value = filterCount > 0 ? "没有找到结果（已应用过滤器）" : "没有找到结果";
+      statusText.value = "没有找到结果";
       return;
     }
 
-    statusText.value =
-      filterCount > 0
-        ? `已加载 ${loadedCount} / ${everythingTotal.value} 个过滤后结果`
-        : `已加载 ${loadedCount} / ${everythingTotal.value} 个结果`;
+    statusText.value = `已加载 ${loadedCount} / ${everythingTotal.value} 个结果`;
   }
 
   function restoreSelection() {

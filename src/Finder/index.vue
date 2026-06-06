@@ -3,7 +3,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import ConfirmDialog from "../components/ConfirmDialog.vue";
 import { useConfirmDialog } from "../components/useConfirmDialog";
 import ContextMenu from "./components/ContextMenu.vue";
-import CustomCategoryDialog from "./components/CustomCategoryDialog.vue";
+
 import FinderFooter from "./components/FinderFooter.vue";
 import FinderResultList from "./components/FinderResultList.vue";
 import FinderSidebar from "./components/FinderSidebar.vue";
@@ -43,37 +43,25 @@ const {
   activeCategoryId,
   activeCategory,
   categories,
-  showCategoryDialog,
+  allCategories,
   selectCategory,
-  handleRemoveCustomCategory,
-  openCategoryDialog,
-  closeCategoryDialog,
   handleAddCustomCategory,
-} = useFinderCategories({ releaseFinderFocus, focusSubInput });
-const {
-  resultFilters,
-  resultFiltersEnabled,
-  resultFilterCount,
-  showSettingsDrawer,
-  buildQueryFilter,
-  openSettingsDrawer,
-  closeSettingsDrawer,
-  handleAddResultFilter,
-  handleRemoveResultFilter,
-  handleSetResultFiltersEnabled,
-  handleToggleResultFilter,
-} = useFinderSettings({ focusSubInput });
+  handleUpdateCustomCategory,
+  handleRemoveCustomCategory,
+  handleSetCategoryEnabled,
+} = useFinderCategories({ releaseFinderFocus });
+const { showSettingsDrawer, openSettingsDrawer, closeSettingsDrawer } = useFinderSettings({
+  focusSubInput,
+});
 const { buildFilteredEverythingQuery } = useFinderQuery({
   queryText,
   activeCategory,
-  buildQueryFilter,
 });
 const isFolderQuery = computed(() => /(?:^|\s)folder:/i.test(buildFilteredEverythingQuery()));
 const finderSearch = useFinderSearch({
   pageSize: PAGE_SIZE,
   maxResults: MAX_RESULTS,
   sortMode,
-  resultFilterCount,
   buildQuery: buildFilteredEverythingQuery,
   onSelectionRestored: scrollSelectedIntoView,
 });
@@ -101,10 +89,7 @@ useFinderEnterAction({
 
 useFinderKeyboard({
   isNavigationBlocked: () =>
-    showCategoryDialog.value ||
-    showSettingsDrawer.value ||
-    footerSortMenuOpen.value ||
-    contextMenu.visible.value,
+    showSettingsDrawer.value || footerSortMenuOpen.value || contextMenu.visible.value,
   closeTransientOverlays: contextMenu.close,
   focusSubInput,
   moveSelection: finderSearch.moveSelection,
@@ -116,12 +101,7 @@ useFinderKeyboard({
   scrollSelectedIntoView,
 });
 
-watch([activeCategoryId, sortMode], () => {
-  finderSearch.resetVisibleCount();
-  if (activeCategoryId.value) finderSearch.runSearch();
-});
-
-watch([resultFilters, resultFilterCount], () => {
+watch([() => activeCategory.value.id, () => activeCategory.value.rule, sortMode], () => {
   finderSearch.resetVisibleCount();
   finderSearch.runSearch();
 });
@@ -175,9 +155,7 @@ function openImagePreviewMenu(event: MouseEvent) {
       :categories="categories"
       :active-category-id="activeCategoryId"
       @select="selectCategory"
-      @context-menu="contextMenu.open"
-      @remove="handleRemoveCustomCategory"
-      @add="openCategoryDialog"
+      @open-settings="openSettingsDrawer"
     />
 
     <section class="finder-main">
@@ -199,7 +177,6 @@ function openImagePreviewMenu(event: MouseEvent) {
     <FinderFooter
       class="finder-footer-bar"
       :everything-total="finderSearch.everythingTotal.value"
-      @open-settings="openSettingsDrawer"
       @request-input-focus="focusSubInput"
       @sort-menu-open-change="footerSortMenuOpen = $event"
     />
@@ -215,21 +192,14 @@ function openImagePreviewMenu(event: MouseEvent) {
       @image-context-menu="openImagePreviewMenu"
     />
 
-    <CustomCategoryDialog
-      :open="showCategoryDialog"
-      @close="closeCategoryDialog"
-      @add="handleAddCustomCategory"
-    />
-
     <SettingsDrawer
       :open="showSettingsDrawer"
-      :filters="resultFilters"
-      :result-filters-enabled="resultFiltersEnabled"
+      :categories="allCategories"
       @close="closeSettingsDrawer"
-      @add-result-filter="handleAddResultFilter"
-      @remove-result-filter="handleRemoveResultFilter"
-      @set-result-filters-enabled="handleSetResultFiltersEnabled"
-      @toggle-result-filter="handleToggleResultFilter"
+      @add-category="handleAddCustomCategory"
+      @update-category="handleUpdateCustomCategory"
+      @remove-category="handleRemoveCustomCategory"
+      @set-category-enabled="handleSetCategoryEnabled"
     />
 
     <ContextMenu

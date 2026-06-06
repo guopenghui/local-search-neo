@@ -1,31 +1,23 @@
 import { computed, shallowRef } from "vue";
 import type { FinderCategory, FinderSortMode } from "../core/finderLogic";
-import {
-  buildResultFilterQuery,
-  createResultFilter,
-  type ResultFilter,
-  type ResultFilterInput,
-} from "../core/resultFilters";
 
 interface FinderPreferences {
   previewEnabled: boolean;
   sortMode: FinderSortMode;
-  resultFiltersEnabled: boolean;
+  categoryEnabled: Record<string, boolean>;
 }
 
 const PREFERENCES_STORAGE_KEY = "preferences";
 const CUSTOM_CATEGORIES_STORAGE_KEY = "customCategories";
-const RESULT_FILTERS_STORAGE_KEY = "resultFilters";
 
 const DEFAULT_PREFERENCES: FinderPreferences = {
   previewEnabled: false,
   sortMode: "modified-desc",
-  resultFiltersEnabled: true,
+  categoryEnabled: {},
 };
 
 const preferences = shallowRef<FinderPreferences>({ ...DEFAULT_PREFERENCES });
 const customCategories = shallowRef<FinderCategory[]>([]);
-const resultFilters = shallowRef<ResultFilter[]>([]);
 
 const previewEnabled = computed({
   get: () => preferences.value.previewEnabled,
@@ -35,10 +27,6 @@ const sortMode = computed({
   get: () => preferences.value.sortMode,
   set: setSortMode,
 });
-const resultFiltersEnabled = computed({
-  get: () => preferences.value.resultFiltersEnabled,
-  set: setResultFiltersEnabled,
-});
 
 let loaded = false;
 
@@ -47,16 +35,12 @@ export function usePersistStorage() {
     loadPersistStorage,
     previewEnabled,
     sortMode,
-    resultFiltersEnabled,
     customCategories,
-    resultFilters,
-    setResultFiltersEnabled,
     addCustomCategory,
+    updateCustomCategory,
     removeCustomCategory,
-    addResultFilter,
-    removeResultFilter,
-    toggleResultFilter,
-    buildQueryFilter,
+    isCategoryEnabled,
+    setCategoryEnabled,
   };
 }
 
@@ -65,20 +49,20 @@ function loadPersistStorage() {
 
   loadPreferences();
   loadCustomCategories();
-  loadResultFilters();
   loaded = true;
 }
 
 function loadPreferences() {
   try {
-    const stored = window.ztools.dbStorage.getItem<FinderPreferences>(PREFERENCES_STORAGE_KEY);
+    const stored =
+      window.ztools.dbStorage.getItem<Partial<FinderPreferences>>(PREFERENCES_STORAGE_KEY);
     if (!stored) {
       preferences.value = { ...DEFAULT_PREFERENCES };
       savePreferences();
       return;
     }
 
-    preferences.value = { ...DEFAULT_PREFERENCES, ...stored };
+    preferences.value = normalizePreferences(stored);
   } catch (error) {
     console.warn("[local-search-neo] 读取偏好设置失败:", error);
     preferences.value = { ...DEFAULT_PREFERENCES };
@@ -94,30 +78,10 @@ function loadCustomCategories() {
       return;
     }
 
-    customCategories.value = stored.map((category) => ({ ...category }));
+    customCategories.value = stored.map(normalizeCustomCategory);
   } catch (error) {
     console.warn("[local-search-neo] 读取自定义分组失败:", error);
     customCategories.value = [];
-  }
-}
-
-function loadResultFilters() {
-  try {
-    const stored = window.ztools.dbStorage.getItem<ResultFilter[]>(RESULT_FILTERS_STORAGE_KEY);
-    if (!stored) {
-      resultFilters.value = [];
-      saveResultFilters();
-      return;
-    }
-
-    resultFilters.value = stored.map((filter) => ({
-      ...filter,
-      extensions: [...filter.extensions],
-      enabled: filter.enabled ?? true,
-    }));
-  } catch (error) {
-    console.warn("[local-search-neo] 读取结果过滤器失败:", error);
-    resultFilters.value = [];
   }
 }
 
@@ -137,14 +101,6 @@ function setSortMode(value: FinderSortMode) {
   savePreferences();
 }
 
-function setResultFiltersEnabled(value: boolean) {
-  preferences.value = {
-    ...preferences.value,
-    resultFiltersEnabled: value,
-  };
-  savePreferences();
-}
-
 function addCustomCategory(label: string, rule: string) {
   const category = {
     id: `custom-${Date.now()}`,
@@ -154,36 +110,69 @@ function addCustomCategory(label: string, rule: string) {
   } satisfies FinderCategory;
 
   customCategories.value = [...customCategories.value, category];
+  setCategoryEnabled(category.id, true);
   saveCustomCategories();
   return category;
 }
 
-function removeCustomCategory(category: FinderCategory) {
-  customCategories.value = customCategories.value.filter((item) => item.id !== category.id);
+function updateCustomCategory(id: string, input: Pick<FinderCategory, "label" | "rule">) {
+  customCategories.value = customCategories.value.map((category) =>
+    category.id === id
+      ? {
+          ...category,
+          label: input.label,
+          rule: input.rule,
+        }
+      : category,
+  );
   saveCustomCategories();
 }
 
-function addResultFilter(input: ResultFilterInput) {
-  const filter = createResultFilter(input);
-  resultFilters.value = [...resultFilters.value, filter];
-  saveResultFilters();
+function removeCustomCategory(category: FinderCategory) {
+  customCategories.value = customCategories.value.filter((item) => item.id !== category.id);
+  removeCategoryEnabledState(category.id);
+  saveCustomCategories();
 }
 
-function removeResultFilter(id: string) {
-  resultFilters.value = resultFilters.value.filter((filter) => filter.id !== id);
-  saveResultFilters();
+function isCategoryEnabled(categoryId: string) {
+  return preferences.value.categoryEnabled[categoryId] ?? true;
 }
 
-function toggleResultFilter(id: string, enabled: boolean) {
-  resultFilters.value = resultFilters.value.map((filter) =>
-    filter.id === id ? { ...filter, enabled } : filter,
-  );
-  saveResultFilters();
+function setCategoryEnabled(categoryId: string, enabled: boolean) {
+  preferences.value = {
+    ...preferences.value,
+    categoryEnabled: {
+      ...preferences.value.categoryEnabled,
+      [categoryId]: enabled,
+    },
+  };
+  savePreferences();
 }
 
-function buildQueryFilter() {
-  if (!preferences.value.resultFiltersEnabled) return "";
-  return buildResultFilterQuery(resultFilters.value);
+function removeCategoryEnabledState(categoryId: string) {
+  const { [categoryId]: _removed, ...categoryEnabled } = preferences.value.categoryEnabled;
+  preferences.value = {
+    ...preferences.value,
+    categoryEnabled,
+  };
+  savePreferences();
+}
+
+function normalizePreferences(stored: Partial<FinderPreferences>): FinderPreferences {
+  return {
+    previewEnabled: stored.previewEnabled ?? DEFAULT_PREFERENCES.previewEnabled,
+    sortMode: stored.sortMode ?? DEFAULT_PREFERENCES.sortMode,
+    categoryEnabled: { ...DEFAULT_PREFERENCES.categoryEnabled, ...stored.categoryEnabled },
+  };
+}
+
+function normalizeCustomCategory(category: FinderCategory): FinderCategory {
+  return {
+    id: category.id,
+    label: category.label,
+    kind: "custom",
+    rule: category.rule,
+  };
 }
 
 function savePreferences() {
@@ -198,24 +187,9 @@ function saveCustomCategories() {
   try {
     window.ztools.dbStorage.setItem(
       CUSTOM_CATEGORIES_STORAGE_KEY,
-      customCategories.value.map((category) => ({ ...category })),
+      customCategories.value.map(normalizeCustomCategory),
     );
   } catch (error) {
     console.warn("[local-search-neo] 保存自定义分组失败:", error);
-  }
-}
-
-function saveResultFilters() {
-  try {
-    window.ztools.dbStorage.setItem(
-      RESULT_FILTERS_STORAGE_KEY,
-      resultFilters.value.map((filter) => ({
-        ...filter,
-        extensions: [...filter.extensions],
-        enabled: filter.enabled,
-      })),
-    );
-  } catch (error) {
-    console.warn("[local-search-neo] 保存结果过滤器失败:", error);
   }
 }

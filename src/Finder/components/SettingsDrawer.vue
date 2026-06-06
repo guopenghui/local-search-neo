@@ -1,67 +1,103 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import {
-  formatFilterExtensions,
-  type ResultFilter,
-  type ResultFilterInput,
-} from "../core/resultFilters";
+import { computed, ref, watch } from "vue";
+import type { FinderCategory } from "../core/finderLogic";
 
 const props = defineProps<{
   open: boolean;
-  filters: ResultFilter[];
-  resultFiltersEnabled: boolean;
+  categories: FinderCategory[];
 }>();
 
 const emit = defineEmits<{
   close: [];
-  addResultFilter: [filter: ResultFilterInput];
-  removeResultFilter: [id: string];
-  setResultFiltersEnabled: [enabled: boolean];
-  toggleResultFilter: [id: string, enabled: boolean];
+  addCategory: [category: Pick<FinderCategory, "label" | "rule">];
+  updateCategory: [id: string, category: Pick<FinderCategory, "label" | "rule">];
+  removeCategory: [category: FinderCategory];
+  setCategoryEnabled: [id: string, enabled: boolean];
 }>();
 
-const directory = ref("");
-const extensions = ref("");
+const label = ref("");
+const rule = ref("");
+const editingCategoryId = ref<string | undefined>();
+const isAdding = ref(false);
+const builtInCollapsed = ref(true);
+const builtInCategories = computed(() =>
+  props.categories.filter((category) => category.kind !== "custom"),
+);
+const customCategories = computed(() =>
+  props.categories.filter((category) => category.kind === "custom"),
+);
 
 watch(
   () => props.open,
   (open) => {
-    if (open) resetForm();
+    if (!open) return;
+    resetDraft();
+    builtInCollapsed.value = true;
   },
 );
 
-function submitFilter() {
-  emit("addResultFilter", {
-    directory: directory.value,
-    extensions: extensions.value,
-  });
-  resetForm();
+function submitCategory() {
+  const trimmedLabel = label.value.trim();
+  const trimmedRule = rule.value.trim();
+  if (!trimmedLabel || !trimmedRule) return;
+
+  const categoryInput = {
+    label: trimmedLabel,
+    rule: trimmedRule,
+  };
+
+  if (editingCategoryId.value) {
+    emit("updateCategory", editingCategoryId.value, categoryInput);
+  } else {
+    emit("addCategory", categoryInput);
+  }
+
+  resetDraft();
 }
 
-function resetForm() {
-  directory.value = "";
-  extensions.value = "";
+function startAddCategory() {
+  editingCategoryId.value = undefined;
+  isAdding.value = true;
+  label.value = "";
+  rule.value = "";
+}
+
+function editCategory(category: FinderCategory) {
+  if (category.kind !== "custom") return;
+  isAdding.value = false;
+  editingCategoryId.value = category.id;
+  label.value = category.label;
+  rule.value = category.rule;
+}
+
+function removeCategory(category: FinderCategory) {
+  if (editingCategoryId.value === category.id) resetDraft();
+  emit("removeCategory", category);
+}
+
+function resetDraft() {
+  editingCategoryId.value = undefined;
+  isAdding.value = false;
+  label.value = "";
+  rule.value = "";
 }
 
 function closeDrawer() {
-  resetForm();
+  resetDraft();
   emit("close");
 }
 
-function displayDirectory(directory: string) {
-  return directory || "*";
+function categoryTypeLabel(category: FinderCategory) {
+  return category.kind === "custom" ? "自定义" : "内置";
 }
 
-function handleResultFiltersEnabledChange(event: Event) {
-  emit("setResultFiltersEnabled", readChecked(event));
+function handleCategoryEnabledChange(category: FinderCategory, event: Event) {
+  const enabled = event.target instanceof HTMLInputElement && event.target.checked;
+  emit("setCategoryEnabled", category.id, enabled);
 }
 
-function handleFilterEnabledChange(id: string, event: Event) {
-  emit("toggleResultFilter", id, readChecked(event));
-}
-
-function readChecked(event: Event) {
-  return event.target instanceof HTMLInputElement && event.target.checked;
+function toggleBuiltInCategories() {
+  builtInCollapsed.value = !builtInCollapsed.value;
 }
 </script>
 
@@ -78,67 +114,140 @@ function readChecked(event: Event) {
         </header>
 
         <section class="settings-section">
-          <div class="filter-section-header">
+          <div class="category-section-header">
             <div>
-              <h3>结果过滤器</h3>
-              <p>隐藏指定目录下的指定后缀。留空表示 *。</p>
+              <h3>分组管理</h3>
+              <p>关闭后，该分组不会显示在左侧分组栏。内置分组不支持删除。</p>
             </div>
-            <label class="filter-switch master-filter-switch">
-              <input
-                type="checkbox"
-                :checked="resultFiltersEnabled"
-                @change="handleResultFiltersEnabledChange"
-              />
-              <span class="switch-track"></span>
-              <span>启用过滤</span>
-            </label>
           </div>
 
-          <form class="filter-form" @submit.prevent="submitFilter">
-            <label>
-              <span>目录路径</span>
-              <input
-                v-model="directory"
-                autocomplete="off"
-                placeholder="例如 C:\Windows\Temp，留空为 *"
-              />
-            </label>
-            <label>
-              <span>后缀名</span>
-              <input v-model="extensions" autocomplete="off" placeholder="例如 log;tmp，留空为 *" />
-            </label>
-            <button type="submit">添加过滤器</button>
-          </form>
-
-          <div class="filter-list">
-            <div class="filter-list-header">
+          <div class="category-list">
+            <div class="category-list-header">
               <span>启用</span>
-              <span>目录</span>
-              <span>后缀</span>
-              <span></span>
+              <span>名称</span>
+              <span>规则</span>
+              <span>类型</span>
+              <span>操作</span>
             </div>
-            <div v-if="filters.length === 0" class="empty-filter">暂无过滤器</div>
-            <div
-              v-for="filter in filters"
-              :key="filter.id"
-              class="filter-row"
-              :class="{ disabled: !resultFiltersEnabled || !filter.enabled }"
+
+            <div class="category-group">
+              <button
+                type="button"
+                class="category-group-toggle"
+                :aria-expanded="!builtInCollapsed"
+                @click="toggleBuiltInCategories"
+              >
+                <span class="category-group-arrow" aria-hidden="true"></span>
+                <span>内置分组</span>
+                <span class="category-group-count">{{ builtInCategories.length }} 个</span>
+              </button>
+
+              <template v-if="!builtInCollapsed">
+                <div
+                  v-for="category in builtInCategories"
+                  :key="category.id"
+                  class="category-row"
+                  :class="{ disabled: !category.enabled }"
+                >
+                  <label class="category-switch" title="启用该分组">
+                    <input
+                      type="checkbox"
+                      :checked="category.enabled"
+                      @change="handleCategoryEnabledChange(category, $event)"
+                    />
+                    <span class="switch-track"></span>
+                  </label>
+                  <span class="category-name">{{ category.label }}</span>
+                  <span class="category-rule" :title="category.rule || '全部'">{{
+                    category.rule || "全部"
+                  }}</span>
+                  <span class="category-type">{{ categoryTypeLabel(category) }}</span>
+                  <span class="category-actions">
+                    <span class="built-in-note">内置</span>
+                  </span>
+                </div>
+              </template>
+            </div>
+
+            <template v-for="category in customCategories" :key="category.id">
+              <form
+                v-if="editingCategoryId === category.id"
+                class="category-row category-edit-row"
+                @submit.prevent="submitCategory"
+              >
+                <label class="category-switch" title="启用该分组">
+                  <input
+                    type="checkbox"
+                    :checked="category.enabled"
+                    @change="handleCategoryEnabledChange(category, $event)"
+                  />
+                  <span class="switch-track"></span>
+                </label>
+                <input v-model="label" class="category-inline-input" autocomplete="off" />
+                <input v-model="rule" class="category-inline-input" autocomplete="off" />
+                <span class="category-type">自定义</span>
+                <span class="category-edit-actions">
+                  <button type="submit">保存</button>
+                  <button type="button" @click="resetDraft">取消</button>
+                </span>
+              </form>
+
+              <div v-else class="category-row" :class="{ disabled: !category.enabled }">
+                <label class="category-switch" title="启用该分组">
+                  <input
+                    type="checkbox"
+                    :checked="category.enabled"
+                    @change="handleCategoryEnabledChange(category, $event)"
+                  />
+                  <span class="switch-track"></span>
+                </label>
+                <span class="category-name">{{ category.label }}</span>
+                <span class="category-rule" :title="category.rule || '全部'">{{
+                  category.rule || "全部"
+                }}</span>
+                <span class="category-type">{{ categoryTypeLabel(category) }}</span>
+                <span class="category-actions">
+                  <button type="button" @click="editCategory(category)">编辑</button>
+                  <button type="button" class="danger-action" @click="removeCategory(category)">
+                    删除
+                  </button>
+                </span>
+              </div>
+            </template>
+
+            <form
+              v-if="isAdding"
+              class="category-row category-edit-row"
+              @submit.prevent="submitCategory"
             >
-              <label class="filter-switch compact-filter-switch" title="启用该过滤器">
-                <input
-                  type="checkbox"
-                  :checked="filter.enabled"
-                  :disabled="!resultFiltersEnabled"
-                  @change="handleFilterEnabledChange(filter.id, $event)"
-                />
-                <span class="switch-track"></span>
-              </label>
-              <span class="filter-directory" :title="displayDirectory(filter.directory)">{{
-                displayDirectory(filter.directory)
-              }}</span>
-              <span class="filter-extensions">{{ formatFilterExtensions(filter.extensions) }}</span>
-              <button type="button" @click="emit('removeResultFilter', filter.id)">删除</button>
-            </div>
+              <span class="category-add-marker">＋</span>
+              <input
+                v-model="label"
+                class="category-inline-input"
+                autocomplete="off"
+                placeholder="例如 日志"
+              />
+              <input
+                v-model="rule"
+                class="category-inline-input"
+                autocomplete="off"
+                placeholder="log;txt 或 path:C:\Windows"
+              />
+              <span class="category-type">自定义</span>
+              <span class="category-edit-actions">
+                <button type="submit">添加</button>
+                <button type="button" @click="resetDraft">取消</button>
+              </span>
+            </form>
+
+            <button
+              v-else
+              type="button"
+              class="category-row category-add-trigger"
+              @click="startAddCategory"
+            >
+              <span>＋ 添加自定义分组</span>
+            </button>
           </div>
         </section>
       </section>
@@ -236,15 +345,11 @@ function readChecked(event: Event) {
   font-size: 18px;
 }
 
-.settings-header p {
-  margin: 6px 0 0;
-  color: #aeb4bb;
-  font-size: 12px;
-}
-
 .drawer-close,
-.filter-row button,
-.filter-form button {
+.category-group-toggle,
+.category-actions button,
+.category-edit-actions button,
+.category-add-trigger {
   border: 0;
   color: inherit;
   font: inherit;
@@ -261,6 +366,22 @@ function readChecked(event: Event) {
   line-height: 1;
 }
 
+.drawer-close:focus,
+.drawer-close:focus-visible,
+.category-inline-input:focus,
+.category-inline-input:focus-visible,
+.category-group-toggle:focus,
+.category-group-toggle:focus-visible,
+.category-actions button:focus,
+.category-actions button:focus-visible,
+.category-edit-actions button:focus,
+.category-edit-actions button:focus-visible,
+.category-add-trigger:focus,
+.category-add-trigger:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
 .settings-section {
   display: grid;
   align-content: start;
@@ -270,35 +391,102 @@ function readChecked(event: Event) {
   padding-right: 2px;
 }
 
-.settings-section h3 {
-  margin: 0;
-  color: #ffffff;
-  font-size: 15px;
-}
-
-.settings-section p {
-  margin: 0;
-  color: #aeb4bb;
-  font-size: 12px;
-}
-
-.filter-section-header {
+.category-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
 }
 
-.filter-switch {
-  display: inline-flex;
+.category-section-header h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 15px;
+}
+
+.category-section-header p {
+  margin: 4px 0 0;
+  color: #aeb4bb;
+  font-size: 12px;
+}
+
+.category-list {
+  display: grid;
+  border: 1px solid #47494c;
+  border-radius: 8px;
+}
+
+.category-list-header,
+.category-row {
+  display: grid;
+  grid-template-columns: 46px minmax(82px, 130px) minmax(160px, 1fr) 60px 120px;
+  gap: 10px;
+  align-items: center;
+  min-height: 34px;
+  box-sizing: border-box;
+  padding: 0 10px;
+}
+
+.category-list-header {
+  color: #aeb4bb;
+  background: #242629;
+  font-size: 12px;
+}
+
+.category-group {
+  display: grid;
+  border-top: 1px solid #3f4246;
+}
+
+.category-group-toggle {
+  display: flex;
   align-items: center;
   gap: 8px;
-  color: #cbd1d8;
+  min-height: 34px;
+  padding: 0 10px;
+  background: #2b2d30;
+  text-align: left;
+}
+
+.category-group-arrow {
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  color: #aeb4bb;
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+
+.category-group-toggle[aria-expanded="true"] .category-group-arrow {
+  transform: rotate(45deg);
+}
+
+.category-group-count {
+  margin-left: auto;
+  color: #aeb4bb;
   font-size: 12px;
+}
+
+.category-row {
+  border-top: 1px solid #3f4246;
+  background: #303234;
+  font-size: 13px;
+}
+
+.category-row.disabled .category-name,
+.category-row.disabled .category-rule,
+.category-row.disabled .category-type {
+  opacity: 0.5;
+}
+
+.category-switch {
+  display: inline-flex;
+  justify-self: start;
   cursor: pointer;
 }
 
-.filter-switch input {
+.category-switch input {
   position: absolute;
   opacity: 0;
   pointer-events: none;
@@ -326,138 +514,95 @@ function readChecked(event: Event) {
   transition: transform 0.15s ease;
 }
 
-.filter-switch input:checked + .switch-track {
+.category-switch input:checked + .switch-track {
   background: #30a1d3;
 }
 
-.filter-switch input:checked + .switch-track::after {
+.category-switch input:checked + .switch-track::after {
   transform: translateX(16px);
 }
 
-.filter-switch input:disabled + .switch-track {
-  opacity: 0.45;
-}
-
-.master-filter-switch {
-  white-space: nowrap;
-}
-
-.compact-filter-switch {
-  justify-self: start;
-}
-
-.filter-form {
-  display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(160px, 280px) max-content;
-  align-items: end;
-  gap: 12px;
-}
-
-.filter-form label {
-  display: grid;
-  gap: 6px;
-  color: #cbd1d8;
-  font-size: 12px;
-}
-
-.filter-form input {
-  appearance: none;
-  height: 34px;
-  box-sizing: border-box;
-  padding: 0 10px;
-  color: #ffffff;
-  background: #1f2022;
-  border: 1px solid #55585c;
-  border-radius: 6px;
-  font-family: Consolas, "Cascadia Mono", "Microsoft YaHei Mono", monospace;
-}
-
-.filter-form input:focus,
-.filter-form input:focus-visible,
-.filter-form button:focus,
-.filter-form button:focus-visible,
-.filter-row button:focus,
-.filter-row button:focus-visible,
-.drawer-close:focus,
-.drawer-close:focus-visible {
-  outline: none;
-  box-shadow: none;
-}
-
-.filter-form input:focus,
-.filter-form input:focus-visible {
-  border-color: #6b7078;
-}
-
-.filter-form button {
-  height: 34px;
-  padding: 0 14px;
-  background: #5f6eea;
-  border-radius: 6px;
-}
-
-.filter-list {
-  display: grid;
-  overflow: hidden;
-  border: 1px solid #47494c;
-  border-radius: 8px;
-}
-
-.filter-list-header,
-.filter-row {
-  display: grid;
-  grid-template-columns: 46px minmax(180px, 1fr) minmax(120px, 220px) 64px;
-  gap: 10px;
-  align-items: center;
-  min-height: 34px;
-  padding: 0 10px;
-}
-
-.filter-list-header {
-  color: #aeb4bb;
-  background: #242629;
-  font-size: 12px;
-}
-
-.filter-row {
-  border-top: 1px solid #3f4246;
-  background: #303234;
-  font-size: 13px;
-}
-
-.filter-row.disabled .filter-directory,
-.filter-row.disabled .filter-extensions {
-  opacity: 0.5;
-}
-
-.filter-directory {
+.category-name,
+.category-rule {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.filter-directory,
-.filter-extensions {
+.category-rule {
+  color: #d7dce3;
   font-family: Consolas, "Cascadia Mono", "Microsoft YaHei Mono", monospace;
 }
 
-.filter-extensions {
-  color: #d7dce3;
-}
-
-.filter-row button {
-  height: 26px;
-  color: #ffb4b4;
-  background: transparent;
+.category-inline-input {
+  appearance: none;
+  min-width: 0;
+  height: 28px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  color: #ffffff;
+  background: #1f2022;
+  border: 1px solid #55585c;
   border-radius: 5px;
+  font-family: Consolas, "Cascadia Mono", "Microsoft YaHei Mono", monospace;
 }
 
-.empty-filter {
-  display: grid;
-  min-height: 72px;
-  place-items: center;
-  color: #a6abb2;
-  border-top: 1px solid #3f4246;
+.category-inline-input:focus,
+.category-inline-input:focus-visible {
+  border-color: #6b7078;
+}
+
+.category-type,
+.built-in-note {
+  color: #aeb4bb;
+  font-size: 12px;
+}
+
+.category-actions,
+.category-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1;
+}
+
+.category-actions button,
+.category-edit-actions button {
+  height: auto;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  line-height: 1;
+}
+
+.category-actions button:hover,
+.category-edit-actions button:hover,
+.category-add-trigger:hover {
+  color: #ffffff;
+}
+
+.category-actions .danger-action {
+  color: #ffb4b4;
+}
+
+.category-edit-actions button:first-child {
+  color: #8bd0ff;
+}
+
+.category-add-marker {
+  color: #aeb4bb;
+  font-size: 15px;
+}
+
+.category-add-trigger {
+  width: 100%;
+  color: #cbd1d8;
+  background: #303234;
+  text-align: left;
+}
+
+.category-add-trigger span {
+  grid-column: 1 / -1;
 }
 
 @media (prefers-color-scheme: light) {
@@ -473,13 +618,17 @@ function readChecked(event: Event) {
   }
 
   .settings-header h2,
-  .settings-section h3 {
+  .category-section-header h3 {
     color: #111827;
   }
 
-  .settings-section p,
-  .settings-header p,
-  .empty-filter {
+  .category-section-header p,
+  .category-list-header,
+  .category-group-arrow,
+  .category-group-count,
+  .category-type,
+  .built-in-note,
+  .category-add-marker {
     color: #667085;
   }
 
@@ -491,75 +640,75 @@ function readChecked(event: Event) {
     background: #edf2f7;
   }
 
-  .filter-form label,
-  .filter-switch {
-    color: #4f5b6a;
+  .category-list {
+    border-color: #d6dde8;
+  }
+
+  .category-list-header {
+    background: #eef2f7;
+  }
+
+  .category-group {
+    border-top-color: #e4e9f1;
+  }
+
+  .category-group-toggle {
+    color: #1f2937;
+    background: #f8fafc;
+  }
+
+  .category-row,
+  .category-add-trigger {
+    color: #1f2937;
+    background: #ffffff;
+    border-top-color: #e4e9f1;
   }
 
   .switch-track {
     background: #b9c2ce;
   }
 
-  .filter-switch input:checked + .switch-track {
+  .category-switch input:checked + .switch-track {
     background: #167fae;
   }
 
-  .filter-form input {
+  .category-rule {
+    color: #4f5b6a;
+  }
+
+  .category-inline-input {
     color: #111827;
     background: #f8fafc;
     border-color: #c8d0da;
   }
 
-  .filter-form input:focus,
-  .filter-form input:focus-visible {
+  .category-inline-input:focus,
+  .category-inline-input:focus-visible {
     border-color: #8f9bad;
   }
 
-  .filter-form button {
-    color: #ffffff;
-    background: #5f6eea;
+  .category-actions button:hover,
+  .category-edit-actions button:hover,
+  .category-add-trigger:hover {
+    color: #111827;
   }
 
-  .filter-list {
-    border-color: #d6dde8;
-  }
-
-  .filter-list-header {
-    color: #667085;
-    background: #eef2f7;
-  }
-
-  .filter-row {
-    color: #1f2937;
-    background: #ffffff;
-    border-top-color: #e4e9f1;
-  }
-
-  .filter-extensions {
-    color: #4f5b6a;
-  }
-
-  .filter-row button {
+  .category-actions .danger-action {
     color: #c24141;
-  }
-
-  .empty-filter {
-    border-top-color: #e4e9f1;
   }
 }
 
-@media (max-width: 680px) {
-  .filter-form,
-  .filter-list-header,
-  .filter-row {
+@media (max-width: 760px) {
+  .category-list-header,
+  .category-row {
     grid-template-columns: 1fr;
   }
 
-  .filter-list-header {
+  .category-list-header {
     display: none;
   }
 
-  .filter-row {
+  .category-row {
     gap: 4px;
     padding: 8px 10px;
   }

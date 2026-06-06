@@ -21,7 +21,6 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
-  openSettings: [];
   requestInputFocus: [];
   sortMenuOpenChange: [open: boolean];
 }>();
@@ -78,16 +77,6 @@ onUnmounted(() => {
 
 <template>
   <footer class="finder-footer">
-    <button
-      class="settings-button"
-      type="button"
-      title="设置"
-      tabindex="-1"
-      @mousedown.left.prevent
-      @click="emit('openSettings')"
-    >
-      <span class="settings-button-icon" aria-hidden="true"></span>
-    </button>
     <div class="sort-select">
       <button
         class="sort-trigger"
@@ -130,7 +119,7 @@ onUnmounted(() => {
   position: relative;
   z-index: 5;
   display: grid;
-  grid-template-columns: max-content minmax(120px, 1fr) auto max-content;
+  grid-template-columns: minmax(120px, 1fr) auto max-content;
   align-items: center;
   gap: 14px;
   box-sizing: border-box;
@@ -143,7 +132,6 @@ onUnmounted(() => {
   font-size: 12px;
 }
 
-.settings-button,
 .sort-trigger,
 .sort-option {
   border: 0;
@@ -152,39 +140,12 @@ onUnmounted(() => {
   font: inherit;
 }
 
-.settings-button:focus,
-.settings-button:focus-visible,
 .sort-trigger:focus,
 .sort-trigger:focus-visible,
 .sort-option:focus,
 .sort-option:focus-visible {
   outline: none;
   box-shadow: none;
-}
-
-.settings-button {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 28px;
-  padding: 0;
-  background: transparent;
-  color: #f0f3f7;
-  cursor: pointer;
-  border-radius: 4px;
-}
-
-.settings-button-icon {
-  width: 18px;
-  height: 18px;
-  display: block;
-  background: currentColor;
-  mask: url("../../assets/settings.svg") center / contain no-repeat;
-  -webkit-mask: url("../../assets/settings.svg") center / contain no-repeat;
-}
-
-.settings-button:hover {
-  background: #5a5e65;
 }
 
 .sort-select {
@@ -267,7 +228,7 @@ onUnmounted(() => {
 }
 
 .preview-toggle {
-  grid-column: 3;
+  grid-column: 2;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -309,7 +270,7 @@ onUnmounted(() => {
 }
 
 .result-count {
-  grid-column: 4;
+  grid-column: 3;
   justify-self: end;
   color: #aeb4bb;
 }
@@ -318,15 +279,6 @@ onUnmounted(() => {
   .finder-footer {
     background: #e9edf3;
     color: #4f5b6a;
-  }
-
-  .settings-button {
-    background: transparent;
-    color: #263241;
-  }
-
-  .settings-button:hover {
-    background: #cdd6e3;
   }
 
   .sort-trigger {
