@@ -1,14 +1,50 @@
 # local-search-neo
 
-借助 Everything 进行本地文件搜索的 ZTools 插件。
+借助 Everything 进行本地文件搜索、分类浏览和快速预览的 ZTools 插件。
 
 ## 功能
 
-- 使用 Everything IPC 查询本地文件。
-- 支持主搜索面板 `mainPush` 快速预览结果。
-- 支持文件类型分类、排序、文本预览和懒加载展示。
-- 支持自定义分类和结果过滤器。
-- 使用 Neon addon 调用 Rust `everything-ipc`。
+### 文件搜索
+
+- 使用 Everything 搜索本地文件和文件夹。
+- 支持 Everything 查询语法，可直接输入关键词或规则。
+- 支持按分类快速过滤：全部、文件夹、Office 文档、PDF、图片、视频、音频、压缩文件等。
+- 支持自定义分类规则。
+- 支持按名称、路径、大小、修改时间排序。
+- 支持结果懒加载，避免一次性渲染过多结果。
+
+### 结果操作
+
+- 打开文件或文件夹。
+- 打开所在目录。
+- 复制完整路径。
+- 复制所在路径。
+- 复制文件到系统剪贴板。
+- 删除文件到回收站。
+
+### 文件预览
+
+- 文本预览：支持常见文本、日志、配置文件。
+- 代码预览：支持常见代码文件并显示语言。
+- Markdown 预览。
+- PDF 预览：支持翻页。
+- 图片预览：支持常见图片格式，右键可复制图片。
+- 视频预览。
+- 音频预览。
+- 目录预览：显示文件夹内部结构。
+- 压缩包预览：显示 `.zip` 和 tar 系压缩包（`.tar`、`.tar.gz`、`.tgz`）内部结构；`.gz` 单文件会显示解压后的文件名。
+
+### ZTools 集成
+
+- 支持主搜索面板 `mainPush` 快速返回搜索结果。
+- 支持插件进入时自动聚焦输入框。
+- 使用 ZTools 剪贴板、文件打开、显示所在目录、回收站等能力。
+
+## 运行要求
+
+- Windows。
+- 已安装并运行 Everything。
+- ZTools 插件环境。
 
 ## 开发
 
@@ -34,61 +70,45 @@ npm run build
 
 `build` 前会自动编译 release addon，并复制到 `public/addon.node`。Vite 会把它复制到 `dist/addon.node`。
 
-## 项目结构
+### 常用检查
 
-```text
-.
-├── addon/                         # Neon / Rust addon
-│   ├── src/
-│   │   ├── everything.rs          # Everything IPC 查询导出
-│   │   ├── file_tree.rs           # 目录 / 压缩包树打印
-│   │   ├── text_preview.rs        # 文本检测和文本预览读取
-│   │   └── lib.rs                 # Neon 模块入口
-│   ├── index.d.ts                 # addon 导出类型
-│   └── package.json
-├── public/
-│   ├── plugin.json                # ZTools 插件配置
-│   └── preload/services.js        # 预加载服务，挂载 window.services
-├── scripts/
-│   ├── copy-addon.cjs             # 复制 addon 到 public
-│   ├── test-everything-addon.cjs  # 验证 addon / Everything 查询
-│   └── benchmark-everything-addon.cjs
-│                                      # Everything 查询性能压测
-├── src/
-│   ├── App.vue                    # 插件入口和 mainPush 处理
-│   ├── Finder/
-│   │   ├── index.vue              # Finder 主布局
-│   │   ├── components/            # 侧栏、结果列表、底栏、设置等组件
-│   │   ├── composables/           # 搜索、预览、键盘、设置等组合逻辑
-│   │   ├── core/                  # 纯逻辑、类型和单测
-│   │   └── preview/               # 图片、视频、PDF、文本、目录树等预览组件
-│   ├── assets/                    # 前端资源
-│   ├── components/                # 通用组件
-│   ├── devMock.ts                 # 浏览器开发 mock
-│   ├── env.d.ts                   # window.services 等类型声明
-│   └── main.ts
-├── AGENTS.md                      # Agent 开发提示
-├── package.json
-└── vite.config.js
+```bash
+npm run lint
+npm run format:check
+npm test
+npx vue-tsc --noEmit
+npm --prefix addon test
 ```
 
-## addon 调试
+### addon 调试
 
 ```bash
 npm run build:addon
 npm run test:everything-addon -- --query "*.exe" --max-results 3
+node scripts/benchmark-everything-addon.cjs
 ```
 
-`test:everything-addon` 会直接 require `addon/index.node` 并验证：
+`test:everything-addon` 会直接 require `addon/index.node`，验证 addon 导出、Everything 状态、版本信息和查询结果。
 
-- `isRunning()`
-- `isDbLoaded()`
-- `getVersion()`
-- `query()`
+### 项目结构
 
-## 运行要求
-
-- Windows
-- Node 版本满足 Vite / Neon 构建要求
-- Rust 工具链
-- Everything 已安装并运行
+```text
+.
+├── addon/                  # Neon / Rust addon
+│   ├── src/                # Everything、文本预览、目录/压缩包树等原生能力
+│   └── index.d.ts          # addon 导出类型
+├── public/
+│   ├── plugin.json         # ZTools 插件配置
+│   └── preload/services.js # 预加载服务，挂载 window.services
+├── scripts/                # addon 复制、验证和性能测试脚本
+├── src/
+│   ├── App.vue             # 插件入口和 mainPush 处理
+│   ├── Finder/             # 搜索界面、结果列表、预览、设置等主要功能
+│   ├── components/         # 通用组件
+│   ├── devMock.ts          # 浏览器开发 mock
+│   ├── env.d.ts            # window.services 等类型声明
+│   └── main.ts
+├── AGENTS.md               # Agent 开发提示
+├── package.json
+└── vite.config.js
+```

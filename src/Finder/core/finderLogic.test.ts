@@ -158,6 +158,7 @@ test("preview candidate helpers detect supported file types", () => {
   assert.equal(isArchiveTreePreviewCandidate({ name: "source.tar" }), true);
   assert.equal(isArchiveTreePreviewCandidate({ name: "source.tar.gz" }), true);
   assert.equal(isArchiveTreePreviewCandidate({ name: "source.tgz" }), true);
+  assert.equal(isArchiveTreePreviewCandidate({ name: "single-file.gz" }), true);
   assert.equal(isArchiveTreePreviewCandidate({ name: "archive.rar" }), false);
   assert.equal(isArchiveTreePreviewCandidate({ name: "Archives", isDirectory: true }), false);
 

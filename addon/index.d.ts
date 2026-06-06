@@ -59,15 +59,11 @@ export interface EverythingAddon {
 }
 
 export interface AddonModule {
-  everything: EverythingAddon;
-  inspectTextFile(file: string, maxBytes?: number): TextFileInspection;
-  readTextPreview(
-    file: string,
-    maxBytes?: number,
-    direction?: TextPreviewDirection,
-  ): TextPreviewResult;
-  printDirectoryTree(directory: string, options?: FileTreeOptions): FileTreeResult;
-  printArchiveTree(file: string, options?: FileTreeOptions): FileTreeResult;
+  everything: typeof everything;
+  inspectTextFile: typeof inspectTextFile;
+  readTextPreview: typeof readTextPreview;
+  printDirectoryTree: typeof printDirectoryTree;
+  printArchiveTree: typeof printArchiveTree;
 }
 
 export const everything: EverythingAddon;

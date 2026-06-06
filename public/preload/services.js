@@ -94,23 +94,23 @@ window.services = {
     return fs.readFileSync(file);
   },
   isTextFile(file) {
-    if (!addon) throw new Error("Everything addon is not available");
+    if (!addon) throw new Error("Addon is not available");
     return addon.inspectTextFile(file).isText;
   },
   inspectTextFile(file, maxBytes) {
-    if (!addon) throw new Error("Everything addon is not available");
+    if (!addon) throw new Error("Addon is not available");
     return addon.inspectTextFile(file, maxBytes);
   },
   readTextPreview(file, maxBytes = 20 * 1024, direction = "start") {
-    if (!addon) throw new Error("Everything addon is not available");
+    if (!addon) throw new Error("Addon is not available");
     return addon.readTextPreview(file, maxBytes, direction);
   },
   printDirectoryTree(directory, options) {
-    if (!addon) throw new Error("Everything addon is not available");
+    if (!addon) throw new Error("Addon is not available");
     return addon.printDirectoryTree(directory, options);
   },
   printArchiveTree(file, options) {
-    if (!addon) throw new Error("Everything addon is not available");
+    if (!addon) throw new Error("Addon is not available");
     return addon.printArchiveTree(file, options);
   },
 };

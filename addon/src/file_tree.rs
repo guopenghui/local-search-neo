@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 use std::fs;
+use std::io::Read;
 use std::path::Path;
 
 use flate2::read::GzDecoder;
@@ -232,6 +233,7 @@ fn read_archive_tree(path: &Path) -> Result<TreeNode, String> {
         Some("zip") => read_zip_archive(path, &mut root)?,
         Some("tar") => read_tar_archive(path, &mut root)?,
         Some("tar.gz" | "tgz") => read_tar_gz_archive(path, &mut root)?,
+        Some("gz") => read_gz_archive(path, &mut root)?,
         _ => return Err("Unsupported archive format".to_string()),
     }
 
@@ -256,6 +258,9 @@ fn archive_extension(path: &Path) -> Option<String> {
     }
     if file_name.ends_with(".tar") {
         return Some("tar".to_string());
+    }
+    if file_name.ends_with(".gz") {
+        return Some("gz".to_string());
     }
     if file_name.ends_with(".zip") {
         return Some("zip".to_string());
@@ -288,7 +293,30 @@ fn read_tar_gz_archive(path: &Path, root: &mut TreeBuildNode) -> Result<(), Stri
     read_tar_entries(&mut archive, root)
 }
 
-fn read_tar_entries<R: std::io::Read>(
+fn read_gz_archive(path: &Path, root: &mut TreeBuildNode) -> Result<(), String> {
+    validate_gzip_file(path)?;
+    let file_name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("compressed.gz");
+    let preview_name = file_name.strip_suffix(".gz").unwrap_or(file_name);
+    insert_archive_path(root, preview_name, false);
+    Ok(())
+}
+
+fn validate_gzip_file(path: &Path) -> Result<(), String> {
+    let mut file = fs::File::open(path).map_err(|error| error.to_string())?;
+    let mut magic = [0; 2];
+    file.read_exact(&mut magic)
+        .map_err(|error| error.to_string())?;
+    if magic == [0x1f, 0x8b] {
+        Ok(())
+    } else {
+        Err("Unsupported archive format".to_string())
+    }
+}
+
+fn read_tar_entries<R: Read>(
     archive: &mut Archive<R>,
     root: &mut TreeBuildNode,
 ) -> Result<(), String> {
@@ -490,6 +518,31 @@ mod tests {
             rendered.text,
             "root/\n├── src/\n│   ├── a.ts\n│   ├── b.ts\n│   └── ...\n├── README.md\n└── ..."
         );
+    }
+
+    #[test]
+    fn archive_extension_detects_supported_formats() {
+        assert_eq!(
+            archive_extension(Path::new("archive.zip")).as_deref(),
+            Some("zip")
+        );
+        assert_eq!(
+            archive_extension(Path::new("source.tar")).as_deref(),
+            Some("tar")
+        );
+        assert_eq!(
+            archive_extension(Path::new("source.tar.gz")).as_deref(),
+            Some("tar.gz")
+        );
+        assert_eq!(
+            archive_extension(Path::new("source.tgz")).as_deref(),
+            Some("tgz")
+        );
+        assert_eq!(
+            archive_extension(Path::new("single.gz")).as_deref(),
+            Some("gz")
+        );
+        assert_eq!(archive_extension(Path::new("archive.rar")), None);
     }
 
     #[test]
