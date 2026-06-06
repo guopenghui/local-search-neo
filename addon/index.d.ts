@@ -20,6 +20,8 @@ export interface EverythingQueryItem {
   name: string;
   path: string;
   fullPath: string;
+  highlightedName?: string;
+  highlightedPath?: string;
   extension?: string;
   size?: number;
   modifiedAt?: number;
@@ -55,7 +57,12 @@ export interface EverythingAddon {
   isRunning(): boolean;
   isDbLoaded(): boolean;
   getVersion(): EverythingVersion;
-  query(search: string, maxResults?: number, sortMode?: EverythingSortMode): EverythingQueryResult;
+  query(
+    search: string,
+    maxResults?: number,
+    sortMode?: EverythingSortMode,
+    matchPath?: boolean,
+  ): EverythingQueryResult;
 }
 
 export interface AddonModule {

@@ -8,6 +8,7 @@
 //   npm run test:everything-addon
 //   npm run test:everything-addon -- --query "folder: aaa.pdf" --max-results 20
 //   npm run test:everything-addon -- --query "ext:pdf" --max-results 10 --sort modified-desc
+//   npm run test:everything-addon -- --query AppData --match-path
 //
 // 输出说明：
 // - 直接 require addon/index.node，不经过 preload 或 Vue。
@@ -50,9 +51,15 @@ function main() {
   console.log("query:", options.query);
   console.log("maxResults:", options.maxResults);
   console.log("sortMode:", options.sortMode);
+  console.log("matchPath:", options.matchPath);
 
   try {
-    const result = everything.query(options.query, options.maxResults, options.sortMode);
+    const result = everything.query(
+      options.query,
+      options.maxResults,
+      options.sortMode,
+      options.matchPath,
+    );
     console.log("total:", result.total);
     console.log("returned:", result.items.length);
     console.table(result.items);
@@ -67,6 +74,7 @@ function parseArgs(args) {
     query: DEFAULT_QUERY,
     maxResults: DEFAULT_MAX_RESULTS,
     sortMode: DEFAULT_SORT_MODE,
+    matchPath: false,
   };
 
   for (let index = 0; index < args.length; index += 1) {
@@ -88,6 +96,11 @@ function parseArgs(args) {
     if ((arg === "--sort" || arg === "-s") && next) {
       options.sortMode = next;
       index += 1;
+      continue;
+    }
+
+    if (arg === "--match-path") {
+      options.matchPath = true;
       continue;
     }
 
@@ -117,11 +130,13 @@ Options:
   --query, -q <search>       Everything 查询语句，默认 ${DEFAULT_QUERY}
   --max-results, -n <number> 返回结果数量，默认 ${DEFAULT_MAX_RESULTS}
   --sort, -s <mode>          Everything 排序方式，默认 ${DEFAULT_SORT_MODE}
+  --match-path               同时匹配路径和文件名
   -h, --help                 显示帮助
 
 Examples:
   node scripts/test-everything-addon.cjs
   node scripts/test-everything-addon.cjs --query "folder: aaa.pdf" --max-results 20
+  node scripts/test-everything-addon.cjs --query AppData --match-path
   node scripts/test-everything-addon.cjs "ext:pdf" 10
 `);
   process.exit(0);

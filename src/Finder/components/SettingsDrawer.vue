@@ -5,6 +5,7 @@ import type { FinderCategory } from "../core/finderLogic";
 const props = defineProps<{
   open: boolean;
   categories: FinderCategory[];
+  matchPathEnabled: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -13,6 +14,7 @@ const emit = defineEmits<{
   updateCategory: [id: string, category: Pick<FinderCategory, "label" | "rule">];
   removeCategory: [category: FinderCategory];
   setCategoryEnabled: [id: string, enabled: boolean];
+  setMatchPathEnabled: [enabled: boolean];
 }>();
 
 const label = ref("");
@@ -92,8 +94,16 @@ function categoryTypeLabel(category: FinderCategory) {
 }
 
 function handleCategoryEnabledChange(category: FinderCategory, event: Event) {
-  const enabled = event.target instanceof HTMLInputElement && event.target.checked;
+  const enabled = readChecked(event);
   emit("setCategoryEnabled", category.id, enabled);
+}
+
+function handleMatchPathEnabledChange(event: Event) {
+  emit("setMatchPathEnabled", readChecked(event));
+}
+
+function readChecked(event: Event) {
+  return event.target instanceof HTMLInputElement && event.target.checked;
 }
 
 function toggleBuiltInCategories() {
@@ -114,6 +124,22 @@ function toggleBuiltInCategories() {
         </header>
 
         <section class="settings-section">
+          <section class="search-settings">
+            <div>
+              <h3>搜索设置</h3>
+              <p>启用后，普通关键字会同时匹配路径和文件名，结果更多但可能变慢。</p>
+            </div>
+            <label class="settings-switch">
+              <input
+                type="checkbox"
+                :checked="matchPathEnabled"
+                @change="handleMatchPathEnabledChange"
+              />
+              <span class="switch-track"></span>
+              <span>同时搜索路径</span>
+            </label>
+          </section>
+
           <div class="category-section-header">
             <div>
               <h3>分组管理</h3>
@@ -391,6 +417,7 @@ function toggleBuiltInCategories() {
   padding-right: 2px;
 }
 
+.search-settings,
 .category-section-header {
   display: flex;
   align-items: center;
@@ -398,16 +425,41 @@ function toggleBuiltInCategories() {
   gap: 16px;
 }
 
+.search-settings {
+  padding: 12px;
+  background: #303234;
+  border: 1px solid #47494c;
+  border-radius: 8px;
+}
+
+.search-settings h3,
 .category-section-header h3 {
   margin: 0;
   color: #ffffff;
   font-size: 15px;
 }
 
+.search-settings p,
 .category-section-header p {
   margin: 4px 0 0;
   color: #aeb4bb;
   font-size: 12px;
+}
+
+.settings-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #cbd1d8;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.settings-switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .category-list {
@@ -514,10 +566,12 @@ function toggleBuiltInCategories() {
   transition: transform 0.15s ease;
 }
 
+.settings-switch input:checked + .switch-track,
 .category-switch input:checked + .switch-track {
   background: #30a1d3;
 }
 
+.settings-switch input:checked + .switch-track::after,
 .category-switch input:checked + .switch-track::after {
   transform: translateX(16px);
 }
@@ -618,10 +672,12 @@ function toggleBuiltInCategories() {
   }
 
   .settings-header h2,
+  .search-settings h3,
   .category-section-header h3 {
     color: #111827;
   }
 
+  .search-settings p,
   .category-section-header p,
   .category-list-header,
   .category-group-arrow,
@@ -638,6 +694,15 @@ function toggleBuiltInCategories() {
 
   .drawer-close:hover {
     background: #edf2f7;
+  }
+
+  .search-settings {
+    background: #ffffff;
+    border-color: #d6dde8;
+  }
+
+  .settings-switch {
+    color: #4f5b6a;
   }
 
   .category-list {
@@ -668,6 +733,7 @@ function toggleBuiltInCategories() {
     background: #b9c2ce;
   }
 
+  .settings-switch input:checked + .switch-track,
   .category-switch input:checked + .switch-track {
     background: #167fae;
   }

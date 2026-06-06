@@ -36,12 +36,17 @@ export function installDevMock() {
       isRunning: () => true,
       isDbLoaded: () => true,
       getVersion: () => ({ major: 1, minor: 4, revision: 1, build: 1026, text: "1.4.1.1026" }),
-      query: (search: string, maxResults = 100, sortMode: FinderSortMode = "modified-desc") => {
-        const keyword = search
+      query: (
+        search: string,
+        maxResults = 100,
+        sortMode: FinderSortMode = "modified-desc",
+        matchPath = false,
+      ) => {
+        const keywordText = search
           .replace(/ext:[^\s]+/g, "")
           .replace(/folder:/g, "")
-          .trim()
-          .toLowerCase();
+          .trim();
+        const keyword = keywordText.toLowerCase();
         const wantsFolder = search.includes("folder:");
         const extMatch = /ext:([^\s]+)/.exec(search);
         const extensions = extMatch ? extMatch[1].split(";") : [];
@@ -52,9 +57,18 @@ export function installDevMock() {
               extensions.length === 0 ||
               extensions.some((ext) => item.name.toLowerCase().endsWith(`.${ext}`)),
           )
-          .filter((item) => !keyword || `${item.name} ${item.path}`.toLowerCase().includes(keyword))
+          .filter((item) => {
+            if (!keyword) return true;
+            const haystack = matchPath ? `${item.name} ${item.path}` : item.name;
+            return haystack.toLowerCase().includes(keyword);
+          })
           .sort((left, right) => compareBySortMode(left, right, sortMode))
-          .slice(0, maxResults);
+          .slice(0, maxResults)
+          .map((item) => ({
+            ...item,
+            highlightedName: highlightText(item.name, keywordText),
+            highlightedPath: matchPath ? highlightText(item.path ?? "", keywordText) : item.path,
+          }));
 
         return { total: items.length, items };
       },
@@ -197,6 +211,17 @@ function makeFile(
     modifiedAt,
     isDirectory,
   };
+}
+
+function highlightText(value: string, keyword: string) {
+  if (!keyword) return value;
+
+  const index = value.toLowerCase().indexOf(keyword.toLowerCase());
+  if (index < 0) return value;
+
+  return `${value.slice(0, index)}*${value.slice(index, index + keyword.length)}*${value.slice(
+    index + keyword.length,
+  )}`;
 }
 
 function compareBySortMode(left: FinderResult, right: FinderResult, mode: FinderSortMode) {

@@ -31,7 +31,7 @@ const MAX_RESULTS = 600;
 
 const queryText = ref("");
 const footerSortMenuOpen = ref(false);
-const { loadPersistStorage, previewEnabled, sortMode } = usePersistStorage();
+const { loadPersistStorage, previewEnabled, sortMode, matchPathEnabled } = usePersistStorage();
 
 const { bindSubInput, syncSubInputValue, focusSubInput } = useSubInput({
   queryText,
@@ -62,6 +62,7 @@ const finderSearch = useFinderSearch({
   pageSize: PAGE_SIZE,
   maxResults: MAX_RESULTS,
   sortMode,
+  matchPathEnabled,
   buildQuery: buildFilteredEverythingQuery,
   onSelectionRestored: scrollSelectedIntoView,
 });
@@ -101,10 +102,13 @@ useFinderKeyboard({
   scrollSelectedIntoView,
 });
 
-watch([() => activeCategory.value.id, () => activeCategory.value.rule, sortMode], () => {
-  finderSearch.resetVisibleCount();
-  finderSearch.runSearch();
-});
+watch(
+  [() => activeCategory.value.id, () => activeCategory.value.rule, sortMode, matchPathEnabled],
+  () => {
+    finderSearch.resetVisibleCount();
+    finderSearch.runSearch();
+  },
+);
 
 onMounted(() => {
   window.ztools.setExpendHeight(650);
@@ -195,11 +199,13 @@ function openImagePreviewMenu(event: MouseEvent) {
     <SettingsDrawer
       :open="showSettingsDrawer"
       :categories="allCategories"
+      :match-path-enabled="matchPathEnabled"
       @close="closeSettingsDrawer"
       @add-category="handleAddCustomCategory"
       @update-category="handleUpdateCustomCategory"
       @remove-category="handleRemoveCustomCategory"
       @set-category-enabled="handleSetCategoryEnabled"
+      @set-match-path-enabled="matchPathEnabled = $event"
     />
 
     <ContextMenu

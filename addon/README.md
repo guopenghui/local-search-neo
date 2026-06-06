@@ -17,7 +17,7 @@ const { everything } = require("./index.node");
 - `isRunning()`
 - `isDbLoaded()`
 - `getVersion()`
-- `query(search, maxResults?, sortMode?)`
+- `query(search, maxResults?, sortMode?, matchPath?)`
 
 顶层还导出：
 
@@ -27,6 +27,8 @@ const { everything } = require("./index.node");
 - `printArchiveTree(file, options?)`
 
 `printDirectoryTree()` / `printArchiveTree()` 默认打印 2 层，第一层最多 50 项，第二层最多 20 项，超出时使用 `...` 表示。压缩包树当前支持 `.zip`、`.tar`、`.tar.gz`、`.tgz`。
+
+`query()` 的 `matchPath` 参数未传入时默认 `false`。前端偏好设置默认开启“同时搜索路径”，开启后会传入 `true` 并使用 Everything 的 `SearchFlags::MatchPath`，让普通关键字同时匹配路径和文件名。
 
 `query()` 返回：
 
@@ -38,10 +40,11 @@ const { everything } = require("./index.node");
       name,
       path,
       fullPath,
+      highlightedName,
+      highlightedPath,
+      extension,
       size,
-      modifiedAt,
-      attributes,
-      isDirectory
+      modifiedAt
     }
   ]
 }

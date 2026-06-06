@@ -14,6 +14,11 @@ const props = defineProps<{
   actions: ResultActions;
 }>();
 
+interface HighlightSegment {
+  text: string;
+  highlighted: boolean;
+}
+
 const emit = defineEmits<{
   nearBottom: [];
   select: [item: FinderResult];
@@ -48,6 +53,32 @@ function formatModified(value?: number) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(
     date.getMinutes(),
   )}:${pad(date.getSeconds())}`;
+}
+
+function highlightSegments(value: string | undefined, fallback = ""): HighlightSegment[] {
+  const source = value || fallback;
+  if (!source) return [];
+
+  const segments: HighlightSegment[] = [];
+  let highlighted = false;
+  let start = 0;
+
+  for (let index = 0; index < source.length; index += 1) {
+    if (source[index] !== "*") continue;
+
+    if (index > start) {
+      segments.push({ text: source.slice(start, index), highlighted });
+    }
+
+    highlighted = !highlighted;
+    start = index + 1;
+  }
+
+  if (start < source.length) {
+    segments.push({ text: source.slice(start), highlighted });
+  }
+
+  return segments.length > 0 ? segments : [{ text: fallback, highlighted: false }];
 }
 
 function openResultMenu(event: MouseEvent, item: FinderResult) {
@@ -111,8 +142,22 @@ function openResultMenu(event: MouseEvent, item: FinderResult) {
         <span v-else>{{ fileInitial(item) }}</span>
       </span>
       <span class="file-text">
-        <span class="file-name">{{ item.name }}</span>
-        <span class="file-path" :title="item.fullPath || item.path">{{ item.path }}</span>
+        <span class="file-name">
+          <span
+            v-for="(segment, segmentIndex) in highlightSegments(item.highlightedName, item.name)"
+            :key="segmentIndex"
+            :class="{ 'highlight-match': segment.highlighted }"
+            >{{ segment.text }}</span
+          >
+        </span>
+        <span class="file-path" :title="item.fullPath || item.path">
+          <span
+            v-for="(segment, segmentIndex) in highlightSegments(item.highlightedPath, item.path)"
+            :key="segmentIndex"
+            :class="{ 'highlight-match': segment.highlighted }"
+            >{{ segment.text }}</span
+          >
+        </span>
       </span>
       <span class="file-meta">
         <span>{{ formatBytes(item.size) }}</span>
@@ -218,6 +263,10 @@ function openResultMenu(event: MouseEvent, item: FinderResult) {
   font-size: 11px;
 }
 
+.highlight-match {
+  color: #ffd166;
+}
+
 .file-meta {
   grid-area: meta;
   display: grid;
@@ -269,6 +318,10 @@ function openResultMenu(event: MouseEvent, item: FinderResult) {
   .file-path,
   .file-meta {
     color: #667085;
+  }
+
+  .highlight-match {
+    color: #b45309;
   }
 
   .file-icon {

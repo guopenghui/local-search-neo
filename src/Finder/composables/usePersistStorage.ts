@@ -4,6 +4,7 @@ import type { FinderCategory, FinderSortMode } from "../core/finderLogic";
 interface FinderPreferences {
   previewEnabled: boolean;
   sortMode: FinderSortMode;
+  matchPathEnabled: boolean;
   categoryEnabled: Record<string, boolean>;
 }
 
@@ -13,6 +14,7 @@ const CUSTOM_CATEGORIES_STORAGE_KEY = "customCategories";
 const DEFAULT_PREFERENCES: FinderPreferences = {
   previewEnabled: false,
   sortMode: "modified-desc",
+  matchPathEnabled: true,
   categoryEnabled: {},
 };
 
@@ -27,6 +29,10 @@ const sortMode = computed({
   get: () => preferences.value.sortMode,
   set: setSortMode,
 });
+const matchPathEnabled = computed({
+  get: () => preferences.value.matchPathEnabled,
+  set: setMatchPathEnabled,
+});
 
 let loaded = false;
 
@@ -35,6 +41,7 @@ export function usePersistStorage() {
     loadPersistStorage,
     previewEnabled,
     sortMode,
+    matchPathEnabled,
     customCategories,
     addCustomCategory,
     updateCustomCategory,
@@ -101,6 +108,14 @@ function setSortMode(value: FinderSortMode) {
   savePreferences();
 }
 
+function setMatchPathEnabled(value: boolean) {
+  preferences.value = {
+    ...preferences.value,
+    matchPathEnabled: value,
+  };
+  savePreferences();
+}
+
 function addCustomCategory(label: string, rule: string) {
   const category = {
     id: `custom-${Date.now()}`,
@@ -162,6 +177,7 @@ function normalizePreferences(stored: Partial<FinderPreferences>): FinderPrefere
   return {
     previewEnabled: stored.previewEnabled ?? DEFAULT_PREFERENCES.previewEnabled,
     sortMode: stored.sortMode ?? DEFAULT_PREFERENCES.sortMode,
+    matchPathEnabled: stored.matchPathEnabled ?? DEFAULT_PREFERENCES.matchPathEnabled,
     categoryEnabled: { ...DEFAULT_PREFERENCES.categoryEnabled, ...stored.categoryEnabled },
   };
 }

@@ -39,6 +39,7 @@ interface Services {
       search: string,
       maxResults?: number,
       sortMode?: EverythingSortMode,
+      matchPath?: boolean,
     ) => {
       total: number;
       items: EverythingQueryItem[];

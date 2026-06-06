@@ -1,7 +1,7 @@
 use std::sync::LazyLock;
 
 use everything_ipc::IpcWindow;
-use everything_ipc::wm::{EverythingClient, QueryList, RequestFlags, Sort};
+use everything_ipc::wm::{EverythingClient, QueryList, RequestFlags, SearchFlags, Sort};
 use neon::prelude::*;
 
 static EVERYTHING: LazyLock<Result<EverythingClient, String>> =
@@ -90,11 +90,13 @@ fn query_flags(
     max_results: u32,
     sort: Sort,
     request_flags: RequestFlags,
+    search_flags: SearchFlags,
 ) -> Result<QueryList, String> {
     with_everything(|client| {
         client
             .query_wait(search)
             .request_flags(request_flags)
+            .search_flags(search_flags)
             .sort(sort)
             .max_results(max_results)
             .call()
@@ -109,6 +111,8 @@ fn default_request_flags() -> RequestFlags {
         | RequestFlags::Extension
         | RequestFlags::Size
         | RequestFlags::DateModified
+        | RequestFlags::HighlightedFileName
+        | RequestFlags::HighlightedPath
 }
 
 fn query(mut cx: FunctionContext) -> JsResult<JsObject> {
@@ -125,10 +129,27 @@ fn query(mut cx: FunctionContext) -> JsResult<JsObject> {
             .value(&mut cx),
         None => String::from("modified-desc"),
     };
+    let match_path = match cx.argument_opt(3) {
+        Some(value) => value
+            .downcast_or_throw::<JsBoolean, _>(&mut cx)?
+            .value(&mut cx),
+        None => false,
+    };
     let sort = sort_from_mode(&sort_mode);
+    let search_flags = if match_path {
+        SearchFlags::MatchPath
+    } else {
+        SearchFlags::empty()
+    };
 
-    let list = query_flags(&search, max_results, sort, default_request_flags())
-        .or_else(|error| cx.throw_error(error))?;
+    let list = query_flags(
+        &search,
+        max_results,
+        sort,
+        default_request_flags(),
+        search_flags,
+    )
+    .or_else(|error| cx.throw_error(error))?;
 
     let result = cx.empty_object();
 
@@ -148,6 +169,16 @@ fn query(mut cx: FunctionContext) -> JsResult<JsObject> {
         if let Some(path) = item.get_string(RequestFlags::Path) {
             let value = cx.string(path);
             object.set(&mut cx, "path", value)?;
+        }
+
+        if let Some(highlighted_name) = item.get_string(RequestFlags::HighlightedFileName) {
+            let value = cx.string(highlighted_name);
+            object.set(&mut cx, "highlightedName", value)?;
+        }
+
+        if let Some(highlighted_path) = item.get_string(RequestFlags::HighlightedPath) {
+            let value = cx.string(highlighted_path);
+            object.set(&mut cx, "highlightedPath", value)?;
         }
 
         let full_path = item.get_string(RequestFlags::FullPathAndFileName);

@@ -12,6 +12,8 @@ export interface FinderResult {
   name: string;
   path?: string;
   fullPath?: string;
+  highlightedName?: string;
+  highlightedPath?: string;
   extension?: string;
   size?: number;
   modifiedAt?: number;

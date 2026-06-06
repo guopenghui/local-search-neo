@@ -65,9 +65,9 @@ window.services = {
       if (!everythingAddon) throw new Error("Everything addon is not available");
       return everythingAddon.getVersion();
     },
-    query(search, maxResults = 100, sortMode = "modified-desc") {
+    query(search, maxResults = 100, sortMode = "modified-desc", matchPath = false) {
       if (!everythingAddon) throw new Error("Everything addon is not available");
-      return everythingAddon.query(search, maxResults, sortMode);
+      return everythingAddon.query(search, maxResults, sortMode, matchPath);
     },
   },
   async getFileInfo(file) {

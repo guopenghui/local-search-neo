@@ -13,6 +13,7 @@ interface UseFinderSearchOptions {
   maxResults: number;
   buildQuery: () => string;
   sortMode: Ref<FinderSortMode>;
+  matchPathEnabled: Ref<boolean>;
   onSelectionRestored?: () => void;
 }
 
@@ -21,6 +22,7 @@ export function useFinderSearch({
   maxResults,
   buildQuery,
   sortMode,
+  matchPathEnabled,
   onSelectionRestored,
 }: UseFinderSearchOptions) {
   const results = ref<FinderResult[]>([]);
@@ -50,6 +52,7 @@ export function useFinderSearch({
     searchSequence += 1;
     const everythingQuery = buildQuery();
     const currentSortMode = sortMode.value;
+    const currentMatchPathEnabled = matchPathEnabled.value;
 
     if (!window.services.everything.isAvailable()) {
       results.value = [];
@@ -62,7 +65,12 @@ export function useFinderSearch({
     visibleCount.value = pageSize;
 
     try {
-      const result = window.services.everything.query(everythingQuery, maxResults, currentSortMode);
+      const result = window.services.everything.query(
+        everythingQuery,
+        maxResults,
+        currentSortMode,
+        currentMatchPathEnabled,
+      );
       results.value = result.items;
       everythingTotal.value = result.total;
       updateResultStatus();
