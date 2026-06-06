@@ -34,7 +34,7 @@ function updateImageSize(event: Event) {
 
 <template>
   <div class="image-preview" @contextmenu.prevent.stop="emit('context-menu', $event)">
-    <header v-if="imageSizeLabel" class="image-info-bar">
+    <header class="image-info-bar" :class="{ empty: !imageSizeLabel }">
       <span>{{ imageSizeLabel }}</span>
     </header>
     <div class="preview-media-shell">
@@ -69,6 +69,10 @@ function updateImageSize(event: Event) {
   border-bottom: 1px solid #282a2d;
   font-size: 12px;
   font-family: Consolas, "Cascadia Mono", monospace;
+}
+
+.image-info-bar.empty {
+  visibility: hidden;
 }
 
 .preview-media-shell {
