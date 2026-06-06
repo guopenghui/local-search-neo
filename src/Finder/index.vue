@@ -26,8 +26,8 @@ const props = defineProps<{
   enterAction: Record<string, unknown>;
 }>();
 
-const PAGE_SIZE = 50;
-const MAX_RESULTS = 100;
+const PAGE_SIZE = 30;
+const MAX_RESULTS = 600;
 
 const queryText = ref("");
 const footerSortMenuOpen = ref(false);
