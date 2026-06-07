@@ -3,7 +3,6 @@ import {
   getNextSelectedPath,
   getNextVisibleCount,
   getRestoredSelectedPath,
-  sortResults,
   type FinderResult,
   type FinderSortMode,
 } from "../core/finderLogic";
@@ -15,6 +14,10 @@ interface UseFinderSearchOptions {
   sortMode: Ref<FinderSortMode>;
   matchPathEnabled: Ref<boolean>;
   onSelectionRestored?: () => void;
+}
+
+export interface RunSearchOptions {
+  preserveSelection?: boolean;
 }
 
 export function useFinderSearch({
@@ -31,10 +34,9 @@ export function useFinderSearch({
   const selectedPath = ref("");
   const statusText = ref("输入关键字开始搜索");
   const isLoading = ref(false);
-  const sortedResults = computed(() => sortResults(results.value, sortMode.value));
-  const visibleResults = computed(() => sortedResults.value.slice(0, visibleCount.value));
+  const visibleResults = computed(() => results.value.slice(0, visibleCount.value));
   const selectedItem = computed(() =>
-    sortedResults.value.find((item) => item.fullPath === selectedPath.value),
+    results.value.find((item) => item.fullPath === selectedPath.value),
   );
 
   let searchTimer: number | undefined;
@@ -47,7 +49,7 @@ export function useFinderSearch({
     searchTimer = window.setTimeout(() => runSearch(), 60);
   }
 
-  function runSearch() {
+  function runSearch(options: RunSearchOptions = {}) {
     clearSearchTimer();
     searchSequence += 1;
     const everythingQuery = buildQuery();
@@ -74,7 +76,7 @@ export function useFinderSearch({
       results.value = result.items;
       everythingTotal.value = result.total;
       updateResultStatus();
-      restoreSelection();
+      restoreSelection(options);
     } catch (error: unknown) {
       results.value = [];
       everythingTotal.value = 0;
@@ -95,8 +97,16 @@ export function useFinderSearch({
     statusText.value = `已加载 ${loadedCount} / ${everythingTotal.value} 个结果`;
   }
 
-  function restoreSelection() {
-    selectedPath.value = getRestoredSelectedPath(sortedResults.value, selectedPath.value);
+  function restoreSelection(options: RunSearchOptions = {}) {
+    const currentPath = selectedPath.value;
+    const selectedPathExists = results.value.some((item) => item.fullPath === currentPath);
+
+    if (options.preserveSelection && currentPath && !selectedPathExists) {
+      nextTick(() => onSelectionRestored?.());
+      return;
+    }
+
+    selectedPath.value = getRestoredSelectedPath(results.value, currentPath);
     nextTick(() => onSelectionRestored?.());
   }
 
@@ -119,29 +129,21 @@ export function useFinderSearch({
   }
 
   function moveSelection(direction: -1 | 1) {
-    const paths = sortedResults.value
+    const paths = results.value
       .map((item) => item.fullPath)
       .filter((path): path is string => !!path);
     const nextPath = getNextSelectedPath(paths, selectedPath.value, direction);
     if (!nextPath) return;
 
     selectedPath.value = nextPath;
-    const nextIndex = sortedResults.value.findIndex((item) => item.fullPath === nextPath);
+    const nextIndex = results.value.findIndex((item) => item.fullPath === nextPath);
     if (nextIndex >= visibleCount.value - 4) {
-      visibleCount.value = getNextVisibleCount(
-        visibleCount.value,
-        sortedResults.value.length,
-        pageSize,
-      );
+      visibleCount.value = getNextVisibleCount(visibleCount.value, results.value.length, pageSize);
     }
   }
 
   function growVisibleCount() {
-    visibleCount.value = getNextVisibleCount(
-      visibleCount.value,
-      sortedResults.value.length,
-      pageSize,
-    );
+    visibleCount.value = getNextVisibleCount(visibleCount.value, results.value.length, pageSize);
   }
 
   function resetVisibleCount() {
@@ -159,7 +161,6 @@ export function useFinderSearch({
     selectedPath,
     statusText,
     isLoading,
-    sortedResults,
     visibleResults,
     selectedItem,
     queueSearch,

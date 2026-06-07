@@ -20,18 +20,15 @@ import { useFinderSettings } from "./composables/useFinderSettings";
 import { usePersistStorage } from "./composables/usePersistStorage";
 import { useResultActions } from "./composables/useResultActions";
 import { useSubInput } from "./composables/useSubInput";
+import type { FinderCategory } from "./core/finderLogic";
 import FinderPreviewPane from "./preview/FinderPreviewPane.vue";
-
-const props = defineProps<{
-  enterAction: Record<string, unknown>;
-}>();
 
 const PAGE_SIZE = 30;
 const MAX_RESULTS = 600;
 
 const queryText = ref("");
 const footerSortMenuOpen = ref(false);
-const { loadPersistStorage, previewEnabled, sortMode, matchPathEnabled } = usePersistStorage();
+const { previewEnabled, sortMode, matchPathEnabled } = usePersistStorage();
 
 const { bindSubInput, syncSubInputValue, focusSubInput } = useSubInput({
   queryText,
@@ -44,12 +41,12 @@ const {
   activeCategory,
   categories,
   allCategories,
-  selectCategory,
+  selectCategory: setActiveCategory,
   handleAddCustomCategory,
   handleUpdateCustomCategory,
   handleRemoveCustomCategory,
   handleSetCategoryEnabled,
-} = useFinderCategories({ releaseFinderFocus });
+} = useFinderCategories();
 const { showSettingsDrawer, openSettingsDrawer, closeSettingsDrawer } = useFinderSettings({
   focusSubInput,
 });
@@ -80,12 +77,16 @@ const resultActions = useResultActions({
   },
 });
 
-useFinderEnterAction({
-  enterAction: () => props.enterAction,
+const { handleEnterAction } = useFinderEnterAction({
   queryText,
   selectedPath: finderSearch.selectedPath,
   syncSubInputValue,
   search: finderSearch.runSearch,
+});
+
+defineExpose({
+  handleEnterAction,
+  syncSubInputValue,
 });
 
 useFinderKeyboard({
@@ -112,7 +113,6 @@ watch(
 
 onMounted(() => {
   window.ztools.setExpendHeight(650);
-  loadPersistStorage();
   bindSubInput();
   syncSubInputValue();
   finderSearch.runSearch();
@@ -124,6 +124,11 @@ function queueSearch() {
 
 function selectItem(item: { fullPath?: string }) {
   finderSearch.selectedPath.value = item.fullPath ?? "";
+  releaseFinderFocus();
+}
+
+function selectCategory(category: FinderCategory) {
+  setActiveCategory(category);
   releaseFinderFocus();
 }
 

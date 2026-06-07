@@ -1,93 +1,90 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, useTemplateRef } from "vue";
 import Finder from "./Finder/index.vue";
+import type { FinderEnterAction } from "./Finder/composables/useFinderEnterAction";
 import { getFileIconDataUrl, warmUpFileIconCache } from "./Finder/core/fileIconCache";
 import { DEFAULT_CATEGORIES, buildEverythingQuery } from "./Finder/core/finderLogic";
+import { useFinderCategories } from "./Finder/composables/useFinderCategories";
+import { usePersistStorage } from "./Finder/composables/usePersistStorage";
 
 const MAIN_PUSH_RESULT_LIMIT = 6;
-const MAIN_PUSH_FILE_RESULT_LIMIT = MAIN_PUSH_RESULT_LIMIT - 1;
 
 type MainPushSearchResult = MainPushResult & {
   fullPath?: string;
-  query: string;
 };
 
-const enterAction = ref<Record<string, unknown>>({});
+type FinderExpose = {
+  handleEnterAction: (action: FinderEnterAction) => void;
+  syncSubInputValue: () => void;
+};
+
+const finderRef = useTemplateRef<FinderExpose>("finder");
+
+const { loadPersistStorage, matchPathEnabled } = usePersistStorage();
+const { resetActiveCategory } = useFinderCategories();
+loadPersistStorage();
 
 onMounted(() => {
   warmUpFileIconCache();
 
-  window.ztools.onPluginEnter((action) => {
-    enterAction.value = action;
+  window.ztools.onPluginEnter<string, Partial<MainPushSearchResult> | undefined>((action) => {
+    if (action.from === "main") {
+      finderRef.value?.syncSubInputValue();
+    } else {
+      resetActiveCategory();
+      finderRef.value?.handleEnterAction({
+        payload: action.code === "oversearch" ? action.payload : "",
+        option: action.option,
+      });
+    }
+
     window.ztools.subInputFocus();
   });
-  window.ztools.onMainPush(
+
+  window.ztools.onMainPush<string>(
     (action) => {
       if (action.code !== "oversearch") return [];
-      const query = extractMainPushText(action.payload);
-      const everythingQuery = buildEverythingQuery(query, DEFAULT_CATEGORIES[0]);
+
+      const searchText = action.payload;
+      const everythingQuery = buildEverythingQuery(searchText, DEFAULT_CATEGORIES[0]);
 
       try {
         if (!window.services.everything.isAvailable()) return [];
         const result = window.services.everything.query(
           everythingQuery,
-          MAIN_PUSH_FILE_RESULT_LIMIT,
+          MAIN_PUSH_RESULT_LIMIT,
           "modified-desc",
+          matchPathEnabled.value,
         );
         const items: MainPushSearchResult[] = result.items.map((item) => ({
           title: item.path ?? getParentPath(item.fullPath),
           text: item.name,
           icon: getFileIconDataUrl(item) || "logo.png",
           fullPath: item.fullPath,
-          query,
         }));
 
         if (result.total > MAIN_PUSH_RESULT_LIMIT) {
+          items.pop();
           items.push({
             text: `共有${result.total}个结果，查看更多...`,
-            query,
           });
         }
 
         return items;
-      } catch (error) {
+      } catch {
         return [];
       }
     },
     (action) => {
-      enterAction.value = {
-        ...action,
-        code: "finder",
-        payload: {
-          query:
-            readMainPushOptionString(action.option, "query") ?? extractMainPushText(action.payload),
-          selectedPath: readMainPushOptionString(action.option, "fullPath"),
-        },
-      };
-      window.ztools.subInputFocus();
-      // window.ztools.showMainWindow()
+      resetActiveCategory();
+      finderRef.value?.handleEnterAction({
+        payload: action.payload,
+        option: action.option as MainPushSearchResult,
+      });
       return true;
     },
   );
 });
-
-function extractMainPushText(payload: unknown): string {
-  if (typeof payload === "string") return payload;
-  if (!payload || typeof payload !== "object") return "";
-
-  const record = payload as Record<string, unknown>;
-  if (typeof record.text === "string") return record.text;
-  if (typeof record.keyword === "string") return record.keyword;
-  return "";
-}
-
-function readMainPushOptionString(
-  option: MainPushResult,
-  key: "query" | "fullPath",
-): string | undefined {
-  const value = Reflect.get(option, key);
-  return typeof value === "string" ? value : undefined;
-}
 
 function getParentPath(fullPath: string): string {
   const index = Math.max(fullPath.lastIndexOf("\\"), fullPath.lastIndexOf("/"));
@@ -96,5 +93,5 @@ function getParentPath(fullPath: string): string {
 </script>
 
 <template>
-  <Finder :enter-action="enterAction" />
+  <Finder ref="finder" />
 </template>

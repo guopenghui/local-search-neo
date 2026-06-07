@@ -14,7 +14,6 @@ import {
   isPdfPreviewCandidate,
   isTextPreviewCandidate,
   isVideoPreviewCandidate,
-  sortResults,
   type FinderCategory,
   type FinderResult,
 } from "./finderLogic";
@@ -77,25 +76,6 @@ test("buildEverythingQuery supports custom Everything rules and extension shorth
   assert.equal(
     buildEverythingQuery("icon", { id: "custom2", label: "图标", kind: "custom", rule: "png;ico" }),
     "icon ext:png;ico",
-  );
-});
-
-test("sortResults supports name, path, size, and modified time ordering", () => {
-  assert.deepEqual(
-    sortResults(sampleResults, "name-asc").map((item) => item.name),
-    ["a.log", "b.txt", "folder"],
-  );
-  assert.deepEqual(
-    sortResults(sampleResults, "size-desc").map((item) => item.name),
-    ["a.log", "b.txt", "folder"],
-  );
-  assert.deepEqual(
-    sortResults(sampleResults, "modified-desc").map((item) => item.name),
-    ["folder", "b.txt", "a.log"],
-  );
-  assert.deepEqual(
-    sortResults(sampleResults, "path-desc").map((item) => item.name),
-    ["b.txt", "folder", "a.log"],
   );
 });
 

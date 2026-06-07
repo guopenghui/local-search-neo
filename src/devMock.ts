@@ -127,7 +127,7 @@ export function installDevMock() {
   const ztoolsMock = {
     onPluginEnter(callback: any) {
       window.setTimeout(
-        () => callback({ code: "finder", type: "dev", payload: { query: "log" }, option: {} }),
+        () => callback({ code: "oversearch", type: "dev", payload: "log", option: {} }),
         0,
       );
     },

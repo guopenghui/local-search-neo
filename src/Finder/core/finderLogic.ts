@@ -140,18 +140,6 @@ export function buildEverythingQuery(keyword: string, category: FinderCategory):
   return [trimmedKeyword, rule].filter(Boolean).join(" ");
 }
 
-export function sortResults(results: FinderResult[], mode: FinderSortMode): FinderResult[] {
-  const [field, direction] = mode.split("-") as [string, "asc" | "desc"];
-  const directionFactor = direction === "asc" ? 1 : -1;
-
-  return [...results].sort((left, right) => {
-    const primary = compareByField(left, right, field);
-    if (primary !== 0) return primary * directionFactor;
-
-    return compareText(left.name, right.name) * directionFactor;
-  });
-}
-
 export function getNextVisibleCount(current: number, total: number, pageSize: number): number {
   return Math.min(total, current + pageSize);
 }
@@ -281,22 +269,6 @@ function normalizeCategoryRule(rule: string): string {
     .filter(Boolean);
 
   return extensions.length > 0 ? `ext:${extensions.join(";")}` : "";
-}
-
-function compareByField(left: FinderResult, right: FinderResult, field: string): number {
-  if (field === "name") return compareText(left.name, right.name);
-  if (field === "path") return compareText(left.path ?? "", right.path ?? "");
-  if (field === "size") return compareNumber(left.size ?? 0, right.size ?? 0);
-  if (field === "modified") return compareNumber(left.modifiedAt ?? 0, right.modifiedAt ?? 0);
-  return 0;
-}
-
-function compareText(left: string, right: string): number {
-  return left.localeCompare(right, "zh-Hans-CN", { numeric: true, sensitivity: "base" });
-}
-
-function compareNumber(left: number, right: number): number {
-  return left === right ? 0 : left > right ? 1 : -1;
 }
 
 function getResultExtension(file: Pick<FinderResult, "name" | "extension">): string {
