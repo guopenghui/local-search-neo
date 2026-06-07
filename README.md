@@ -46,7 +46,7 @@
 ## 运行要求
 
 - Windows。
-- 已安装并运行 Everything (1.4+)。
+- 已安装并运行 Everything 1.4+ (建议）
 
 ## 开发
 

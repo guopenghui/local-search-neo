@@ -97,7 +97,7 @@ const emit = defineEmits<{
 }
 
 .confirm-button {
-  background: #5f6eea;
+  background: #3b82f6;
 }
 
 .confirm-button.danger {
@@ -124,14 +124,14 @@ const emit = defineEmits<{
     color: #4f5b6a;
   }
 
-  .cancel-button {
+  .confirm-actions .cancel-button {
     color: #1f2937;
     background: #e5eaf2;
   }
 
-  .confirm-button {
+  .confirm-actions .confirm-button {
     color: #ffffff;
-    background: #5f6eea;
+    background: #2563eb;
   }
 
   .confirm-button.danger {

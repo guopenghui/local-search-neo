@@ -1,19 +1,27 @@
-import { ref } from "vue";
+import { shallowRef } from "vue";
 
 interface UseFinderSettingsOptions {
   focusSubInput: () => void;
 }
 
-export function useFinderSettings({ focusSubInput }: UseFinderSettingsOptions) {
-  const showSettingsDrawer = ref(false);
+interface CloseSettingsDrawerOptions {
+  restoreFocus?: boolean;
+}
 
+const showSettingsDrawer = shallowRef(false);
+
+export function useFinderSettings({ focusSubInput }: UseFinderSettingsOptions) {
   function openSettingsDrawer() {
     showSettingsDrawer.value = true;
   }
 
-  function closeSettingsDrawer() {
+  function closeSettingsDrawer({ restoreFocus = true }: CloseSettingsDrawerOptions = {}) {
+    const wasOpen = showSettingsDrawer.value;
     showSettingsDrawer.value = false;
-    focusSubInput();
+
+    if (wasOpen && restoreFocus) {
+      focusSubInput();
+    }
   }
 
   return {

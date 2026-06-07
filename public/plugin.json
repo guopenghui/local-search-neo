@@ -14,12 +14,14 @@
     {
       "code": "finder",
       "explain": "使用 Everything 查找本地文件",
+      "platform": ["win32"],
       "icon": "logo.png",
       "cmds": ["打开搜索"]
     },
     {
       "code": "oversearch",
       "explain": "本地文件搜索",
+      "platform": ["win32"],
       "mainPush": true,
       "cmds": [
         {

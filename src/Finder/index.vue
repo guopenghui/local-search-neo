@@ -78,7 +78,10 @@ useFinderEnterAction({
 
 useFinderKeyboard({
   isNavigationBlocked: () =>
-    showSettingsDrawer.value || footerSortMenuOpen.value || contextMenu.visible.value,
+    showSettingsDrawer.value ||
+    footerSortMenuOpen.value ||
+    contextMenu.visible.value ||
+    confirmDialog.state.open,
   closeTransientOverlays: contextMenu.close,
   focusSubInput,
   moveSelection: finderSearch.moveSelection,
@@ -99,14 +102,20 @@ watch(
 );
 
 onMounted(() => {
-  // window.ztools.setExpendHeight(650);
   bindSubInput();
   syncSubInputValue();
   finderSearch.runSearch();
+  window.ztools.onPluginOut(closeTransientState);
 });
 
 function queueSearch() {
   finderSearch.queueSearch();
+}
+
+function closeTransientState() {
+  contextMenu.close();
+  closeSettingsDrawer({ restoreFocus: false });
+  confirmDialog.cancel();
 }
 
 function selectItem(item: { fullPath?: string }) {

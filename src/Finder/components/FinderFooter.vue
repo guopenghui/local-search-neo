@@ -52,26 +52,12 @@ function handleGlobalPointerdown(event: PointerEvent) {
   setSortMenuOpen(false);
 }
 
-function handleGlobalKeydown(event: KeyboardEvent) {
-  if (!showSortMenu.value || event.key === "ArrowDown" || event.key === "ArrowUp") return;
-  if (event.key === "Escape" || shouldCloseSortMenuForKey(event)) setSortMenuOpen(false);
-}
-
-function shouldCloseSortMenuForKey(event: KeyboardEvent) {
-  if (event.ctrlKey || event.metaKey || event.altKey) return false;
-  if (event.key === "ArrowLeft" || event.key === "ArrowRight") return true;
-  if (event.key === "Backspace" || event.key === "Delete") return true;
-  return event.key.length === 1;
-}
-
 onMounted(() => {
   window.addEventListener("pointerdown", handleGlobalPointerdown);
-  window.addEventListener("keydown", handleGlobalKeydown);
 });
 
 onUnmounted(() => {
   window.removeEventListener("pointerdown", handleGlobalPointerdown);
-  window.removeEventListener("keydown", handleGlobalKeydown);
 });
 </script>
 
@@ -262,7 +248,7 @@ onUnmounted(() => {
 }
 
 .preview-toggle input:checked + .toggle-track {
-  background: #8d7df0;
+  background: #3b82f6;
 }
 
 .preview-toggle input:checked + .toggle-track::after {
@@ -322,7 +308,7 @@ onUnmounted(() => {
   }
 
   .preview-toggle input:checked + .toggle-track {
-    background: #7b6ff0;
+    background: #2563eb;
   }
 
   .result-count {

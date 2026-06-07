@@ -102,7 +102,7 @@ const customCategories = computed(() =>
 }
 
 .category-button.active {
-  color: #30a1d3;
+  color: #3b82f6;
 }
 
 .category-button:not(:disabled):active {
@@ -154,7 +154,7 @@ const customCategories = computed(() =>
   }
 
   .category-button.active {
-    color: #167fae;
+    color: #2563eb;
   }
 
   .custom-category-button {

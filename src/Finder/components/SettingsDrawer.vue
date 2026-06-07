@@ -32,9 +32,10 @@ const customCategories = computed(() =>
 watch(
   () => props.open,
   (open) => {
-    if (!open) return;
     resetDraft();
-    builtInCollapsed.value = true;
+    if (open) {
+      builtInCollapsed.value = true;
+    }
   },
 );
 
@@ -568,7 +569,7 @@ function toggleBuiltInCategories() {
 
 .settings-switch input:checked + .switch-track,
 .category-switch input:checked + .switch-track {
-  background: #30a1d3;
+  background: #3b82f6;
 }
 
 .settings-switch input:checked + .switch-track::after,
@@ -603,7 +604,7 @@ function toggleBuiltInCategories() {
 
 .category-inline-input:focus,
 .category-inline-input:focus-visible {
-  border-color: #6b7078;
+  border-color: #3b82f6;
 }
 
 .category-type,
@@ -640,7 +641,7 @@ function toggleBuiltInCategories() {
 }
 
 .category-edit-actions button:first-child {
-  color: #8bd0ff;
+  color: #60a5fa;
 }
 
 .category-add-marker {
@@ -735,7 +736,7 @@ function toggleBuiltInCategories() {
 
   .settings-switch input:checked + .switch-track,
   .category-switch input:checked + .switch-track {
-    background: #167fae;
+    background: #2563eb;
   }
 
   .category-rule {
@@ -750,13 +751,17 @@ function toggleBuiltInCategories() {
 
   .category-inline-input:focus,
   .category-inline-input:focus-visible {
-    border-color: #8f9bad;
+    border-color: #2563eb;
   }
 
   .category-actions button:hover,
   .category-edit-actions button:hover,
   .category-add-trigger:hover {
     color: #111827;
+  }
+
+  .category-edit-actions button:first-child {
+    color: #2563eb;
   }
 
   .category-actions .danger-action {

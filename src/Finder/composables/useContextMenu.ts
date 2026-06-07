@@ -52,18 +52,12 @@ export function useContextMenu() {
     close();
   }
 
-  function handleGlobalKeydown(event: KeyboardEvent) {
-    if (visible.value && event.key === "Escape") close();
-  }
-
   onMounted(() => {
     window.addEventListener("click", handleGlobalClick);
-    window.addEventListener("keydown", handleGlobalKeydown);
   });
 
   onUnmounted(() => {
     window.removeEventListener("click", handleGlobalClick);
-    window.removeEventListener("keydown", handleGlobalKeydown);
   });
 
   return {

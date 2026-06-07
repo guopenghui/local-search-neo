@@ -207,7 +207,7 @@ function openResultMenu(event: MouseEvent, item: FinderResult) {
 }
 
 .result-row.selected {
-  box-shadow: inset 3px 0 0 #d8dbe0;
+  box-shadow: inset 3px 0 0 #3b82f6;
 }
 
 .file-icon {
@@ -308,7 +308,7 @@ function openResultMenu(event: MouseEvent, item: FinderResult) {
   }
 
   .result-row.selected {
-    box-shadow: inset 3px 0 0 #6f7a88;
+    box-shadow: inset 3px 0 0 #2563eb;
   }
 
   .file-name {
