@@ -1,16 +1,32 @@
-import { onUnmounted, type Ref } from "vue";
+import { onUnmounted } from "vue";
+import { useFinderQuery } from "./useFinderQuery";
 
 interface UseSubInputOptions {
-  queryText: Ref<string>;
-  onInput: () => void;
+  onInput?: () => void;
   placeholder?: string;
 }
 
-export function useSubInput({ queryText, onInput, placeholder = "全盘搜索" }: UseSubInputOptions) {
-  let subInputReady = false;
-  let programmaticInputValue: string | undefined;
+const inputListeners = new Set<() => void>();
+let subInputReady = false;
+let programmaticInputValue: string | undefined;
+let activePlaceholder = "全盘搜索";
+
+export function useSubInput({ onInput, placeholder = "全盘搜索" }: UseSubInputOptions = {}) {
+  const { queryText, setQueryText } = useFinderQuery();
+
+  if (onInput) {
+    inputListeners.add(onInput);
+  }
+
+  onUnmounted(() => {
+    if (onInput) {
+      inputListeners.delete(onInput);
+    }
+    disposeSubInput();
+  });
 
   function bindSubInput() {
+    activePlaceholder = placeholder;
     if (subInputReady) return;
 
     window.ztools.setSubInput(
@@ -21,10 +37,10 @@ export function useSubInput({ queryText, onInput, placeholder = "全盘搜索" }
         }
 
         programmaticInputValue = undefined;
-        queryText.value = text;
-        onInput();
+        setQueryText(text);
+        notifyInputListeners();
       },
-      placeholder,
+      activePlaceholder,
       true,
     );
     subInputReady = true;
@@ -41,11 +57,12 @@ export function useSubInput({ queryText, onInput, placeholder = "全盘搜索" }
   }
 
   function disposeSubInput() {
+    if (!subInputReady) return;
+
     window.ztools.removeSubInput();
     subInputReady = false;
+    programmaticInputValue = undefined;
   }
-
-  onUnmounted(disposeSubInput);
 
   return {
     bindSubInput,
@@ -53,4 +70,8 @@ export function useSubInput({ queryText, onInput, placeholder = "全盘搜索" }
     focusSubInput,
     disposeSubInput,
   };
+}
+
+function notifyInputListeners() {
+  inputListeners.forEach((listener) => listener());
 }

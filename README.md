@@ -25,28 +25,36 @@
 ### 文件预览
 
 - 文本预览：支持常见文本、日志、配置文件。
-- 代码预览：支持常见代码文件并显示语言。
-- Markdown 预览。
-- PDF 预览：支持翻页。
+- 代码预览：支持渲染常见语言的代码。
+- Markdown预览：支持渲染。
+- PDF 预览。
 - 图片预览：支持常见图片格式，右键可复制图片。
 - 视频预览。
-- 音频预览。
-- 目录预览：显示文件夹内部结构。
-- 压缩包预览：显示 `.zip` 和 tar 系压缩包（`.tar`、`.tar.gz`、`.tgz`）内部结构；`.gz` 单文件会显示解压后的文件名。
+- 音频预览：选中时直接播放。
+- 文件夹预览：以 tree 格式速览文件夹内部结构。
+- 压缩包预览：以 tree 格式速览 `.zip` 和 tar 系压缩包（`.tar`、`.tar.gz`、`.tgz`）内部结构；。
 
 ### ZTools 集成
 
 - 支持主搜索面板 `mainPush` 快速返回搜索结果。
-- 支持插件进入时自动聚焦输入框。
-- 使用 ZTools 剪贴板、文件打开、显示所在目录、回收站等能力。
+
+### 设置项
+
+- 开启路径匹配功能，同时匹配路径和文件名
+- 添加自定义分组规则
 
 ## 运行要求
 
 - Windows。
-- 已安装并运行 Everything。
-- ZTools 插件环境。
+- 已安装并运行 Everything (1.4+)。
 
 ## 开发
+
+### 前提条件
+
+- Node 已安装
+- Rust 工具链已安装
+- Window 平台
 
 ### 安装依赖
 
@@ -60,7 +68,9 @@ npm install
 npm run dev
 ```
 
-`dev` 前会自动编译 release addon，并复制到 `public/addon.node`。addon 始终使用 release 构建，以保证性能测试和实际运行一致。
+`dev` 前会自动编译 release addon，并复制到 `public/addon.node`。
+
+addon 始终使用 release 构建，以保证性能测试和实际运行一致。
 
 ### 构建
 
@@ -68,7 +78,8 @@ npm run dev
 npm run build
 ```
 
-`build` 前会自动编译 release addon，并复制到 `public/addon.node`。Vite 会把它复制到 `dist/addon.node`。
+`build` 前会自动编译 release addon，并复制到 `public/addon.node`。
+Vite 最后会把它复制到 `dist/addon.node`。
 
 ### 常用检查
 
@@ -99,7 +110,7 @@ node scripts/benchmark-everything-addon.cjs
 │   └── index.d.ts          # addon 导出类型
 ├── public/
 │   ├── plugin.json         # ZTools 插件配置
-│   └── preload/services.js # 预加载服务，挂载 window.services
+│   └── preload/services.js # 预加载脚本，挂载 window.services，提供系统原生能力
 ├── scripts/                # addon 复制、验证和性能测试脚本
 ├── src/
 │   ├── App.vue             # 插件入口和 mainPush 处理

@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { onMounted, useTemplateRef } from "vue";
+import { onMounted } from "vue";
 import Finder from "./Finder/index.vue";
-import type { FinderEnterAction } from "./Finder/composables/useFinderEnterAction";
+import { useFinderEnterAction } from "./Finder/composables/useFinderEnterAction";
 import { getFileIconDataUrl, warmUpFileIconCache } from "./Finder/core/fileIconCache";
 import { DEFAULT_CATEGORIES, buildEverythingQuery } from "./Finder/core/finderLogic";
 import { useFinderCategories } from "./Finder/composables/useFinderCategories";
 import { usePersistStorage } from "./Finder/composables/usePersistStorage";
+import { useSubInput } from "./Finder/composables/useSubInput";
 
 const MAIN_PUSH_RESULT_LIMIT = 6;
 
@@ -13,15 +14,10 @@ type MainPushSearchResult = MainPushResult & {
   fullPath?: string;
 };
 
-type FinderExpose = {
-  handleEnterAction: (action: FinderEnterAction) => void;
-  syncSubInputValue: () => void;
-};
-
-const finderRef = useTemplateRef<FinderExpose>("finder");
-
 const { loadPersistStorage, matchPathEnabled } = usePersistStorage();
 const { resetActiveCategory } = useFinderCategories();
+const { handleEnterAction } = useFinderEnterAction();
+const { syncSubInputValue } = useSubInput();
 loadPersistStorage();
 
 onMounted(() => {
@@ -29,10 +25,10 @@ onMounted(() => {
 
   window.ztools.onPluginEnter<string, Partial<MainPushSearchResult> | undefined>((action) => {
     if (action.from === "main") {
-      finderRef.value?.syncSubInputValue();
+      syncSubInputValue();
     } else {
       resetActiveCategory();
-      finderRef.value?.handleEnterAction({
+      handleEnterAction({
         payload: action.code === "oversearch" ? action.payload : "",
         option: action.option,
       });
@@ -77,7 +73,7 @@ onMounted(() => {
     },
     (action) => {
       resetActiveCategory();
-      finderRef.value?.handleEnterAction({
+      handleEnterAction({
         payload: action.payload,
         option: action.option as MainPushSearchResult,
       });
@@ -93,5 +89,5 @@ function getParentPath(fullPath: string): string {
 </script>
 
 <template>
-  <Finder ref="finder" />
+  <Finder />
 </template>

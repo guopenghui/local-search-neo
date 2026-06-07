@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import ConfirmDialog from "../components/ConfirmDialog.vue";
-import { useConfirmDialog } from "../components/useConfirmDialog";
+import { useGlocalConfirmDialog } from "../components/useGlocalConfirmDialog";
 import ContextMenu from "./components/ContextMenu.vue";
 
 import FinderFooter from "./components/FinderFooter.vue";
@@ -26,12 +26,10 @@ import FinderPreviewPane from "./preview/FinderPreviewPane.vue";
 const PAGE_SIZE = 30;
 const MAX_RESULTS = 600;
 
-const queryText = ref("");
 const footerSortMenuOpen = ref(false);
 const { previewEnabled, sortMode, matchPathEnabled } = usePersistStorage();
 
 const { bindSubInput, syncSubInputValue, focusSubInput } = useSubInput({
-  queryText,
   onInput: queueSearch,
 });
 
@@ -39,7 +37,7 @@ const { releaseFinderFocus } = useFinderFocus(focusSubInput);
 const {
   activeCategoryId,
   activeCategory,
-  categories,
+  enabledCategories,
   allCategories,
   selectCategory: setActiveCategory,
   handleAddCustomCategory,
@@ -50,10 +48,7 @@ const {
 const { showSettingsDrawer, openSettingsDrawer, closeSettingsDrawer } = useFinderSettings({
   focusSubInput,
 });
-const { buildFilteredEverythingQuery } = useFinderQuery({
-  queryText,
-  activeCategory,
-});
+const { buildFilteredEverythingQuery } = useFinderQuery();
 const isFolderQuery = computed(() => /(?:^|\s)folder:/i.test(buildFilteredEverythingQuery()));
 const finderSearch = useFinderSearch({
   pageSize: PAGE_SIZE,
@@ -68,25 +63,17 @@ const filePreview = useFilePreview({
   previewEnabled,
 });
 const contextMenu = useContextMenu();
-const confirmDialog = useConfirmDialog();
+const confirmDialog = useGlocalConfirmDialog();
 const resultActions = useResultActions({
-  confirm: confirmDialog.confirm,
   onTrashed: (fullPath) => {
     finderSearch.removeResultByPath(fullPath);
     finderSearch.runSearch();
   },
 });
 
-const { handleEnterAction } = useFinderEnterAction({
-  queryText,
+useFinderEnterAction({
   selectedPath: finderSearch.selectedPath,
-  syncSubInputValue,
   search: finderSearch.runSearch,
-});
-
-defineExpose({
-  handleEnterAction,
-  syncSubInputValue,
 });
 
 useFinderKeyboard({
@@ -112,7 +99,7 @@ watch(
 );
 
 onMounted(() => {
-  window.ztools.setExpendHeight(650);
+  // window.ztools.setExpendHeight(650);
   bindSubInput();
   syncSubInputValue();
   finderSearch.runSearch();
@@ -161,7 +148,7 @@ function openImagePreviewMenu(event: MouseEvent) {
 <template>
   <main class="finder-shell" :class="{ 'preview-open': previewEnabled }">
     <FinderSidebar
-      :categories="categories"
+      :categories="enabledCategories"
       :active-category-id="activeCategoryId"
       @select="selectCategory"
       @open-settings="openSettingsDrawer"

@@ -18,21 +18,23 @@ const allCategories = computed(() =>
     enabled: isCategoryEnabled(category.id),
   })),
 );
-const categories = computed(() => allCategories.value.filter((category) => category.enabled));
+const enabledCategories = computed(() =>
+  allCategories.value.filter((category) => category.enabled),
+);
 const activeCategory = computed(
   () =>
-    categories.value.find((category) => category.id === activeCategoryId.value) ??
-    categories.value[0] ??
+    enabledCategories.value.find((category) => category.id === activeCategoryId.value) ??
+    enabledCategories.value[0] ??
     DEFAULT_CATEGORIES[0],
 );
 
-watch(categories, ensureActiveCategoryVisible, { immediate: true });
+watch(enabledCategories, ensureActiveCategoryVisible, { immediate: true });
 
 export function useFinderCategories() {
   return {
     activeCategoryId,
     activeCategory,
-    categories,
+    enabledCategories,
     allCategories,
     selectCategory,
     resetActiveCategory,
@@ -91,6 +93,6 @@ function handleSetCategoryEnabled(id: string, enabled: boolean) {
 }
 
 function ensureActiveCategoryVisible() {
-  if (categories.value.some((category) => category.id === activeCategoryId.value)) return;
-  activeCategoryId.value = categories.value[0]?.id ?? "all";
+  if (enabledCategories.value.some((category) => category.id === activeCategoryId.value)) return;
+  activeCategoryId.value = enabledCategories.value[0]?.id ?? "all";
 }

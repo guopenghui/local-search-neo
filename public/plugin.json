@@ -15,7 +15,7 @@
       "code": "finder",
       "explain": "使用 Everything 查找本地文件",
       "icon": "logo.png",
-      "cmds": ["文件查找", "everything", "Everything"]
+      "cmds": ["打开搜索"]
     },
     {
       "code": "oversearch",

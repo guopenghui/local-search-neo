@@ -1,5 +1,7 @@
-import type { Ref } from "vue";
+import { onUnmounted, type Ref } from "vue";
 import type { RunSearchOptions } from "./useFinderSearch";
+import { useFinderQuery } from "./useFinderQuery";
+import { useSubInput } from "./useSubInput";
 
 export interface FinderEnterAction {
   payload: string;
@@ -9,28 +11,59 @@ export interface FinderEnterAction {
 }
 
 interface UseFinderEnterActionOptions {
-  queryText: Ref<string>;
   selectedPath: Ref<string>;
-  syncSubInputValue: () => void;
   search: (options?: RunSearchOptions) => void;
 }
 
-export function useFinderEnterAction({
-  queryText,
-  selectedPath,
-  syncSubInputValue,
-  search,
-}: UseFinderEnterActionOptions) {
-  function handleEnterAction(action: FinderEnterAction) {
-    const fullPath = action.option?.fullPath;
+type EnterActionHandler = (action: FinderEnterAction) => void;
 
-    queryText.value = action.payload;
+let activeHandler: EnterActionHandler | undefined;
+let pendingAction: FinderEnterAction | undefined;
+
+export function useFinderEnterAction(options?: UseFinderEnterActionOptions) {
+  const { setQueryText } = useFinderQuery();
+  const { syncSubInputValue } = useSubInput();
+
+  if (options) {
+    const handler: EnterActionHandler = (action) => {
+      const fullPath = action.option?.fullPath;
+
+      setQueryText(action.payload);
+      syncSubInputValue();
+      options.selectedPath.value = fullPath ?? "";
+      options.search({ preserveSelection: !!fullPath });
+    };
+
+    activeHandler = handler;
+    flushPendingAction();
+
+    onUnmounted(() => {
+      if (activeHandler === handler) {
+        activeHandler = undefined;
+      }
+    });
+  }
+
+  function handleEnterAction(action: FinderEnterAction) {
+    if (activeHandler) {
+      activeHandler(action);
+      return;
+    }
+
+    pendingAction = action;
+    setQueryText(action.payload);
     syncSubInputValue();
-    selectedPath.value = fullPath ?? "";
-    search({ preserveSelection: !!fullPath });
   }
 
   return {
     handleEnterAction,
   };
+}
+
+function flushPendingAction() {
+  if (!pendingAction || !activeHandler) return;
+
+  const action = pendingAction;
+  pendingAction = undefined;
+  activeHandler(action);
 }

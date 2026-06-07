@@ -1,17 +1,23 @@
-import type { ComputedRef, Ref } from "vue";
-import { buildEverythingQuery, type FinderCategory } from "../core/finderLogic";
+import { shallowRef } from "vue";
+import { buildEverythingQuery } from "../core/finderLogic";
+import { useFinderCategories } from "./useFinderCategories";
 
-interface UseFinderQueryOptions {
-  queryText: Ref<string>;
-  activeCategory: ComputedRef<FinderCategory>;
-}
+const queryText = shallowRef("");
 
-export function useFinderQuery({ queryText, activeCategory }: UseFinderQueryOptions) {
+export function useFinderQuery() {
+  const { activeCategory } = useFinderCategories();
+
+  function setQueryText(text: string) {
+    queryText.value = text;
+  }
+
   function buildFilteredEverythingQuery() {
     return buildEverythingQuery(queryText.value, activeCategory.value);
   }
 
   return {
+    queryText,
+    setQueryText,
     buildFilteredEverythingQuery,
   };
 }

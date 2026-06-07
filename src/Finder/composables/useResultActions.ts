@@ -1,13 +1,7 @@
+import { useGlocalConfirmDialog } from "../../components/useGlocalConfirmDialog";
 import type { FinderResult } from "../core/finderLogic";
 
 interface UseResultActionsOptions {
-  confirm: (options: {
-    title: string;
-    message: string;
-    confirmText?: string;
-    cancelText?: string;
-    danger?: boolean;
-  }) => Promise<boolean>;
   onTrashed: (fullPath: string) => void;
 }
 
@@ -20,7 +14,9 @@ export interface ResultActions {
   trash(item: FinderResult): Promise<void>;
 }
 
-export function useResultActions({ confirm, onTrashed }: UseResultActionsOptions): ResultActions {
+const { confirm } = useGlocalConfirmDialog();
+
+export function useResultActions({ onTrashed }: UseResultActionsOptions): ResultActions {
   function open(item?: FinderResult) {
     if (item?.fullPath) window.ztools.shellOpenPath(item.fullPath);
   }
