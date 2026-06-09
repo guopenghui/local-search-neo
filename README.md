@@ -2,14 +2,16 @@
 
 借助 Everything 进行本地文件搜索、分类浏览和快速预览的 ZTools 插件。
 
-> [!IMPORTANT] 推荐使用本地安装版 everything
+> [!TIP]
+> 推荐使用本地安装版 everything
+>
 > 插件会自带内置的 everything，但是这会使得每次插件第一次启动时，需要重新启动 everything，读取和初始化数据库。
 >
 > 使用本地安装 everything，并设置开机自启，进程会长期存在。每次打开插件时可以直接读取数据库。
 
 ## 界面
 
-![界面](./demo.png)
+![界面](https://raw.githubusercontent.com/guopenghui/local-search-neo/refs/heads/master/public/demo.png)
 
 ## 功能
 
