@@ -8,6 +8,7 @@
   "main": "index.html",
   "preload": "preload/services.js",
   "logo": "logo.png",
+  "platform": ["win32"],
   "development": {
     "main": "http://localhost:5173"
   },
