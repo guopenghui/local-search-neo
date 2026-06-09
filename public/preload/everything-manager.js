@@ -156,9 +156,20 @@ function createEverythingManager(everythingAddon) {
   }
 
   function withWindowsProcessInfo(pid, callback) {
+    const processId = Number(pid);
+    if (!Number.isInteger(processId) || processId <= 0) {
+      callback(new Error(`Invalid process id: ${pid}`));
+      return;
+    }
+
     execFile(
-      "wmic",
-      ["process", "where", `ProcessId=${pid}`, "get", "Name,ExecutablePath", "/format:list"],
+      "powershell.exe",
+      [
+        "-NoProfile",
+        "-NonInteractive",
+        "-Command",
+        `Get-CimInstance Win32_Process -Filter "ProcessId = ${processId}" -ErrorAction SilentlyContinue | Select-Object Name, ExecutablePath | ConvertTo-Json -Compress`,
+      ],
       { windowsHide: true },
       (error, stdout) => {
         if (error) {
@@ -166,24 +177,13 @@ function createEverythingManager(everythingAddon) {
           return;
         }
 
-        callback(undefined, parseWindowsProcessInfo(stdout));
+        try {
+          callback(undefined, JSON.parse(stdout.trim() || "{}"));
+        } catch (parseError) {
+          callback(parseError);
+        }
       },
     );
-  }
-
-  function parseWindowsProcessInfo(output) {
-    const info = {};
-
-    for (const line of output.split(/\r?\n/)) {
-      const separatorIndex = line.indexOf("=");
-      if (separatorIndex < 0) continue;
-
-      const key = line.slice(0, separatorIndex).trim();
-      const value = line.slice(separatorIndex + 1).trim();
-      if (key) info[key] = value;
-    }
-
-    return info;
   }
 
   function isBundledEverythingProcess(processInfo) {
