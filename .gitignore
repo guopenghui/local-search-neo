@@ -4,4 +4,4 @@ dist
 *.node
 public/addon-manifest.json
 public/pdfjs/
-public/everything/
+public/everything/*.db*

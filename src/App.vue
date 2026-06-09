@@ -46,6 +46,7 @@ onMounted(() => {
 
       try {
         if (!window.services.everything.isAvailable()) return [];
+        if (window.services.everything.getStartupStatus().state !== "ready") return [];
         const result = window.services.everything.query(
           everythingQuery,
           MAIN_PUSH_RESULT_LIMIT,
@@ -55,7 +56,7 @@ onMounted(() => {
         const items: MainPushSearchResult[] = result.items.map((item) => ({
           title: item.path ?? getParentPath(item.fullPath),
           text: item.name,
-          icon: getFileIconDataUrl(item) || "logo.png",
+          icon: window.ztools.getFileIcon(item.fullPath),
           fullPath: item.fullPath,
         }));
 

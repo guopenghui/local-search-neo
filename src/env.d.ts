@@ -29,11 +29,22 @@ interface FileInfo {
   exists: boolean;
 }
 
+interface EverythingStartupStatus {
+  state: "idle" | "checking" | "starting" | "waiting" | "ready" | "error";
+  message: string;
+  managed: boolean;
+  pid?: number;
+  error?: string;
+}
+
 interface Services {
   everything: {
     isAvailable: () => boolean;
     isRunning: () => boolean;
     isDbLoaded: () => boolean;
+    getStartupStatus: () => EverythingStartupStatus;
+    ensureReady: (options?: { timeoutMs?: number }) => Promise<EverythingStartupStatus>;
+    handlePluginOut: (isKill: boolean) => boolean;
     getVersion: () => EverythingVersion;
     query: (
       search: string,

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Settings } from "@lucide/vue";
 import { computed } from "vue";
 import type { FinderCategory } from "../core/finderLogic";
 
@@ -55,7 +56,7 @@ const customCategories = computed(() =>
       @mousedown.left.prevent
       @click="emit('openSettings')"
     >
-      <span class="sidebar-settings-icon" aria-hidden="true"></span>
+      <Settings class="sidebar-settings-icon" :size="18" :stroke-width="2" aria-hidden="true" />
     </button>
   </aside>
 </template>
@@ -135,12 +136,9 @@ const customCategories = computed(() =>
 }
 
 .sidebar-settings-icon {
+  display: block;
   width: 18px;
   height: 18px;
-  display: block;
-  background: currentColor;
-  mask: url("../../assets/settings.svg") center / contain no-repeat;
-  -webkit-mask: url("../../assets/settings.svg") center / contain no-repeat;
 }
 
 @media (prefers-color-scheme: light) {

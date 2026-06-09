@@ -56,6 +56,7 @@ export interface FileTreeResult {
 export interface EverythingAddon {
   isRunning(): boolean;
   isDbLoaded(): boolean;
+  exit(): boolean;
   getVersion(): EverythingVersion;
   query(
     search: string,

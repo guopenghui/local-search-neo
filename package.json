@@ -22,6 +22,7 @@
     "postbuild": "node scripts/cleanup-dist-addon.cjs"
   },
   "dependencies": {
+    "@lucide/vue": "^1.17.0",
     "markdown-it": "^14.2.0",
     "pdfjs-dist": "^6.0.227",
     "shiki": "^4.2.0",

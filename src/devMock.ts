@@ -35,6 +35,9 @@ export function installDevMock() {
       isAvailable: () => true,
       isRunning: () => true,
       isDbLoaded: () => true,
+      getStartupStatus: () => ({ state: "ready", message: "Everything 已就绪", managed: false }),
+      ensureReady: async () => ({ state: "ready", message: "Everything 已就绪", managed: false }),
+      handlePluginOut: () => false,
       getVersion: () => ({ major: 1, minor: 4, revision: 1, build: 1026, text: "1.4.1.1026" }),
       query: (
         search: string,

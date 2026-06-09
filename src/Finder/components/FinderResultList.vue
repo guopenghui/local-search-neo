@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { LoaderCircle } from "@lucide/vue";
 import type { ContextMenuItem } from "../composables/useContextMenu";
 import { useFileIcons } from "../composables/useFileIcons";
 import type { ResultActions } from "../composables/useResultActions";
@@ -165,7 +166,10 @@ function openResultMenu(event: MouseEvent, item: FinderResult) {
       </span>
     </button>
 
-    <div v-if="isLoading" class="empty-state">搜索中...</div>
+    <div v-if="isLoading" class="empty-state loading-state">
+      <LoaderCircle class="loading-icon" :size="22" :stroke-width="2" aria-hidden="true" />
+      <span>{{ statusText }}</span>
+    </div>
     <div v-else-if="visibleResults.length === 0" class="empty-state">{{ statusText }}</div>
   </div>
 </template>
@@ -294,6 +298,22 @@ function openResultMenu(event: MouseEvent, item: FinderResult) {
   min-height: 180px;
   place-items: center;
   color: #a6abb2;
+}
+
+.loading-state {
+  align-content: center;
+  gap: 10px;
+}
+
+.loading-icon {
+  color: #3b82f6;
+  animation: loading-spin 0.9s linear infinite;
+}
+
+@keyframes loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (prefers-color-scheme: light) {

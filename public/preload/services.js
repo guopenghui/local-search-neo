@@ -1,6 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
+const { createEverythingManager } = require("./everything-manager");
 
 /** @typedef {import("../../addon").AddonModule} AddonModule */
 
@@ -28,6 +29,7 @@ function loadAddon() {
 
 const addon = loadAddon();
 const everythingAddon = addon?.everything ?? null;
+const everythingManager = createEverythingManager(everythingAddon);
 
 function readAddonManifestFile() {
   try {
@@ -61,12 +63,23 @@ window.services = {
     isDbLoaded() {
       return everythingAddon?.isDbLoaded() ?? false;
     },
+    getStartupStatus() {
+      return everythingManager.getStartupStatus();
+    },
+    ensureReady(options) {
+      return everythingManager.ensureReady(options);
+    },
+    handlePluginOut(isKill) {
+      return everythingManager.handlePluginOut(isKill);
+    },
     getVersion() {
       if (!everythingAddon) throw new Error("Everything addon is not available");
       return everythingAddon.getVersion();
     },
     query(search, maxResults = 100, sortMode = "modified-desc", matchPath = false) {
       if (!everythingAddon) throw new Error("Everything addon is not available");
+      const startupStatus = everythingManager.getStartupStatus();
+      if (startupStatus.state !== "ready") throw new Error(startupStatus.message);
       return everythingAddon.query(search, maxResults, sortMode, matchPath);
     },
   },
@@ -114,3 +127,7 @@ window.services = {
     return addon.printArchiveTree(file, options);
   },
 };
+
+everythingManager.ensureReady().catch((error) => {
+  console.warn("[local-search-neo] Everything 初始化失败:", error);
+});

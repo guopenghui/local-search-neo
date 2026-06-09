@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from "vue";
 import ConfirmDialog from "../components/ConfirmDialog.vue";
 import { useGlocalConfirmDialog } from "../components/useGlocalConfirmDialog";
 import ContextMenu from "./components/ContextMenu.vue";
@@ -27,6 +27,10 @@ const PAGE_SIZE = 30;
 const MAX_RESULTS = 600;
 
 const footerSortMenuOpen = ref(false);
+const everythingStatus = shallowRef(window.services.everything.getStartupStatus());
+let everythingStatusTimer: number | undefined;
+const everythingReady = computed(() => everythingStatus.value.state === "ready");
+const everythingPending = computed(() => isEverythingStartupPending(everythingStatus.value.state));
 const { previewEnabled, sortMode, matchPathEnabled } = usePersistStorage();
 
 const { bindSubInput, syncSubInputValue, focusSubInput } = useSubInput({
@@ -58,6 +62,11 @@ const finderSearch = useFinderSearch({
   buildQuery: buildFilteredEverythingQuery,
   onSelectionRestored: scrollSelectedIntoView,
 });
+const resultStatusText = computed(() => {
+  if (!everythingReady.value) return everythingStatus.value.message;
+  return finderSearch.isLoading.value ? "搜索中..." : finderSearch.statusText.value;
+});
+const resultLoading = computed(() => finderSearch.isLoading.value || everythingPending.value);
 const filePreview = useFilePreview({
   selectedItem: finderSearch.selectedItem,
   previewEnabled,
@@ -96,6 +105,8 @@ useFinderKeyboard({
 watch(
   [() => activeCategory.value.id, () => activeCategory.value.rule, sortMode, matchPathEnabled],
   () => {
+    if (!everythingReady.value) return;
+
     finderSearch.resetVisibleCount();
     finderSearch.runSearch();
   },
@@ -104,18 +115,73 @@ watch(
 onMounted(() => {
   bindSubInput();
   syncSubInputValue();
-  finderSearch.runSearch();
+  startEverythingStatusPolling();
+  void ensureEverythingReady();
   window.ztools.onPluginOut(closeTransientState);
 });
 
+onUnmounted(() => {
+  stopEverythingStatusPolling();
+});
+
 function queueSearch() {
+  if (!everythingReady.value) {
+    void ensureEverythingReady();
+    return;
+  }
+
   finderSearch.queueSearch();
 }
 
-function closeTransientState() {
+async function ensureEverythingReady() {
+  syncEverythingStatus();
+  startEverythingStatusPolling();
+
+  try {
+    await window.services.everything.ensureReady();
+  } catch {
+    // 具体错误会通过 getStartupStatus 暴露给界面。
+  } finally {
+    syncEverythingStatus();
+    if (!everythingPending.value) stopEverythingStatusPolling();
+  }
+
+  if (everythingReady.value) {
+    finderSearch.runSearch();
+  }
+}
+
+function syncEverythingStatus() {
+  everythingStatus.value = window.services.everything.getStartupStatus();
+}
+
+function startEverythingStatusPolling() {
+  if (everythingStatusTimer) return;
+
+  everythingStatusTimer = window.setInterval(() => {
+    syncEverythingStatus();
+    if (!everythingPending.value) stopEverythingStatusPolling();
+  }, 300);
+}
+
+function stopEverythingStatusPolling() {
+  if (!everythingStatusTimer) return;
+
+  window.clearInterval(everythingStatusTimer);
+  everythingStatusTimer = undefined;
+}
+
+function isEverythingStartupPending(
+  state: ReturnType<typeof window.services.everything.getStartupStatus>["state"],
+) {
+  return state === "idle" || state === "checking" || state === "starting" || state === "waiting";
+}
+
+function closeTransientState(isKill = false) {
   contextMenu.close();
   closeSettingsDrawer({ restoreFocus: false });
   confirmDialog.cancel();
+  window.services.everything.handlePluginOut(isKill);
 }
 
 function selectItem(item: { fullPath?: string }) {
@@ -167,8 +233,8 @@ function openImagePreviewMenu(event: MouseEvent) {
       <FinderResultList
         :visible-results="finderSearch.visibleResults.value"
         :selected-path="finderSearch.selectedPath.value"
-        :is-loading="finderSearch.isLoading.value"
-        :status-text="finderSearch.statusText.value"
+        :is-loading="resultLoading"
+        :status-text="resultStatusText"
         :preview-open="previewEnabled"
         :is-folder-query="isFolderQuery"
         :actions="resultActions"

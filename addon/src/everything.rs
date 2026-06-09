@@ -4,8 +4,33 @@ use everything_ipc::IpcWindow;
 use everything_ipc::wm::{EverythingClient, QueryList, RequestFlags, SearchFlags, Sort};
 use neon::prelude::*;
 
+use windows::Win32::{
+    Foundation::{LPARAM, WPARAM},
+    UI::WindowsAndMessaging::{SendMessageW, WM_USER},
+};
+
+const EVERYTHING_IPC_EXIT: usize = 4;
+
 static EVERYTHING: LazyLock<Result<EverythingClient, String>> =
     LazyLock::new(|| EverythingClient::new().map_err(|error| error.to_string()));
+
+trait EverythingClientExt {
+    fn exit(&self) -> bool;
+}
+
+impl EverythingClientExt for EverythingClient {
+    fn exit(&self) -> bool {
+        unsafe {
+            SendMessageW(
+                self.hwnd(),
+                WM_USER,
+                Some(WPARAM(EVERYTHING_IPC_EXIT as usize)),
+                Some(LPARAM(0)),
+            )
+            .0 != 0
+        }
+    }
+}
 
 fn with_everything<T>(f: impl FnOnce(&EverythingClient) -> Result<T, String>) -> Result<T, String> {
     match &*EVERYTHING {
@@ -28,6 +53,12 @@ fn is_db_loaded(mut cx: FunctionContext) -> JsResult<JsBoolean> {
         .unwrap_or(false);
 
     Ok(cx.boolean(loaded))
+}
+
+fn exit(mut cx: FunctionContext) -> JsResult<JsBoolean> {
+    let exited = with_everything(|client| Ok(client.exit())).unwrap_or(false);
+
+    Ok(cx.boolean(exited))
 }
 
 fn get_version(mut cx: FunctionContext) -> JsResult<JsObject> {
@@ -221,6 +252,9 @@ pub fn export(cx: &mut ModuleContext) -> NeonResult<()> {
 
     let is_db_loaded = JsFunction::new(cx, is_db_loaded)?;
     everything.set(cx, "isDbLoaded", is_db_loaded)?;
+
+    let exit = JsFunction::new(cx, exit)?;
+    everything.set(cx, "exit", exit)?;
 
     let query = JsFunction::new(cx, query)?;
     everything.set(cx, "query", query)?;
