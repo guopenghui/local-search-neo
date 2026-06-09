@@ -51,7 +51,7 @@ pub fn read_text_preview(mut cx: FunctionContext) -> JsResult<JsObject> {
     let bytes =
         read_preview_bytes(&path, max_bytes, direction).or_else(|error| cx.throw_error(error))?;
     let text = if info.is_text {
-        let decoded = decode_bytes(&bytes, info.encoding);
+        let decoded = decode_preview_bytes(&bytes, info.encoding, direction);
         match direction {
             PreviewDirection::Start => truncate_utf8_start(&decoded, max_bytes),
             PreviewDirection::End => {
@@ -210,8 +210,12 @@ fn has_known_text_bom(bytes: &[u8]) -> bool {
         || bytes.starts_with(&[0xfe, 0xff])
 }
 
-fn decode_bytes(bytes: &[u8], encoding: &'static Encoding) -> String {
-    if encoding == UTF_8 {
+fn decode_preview_bytes(
+    bytes: &[u8],
+    encoding: &'static Encoding,
+    direction: PreviewDirection,
+) -> String {
+    if encoding == UTF_8 && direction == PreviewDirection::Start {
         let valid_prefix = utf8_complete_prefix(bytes);
         return String::from_utf8_lossy(valid_prefix).into_owned();
     }
@@ -265,5 +269,42 @@ fn trim_leading_partial_line(text: &str) -> String {
     match text.find('\n') {
         Some(index) if index + 1 < text.len() => text[index + 1..].to_string(),
         _ => text.to_string(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn start_preview_drops_incomplete_utf8_suffix() {
+        let bytes = "abc😀".as_bytes();
+        let incomplete_suffix = &bytes[..bytes.len() - 1];
+
+        let decoded = decode_preview_bytes(incomplete_suffix, UTF_8, PreviewDirection::Start);
+
+        assert_eq!(decoded, "abc");
+    }
+
+    #[test]
+    fn end_preview_decodes_after_incomplete_utf8_prefix() {
+        let bytes = "😀log line".as_bytes();
+        let incomplete_prefix = &bytes[1..];
+
+        let decoded = decode_preview_bytes(incomplete_prefix, UTF_8, PreviewDirection::End);
+
+        assert!(decoded.contains("log line"));
+        assert!(!decoded.is_empty());
+    }
+
+    #[test]
+    fn end_preview_trims_line_started_from_incomplete_utf8_prefix() {
+        let bytes = "😀partial line\nlast line".as_bytes();
+        let incomplete_prefix = &bytes[1..];
+        let decoded = decode_preview_bytes(incomplete_prefix, UTF_8, PreviewDirection::End);
+
+        let preview = trim_leading_partial_line(&truncate_utf8_end(&decoded, 100));
+
+        assert_eq!(preview, "last line");
     }
 }
