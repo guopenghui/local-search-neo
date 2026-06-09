@@ -2,6 +2,7 @@ import {
   DEFAULT_CATEGORIES,
   buildEverythingQuery,
   formatBytes,
+  getArchiveTreePreviewBlockedReason,
   getCodePreviewLanguage,
   getNextSelectedPath,
   getNextVisibleCount,
@@ -132,7 +133,37 @@ test("preview candidate helpers detect supported file types", () => {
   assert.equal(isArchiveTreePreviewCandidate({ name: "source.tar" }), true);
   assert.equal(isArchiveTreePreviewCandidate({ name: "source.tar.gz" }), true);
   assert.equal(isArchiveTreePreviewCandidate({ name: "source.tgz" }), true);
-  assert.equal(isArchiveTreePreviewCandidate({ name: "single-file.gz" }), true);
+  assert.equal(
+    isArchiveTreePreviewCandidate({ name: "source.tar", size: 100 * 1024 * 1024 }),
+    true,
+  );
+  assert.equal(
+    isArchiveTreePreviewCandidate({ name: "source.tar", size: 100 * 1024 * 1024 + 1 }),
+    false,
+  );
+  assert.equal(
+    getArchiveTreePreviewBlockedReason({ name: "source.tar", size: 100 * 1024 * 1024 + 1 }),
+    "压缩包超过 100 MB，不提供预览",
+  );
+  assert.equal(
+    isArchiveTreePreviewCandidate({ name: "source.tar.gz", size: 100 * 1024 * 1024 + 1 }),
+    false,
+  );
+  assert.equal(
+    isArchiveTreePreviewCandidate({ name: "source.tgz", size: 100 * 1024 * 1024 + 1 }),
+    false,
+  );
+  assert.equal(
+    isArchiveTreePreviewCandidate({ name: "single-file.gz", size: 100 * 1024 * 1024 + 1 }),
+    true,
+  );
+  assert.equal(
+    getArchiveTreePreviewBlockedReason({
+      name: "single-file.gz",
+      size: 100 * 1024 * 1024 + 1,
+    }),
+    undefined,
+  );
   assert.equal(isArchiveTreePreviewCandidate({ name: "archive.rar" }), false);
   assert.equal(isArchiveTreePreviewCandidate({ name: "Archives", isDirectory: true }), false);
 

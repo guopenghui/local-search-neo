@@ -132,6 +132,7 @@ const TEXT_PREVIEW_EXTENSIONS = new Set([
 ]);
 
 const MAX_TEXT_PREVIEW_FILE_SIZE = 20 * 1024 * 1024;
+const MAX_TAR_ARCHIVE_TREE_PREVIEW_FILE_SIZE = 100 * 1024 * 1024;
 
 export function buildEverythingQuery(keyword: string, category: FinderCategory): string {
   const trimmedKeyword = keyword.trim();
@@ -196,14 +197,20 @@ export function isPdfPreviewCandidate(
 }
 
 export function isArchiveTreePreviewCandidate(
-  file: Pick<FinderResult, "name" | "extension" | "isDirectory">,
+  file: Pick<FinderResult, "name" | "extension" | "size" | "isDirectory">,
 ): boolean {
   if (file.isDirectory) return false;
-  const normalizedName = file.name.toLowerCase();
-  return (
-    ARCHIVE_TREE_PREVIEW_EXTENSIONS.has(getResultExtension(file)) ||
-    normalizedName.endsWith(".tar.gz")
-  );
+  return isArchiveTreePreviewSupported(file) && !getArchiveTreePreviewBlockedReason(file);
+}
+
+export function getArchiveTreePreviewBlockedReason(
+  file: Pick<FinderResult, "name" | "extension" | "size" | "isDirectory">,
+): string | undefined {
+  if (file.isDirectory || !isArchiveTreePreviewSupported(file)) return undefined;
+  if (isTarArchive(file) && (file.size ?? 0) > MAX_TAR_ARCHIVE_TREE_PREVIEW_FILE_SIZE) {
+    return `压缩包超过 ${formatBytes(MAX_TAR_ARCHIVE_TREE_PREVIEW_FILE_SIZE)}，不提供预览`;
+  }
+  return undefined;
 }
 
 export function isMarkdownPreviewCandidate(
@@ -269,6 +276,17 @@ function normalizeCategoryRule(rule: string): string {
     .filter(Boolean);
 
   return extensions.length > 0 ? `ext:${extensions.join(";")}` : "";
+}
+
+function isArchiveTreePreviewSupported(file: Pick<FinderResult, "name" | "extension">): boolean {
+  const ext = getResultExtension(file);
+  return ARCHIVE_TREE_PREVIEW_EXTENSIONS.has(ext) || file.name.toLowerCase().endsWith(".tar.gz");
+}
+
+function isTarArchive(file: Pick<FinderResult, "name" | "extension">): boolean {
+  const ext = getResultExtension(file);
+  const normalizedName = file.name.toLowerCase();
+  return ext === "tar" || ext === "tgz" || normalizedName.endsWith(".tar.gz");
 }
 
 function getResultExtension(file: Pick<FinderResult, "name" | "extension">): string {

@@ -2,6 +2,7 @@ import { ref, watch, type ComputedRef, type Ref } from "vue";
 import type { PreviewKind } from "../preview/previewTypes";
 import {
   formatBytes,
+  getArchiveTreePreviewBlockedReason,
   getCodePreviewLanguage,
   isArchiveTreePreviewCandidate,
   isAudioPreviewCandidate,
@@ -121,7 +122,16 @@ export function useFilePreview({ selectedItem, previewEnabled }: UseFilePreviewO
   }
 
   function loadArchiveTreePreview(item: FinderResult) {
-    if (!item.fullPath || !isArchiveTreePreviewCandidate(item)) return false;
+    if (!item.fullPath) return false;
+
+    const blockedReason = getArchiveTreePreviewBlockedReason(item);
+    if (blockedReason) {
+      resetPreview();
+      previewStatus.value = blockedReason;
+      return true;
+    }
+
+    if (!isArchiveTreePreviewCandidate(item)) return false;
 
     try {
       const tree = window.services.printArchiveTree(item.fullPath);
