@@ -49,7 +49,7 @@ jobs:
           if (Test-Path $zip) {
             Remove-Item $zip -Force
           }
-          Compress-Archive -Path dist -DestinationPath $zip -CompressionLevel Optimal
+          Compress-Archive -Path dist/* -DestinationPath $zip -CompressionLevel Optimal
 
       - name: Upload release asset
         uses: softprops/action-gh-release@v2
