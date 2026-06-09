@@ -19,7 +19,7 @@
     "dev": "vite",
     "prebuild": "npm run prepare:pdfjs && npm run build:addon",
     "build": "vue-tsc && vite build",
-    "postbuild": "node scripts/cleanup-dist.cjs"
+    "postbuild": "node scripts/prepare-dist.cjs"
   },
   "dependencies": {
     "@lucide/vue": "^1.17.0",

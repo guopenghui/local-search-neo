@@ -65,7 +65,7 @@ function createEverythingManager(everythingAddon) {
       const configFile = getBundledEverythingConfigFile();
       managedProcess = spawn(executable, ["-startup", "-config", configFile], {
         cwd: path.dirname(executable),
-        detached: false,
+        detached: true,
         stdio: "ignore",
         windowsHide: true,
       });
@@ -114,14 +114,7 @@ function createEverythingManager(everythingAddon) {
     if (!managedProcess?.pid) return false;
 
     const pid = managedProcess.pid;
-    if (requestEverythingExit()) {
-      window.setTimeout(() => {
-        if (managedProcess?.pid === pid) {
-          forceKillManagedEverything(pid);
-        }
-      }, 1_500);
-      return true;
-    }
+    if (requestEverythingExit()) return true;
 
     forceKillManagedEverything(pid);
     return true;
