@@ -10,7 +10,9 @@ if (!fs.existsSync(distDir)) {
 }
 
 const addonPattern = /^addon\.[^.]+\.node$/;
+const everythingDbPattern = /\.db(?:\.|$)/i;
 let removedCount = 0;
+let removedEverythingDbCount = 0;
 
 for (const entry of fs.readdirSync(distDir)) {
   if (!addonPattern.test(entry)) continue;
@@ -24,4 +26,14 @@ if (fs.existsSync(manifestPath)) {
   removedCount += 1;
 }
 
+const everythingDir = path.join(distDir, "everything");
+if (fs.existsSync(everythingDir)) {
+  for (const entry of fs.readdirSync(everythingDir)) {
+    if (!everythingDbPattern.test(entry)) continue;
+    fs.rmSync(path.join(everythingDir, entry), { force: true });
+    removedEverythingDbCount += 1;
+  }
+}
+
 console.log(`已清理 dist addon 临时产物 ${removedCount} 个，发布产物使用 dist/addon.node`);
+console.log(`已清理 dist Everything 数据库运行时文件 ${removedEverythingDbCount} 个`);
