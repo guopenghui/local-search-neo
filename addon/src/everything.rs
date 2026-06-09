@@ -4,6 +4,10 @@ use everything_ipc::IpcWindow;
 use everything_ipc::wm::{EverythingClient, QueryList, RequestFlags, SearchFlags, Sort};
 use neon::prelude::*;
 
+use crate::js_args::{
+    optional_bool_arg, optional_string_arg, optional_u32_arg, required_string_arg,
+};
+
 use windows::Win32::{
     Foundation::{LPARAM, WPARAM},
     UI::WindowsAndMessaging::{SendMessageW, WM_USER},
@@ -147,25 +151,10 @@ fn default_request_flags() -> RequestFlags {
 }
 
 fn query(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let search = cx.argument::<JsString>(0)?.value(&mut cx);
-    let max_results = match cx.argument_opt(1) {
-        Some(value) => value
-            .downcast_or_throw::<JsNumber, _>(&mut cx)?
-            .value(&mut cx) as u32,
-        None => 100,
-    };
-    let sort_mode = match cx.argument_opt(2) {
-        Some(value) => value
-            .downcast_or_throw::<JsString, _>(&mut cx)?
-            .value(&mut cx),
-        None => String::from("modified-desc"),
-    };
-    let match_path = match cx.argument_opt(3) {
-        Some(value) => value
-            .downcast_or_throw::<JsBoolean, _>(&mut cx)?
-            .value(&mut cx),
-        None => false,
-    };
+    let search = required_string_arg(&mut cx, 0, "search")?;
+    let max_results = optional_u32_arg(&mut cx, 1, "maxResults", 100)?;
+    let sort_mode = optional_string_arg(&mut cx, 2, "sortMode", "modified-desc")?;
+    let match_path = optional_bool_arg(&mut cx, 3, "matchPath", false)?;
     let sort = sort_from_mode(&sort_mode);
     let search_flags = if match_path {
         SearchFlags::MatchPath

@@ -2,6 +2,7 @@ use neon::prelude::*;
 
 mod everything;
 mod file_tree;
+mod js_args;
 mod text_preview;
 
 #[neon::main]

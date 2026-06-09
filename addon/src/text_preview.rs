@@ -5,6 +5,8 @@ use chardetng::{EncodingDetector, Iso2022JpDetection, Utf8Detection};
 use encoding_rs::{Encoding, UTF_8, UTF_16BE, UTF_16LE};
 use neon::prelude::*;
 
+use crate::js_args::{optional_string_arg, optional_usize_arg, required_string_arg};
+
 const INSPECT_BYTES: usize = 8 * 1024;
 const PREVIEW_BYTES: usize = 20 * 1024;
 const MAX_READ_BYTES: usize = 1024 * 1024;
@@ -22,8 +24,8 @@ struct TextInfo {
 }
 
 pub fn inspect_text_file(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let path = cx.argument::<JsString>(0)?.value(&mut cx);
-    let max_bytes = optional_usize_arg(&mut cx, 1, INSPECT_BYTES)?;
+    let path = required_string_arg(&mut cx, 0, "file")?;
+    let max_bytes = optional_usize_arg(&mut cx, 1, "maxBytes", INSPECT_BYTES)?;
 
     let bytes = read_file_prefix(&path, max_bytes).or_else(|error| cx.throw_error(error))?;
     let info = inspect_bytes_info(&bytes);
@@ -39,8 +41,8 @@ pub fn inspect_text_file(mut cx: FunctionContext) -> JsResult<JsObject> {
 }
 
 pub fn read_text_preview(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let path = cx.argument::<JsString>(0)?.value(&mut cx);
-    let max_bytes = optional_usize_arg(&mut cx, 1, PREVIEW_BYTES)?.min(MAX_READ_BYTES);
+    let path = required_string_arg(&mut cx, 0, "file")?;
+    let max_bytes = optional_usize_arg(&mut cx, 1, "maxBytes", PREVIEW_BYTES)?.min(MAX_READ_BYTES);
     let direction = optional_direction_arg(&mut cx, 2)?;
 
     let inspect_bytes =
@@ -83,32 +85,13 @@ pub fn export(cx: &mut ModuleContext) -> NeonResult<()> {
     Ok(())
 }
 
-fn optional_usize_arg(
-    cx: &mut FunctionContext,
-    index: usize,
-    default_value: usize,
-) -> NeonResult<usize> {
-    match cx.argument_opt(index) {
-        Some(value) => Ok(value
-            .downcast_or_throw::<JsNumber, _>(cx)?
-            .value(cx)
-            .max(0.0) as usize),
-        None => Ok(default_value),
-    }
-}
-
 fn optional_direction_arg(cx: &mut FunctionContext, index: usize) -> NeonResult<PreviewDirection> {
-    match cx.argument_opt(index) {
-        Some(value) => {
-            let direction = value.downcast_or_throw::<JsString, _>(cx)?.value(cx);
-            Ok(if direction == "end" {
-                PreviewDirection::End
-            } else {
-                PreviewDirection::Start
-            })
-        }
-        None => Ok(PreviewDirection::Start),
-    }
+    let direction = optional_string_arg(cx, index, "direction", "start")?;
+    Ok(if direction == "end" {
+        PreviewDirection::End
+    } else {
+        PreviewDirection::Start
+    })
 }
 
 fn read_file_prefix(path: &str, max_bytes: usize) -> Result<Vec<u8>, String> {

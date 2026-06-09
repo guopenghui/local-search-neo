@@ -6,6 +6,10 @@ use std::path::Path;
 use flate2::read::GzDecoder;
 use neon::prelude::*;
 use tar::Archive;
+
+use crate::js_args::{
+    is_nullish, optional_usize_property, required_string_arg, type_error_for_value,
+};
 use zip::ZipArchive;
 
 const DEFAULT_MAX_DEPTH: usize = 2;
@@ -37,7 +41,7 @@ struct RenderedTree {
 }
 
 pub fn print_directory_tree(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let path = cx.argument::<JsString>(0)?.value(&mut cx);
+    let path = required_string_arg(&mut cx, 0, "directory")?;
     let options = parse_tree_options(&mut cx, 1)?;
     let root =
         read_directory_tree(Path::new(&path), &options).or_else(|error| cx.throw_error(error))?;
@@ -47,7 +51,7 @@ pub fn print_directory_tree(mut cx: FunctionContext) -> JsResult<JsObject> {
 }
 
 pub fn print_archive_tree(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let path = cx.argument::<JsString>(0)?.value(&mut cx);
+    let path = required_string_arg(&mut cx, 0, "file")?;
     let options = parse_tree_options(&mut cx, 1)?;
     let root = read_archive_tree(Path::new(&path)).or_else(|error| cx.throw_error(error))?;
     let rendered = render_tree(&root, &options);
@@ -71,8 +75,11 @@ fn parse_tree_options(cx: &mut FunctionContext, index: usize) -> NeonResult<Tree
         return Ok(default_options);
     };
 
-    if value.is_a::<JsUndefined, _>(cx) || value.is_a::<JsNull, _>(cx) {
+    if is_nullish(cx, value) {
         return Ok(default_options);
+    }
+    if !value.is_a::<JsObject, _>(cx) {
+        return type_error_for_value(cx, "options", "an object", value);
     }
 
     let object = value.downcast_or_throw::<JsObject, _>(cx)?;
@@ -86,31 +93,13 @@ fn parse_tree_options(cx: &mut FunctionContext, index: usize) -> NeonResult<Tree
     })
 }
 
-fn optional_usize_property(
-    cx: &mut FunctionContext,
-    object: Handle<JsObject>,
-    key: &str,
-) -> NeonResult<Option<usize>> {
-    let value = object.get::<JsValue, _, _>(cx, key)?;
-    if value.is_a::<JsUndefined, _>(cx) || value.is_a::<JsNull, _>(cx) {
-        return Ok(None);
-    }
-
-    Ok(Some(
-        value
-            .downcast_or_throw::<JsNumber, _>(cx)?
-            .value(cx)
-            .max(0.0) as usize,
-    ))
-}
-
 fn optional_level_limits_property(
     cx: &mut FunctionContext,
     object: Handle<JsObject>,
     key: &str,
 ) -> NeonResult<Option<Vec<usize>>> {
     let value = object.get::<JsValue, _, _>(cx, key)?;
-    if value.is_a::<JsUndefined, _>(cx) || value.is_a::<JsNull, _>(cx) {
+    if is_nullish(cx, value) {
         return Ok(None);
     }
 
@@ -122,12 +111,20 @@ fn optional_level_limits_property(
         return Ok(Some(vec![limit]));
     }
 
+    if !value.is_a::<JsArray, _>(cx) {
+        return type_error_for_value(cx, key, "a number or an array", value);
+    }
+
     let array = value.downcast_or_throw::<JsArray, _>(cx)?;
     let mut limits = Vec::new();
     for index in 0..array.len(cx) {
         let item = array.get::<JsValue, _, _>(cx, index)?;
-        if item.is_a::<JsUndefined, _>(cx) || item.is_a::<JsNull, _>(cx) {
+        if is_nullish(cx, item) {
             continue;
+        }
+        if !item.is_a::<JsNumber, _>(cx) {
+            let item_name = format!("{key}[{index}]");
+            return type_error_for_value(cx, &item_name, "a number", item);
         }
         limits.push(
             item.downcast_or_throw::<JsNumber, _>(cx)?
