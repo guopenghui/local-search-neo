@@ -40,7 +40,7 @@ function openImagePreviewMenu(event: MouseEvent) {
       label: "复制图片",
       disabled: !imagePath,
       action: () => {
-        window.ztools.copyImage(imagePath);
+        window.ztools.copyFile(imagePath);
       },
     },
   ]);
