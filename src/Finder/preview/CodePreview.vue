@@ -157,7 +157,19 @@ async function resolveLanguage(highlighter: HighlighterCore, language: string) {
 }
 
 .code-highlight :deep(code) {
+  counter-reset: step;
+  counter-increment: step 0;
   font-family: Consolas, "Cascadia Mono", monospace;
+}
+
+.code-highlight :deep(code .line)::before {
+  content: counter(step);
+  counter-increment: step;
+  display: inline-block;
+  width: 1rem;
+  margin-right: 1.5rem;
+  color: rgba(115, 138, 148, 0.4);
+  text-align: right;
 }
 
 .code-fallback {
