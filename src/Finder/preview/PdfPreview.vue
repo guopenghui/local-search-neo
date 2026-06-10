@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onUnmounted, ref, useTemplateRef, watch } from "vue";
+import { nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from "vue";
 
 const props = defineProps<{
   source: string;
@@ -47,7 +47,10 @@ let pdfDocument: PdfDocument | null = null;
 let loadingTask: PdfLoadingTask | null = null;
 let renderTask: PdfRenderTask | null = null;
 let lastPageSize = { width: 0, height: 0 };
+let lastPageShellWidth = 0;
 let renderToken = 0;
+let resizeObserver: ResizeObserver | null = null;
+let resizeFrame: number | undefined;
 let pdfjsPromise: Promise<PdfJs> | undefined;
 
 function debugPdf(...args: unknown[]) {
@@ -62,8 +65,19 @@ watch(
   { immediate: true },
 );
 
+onMounted(() => {
+  const pageShell = pageShellRef.value;
+  if (!pageShell || typeof ResizeObserver === "undefined") return;
+
+  lastPageShellWidth = pageShell.clientWidth;
+  resizeObserver = new ResizeObserver(scheduleResizeRender);
+  resizeObserver.observe(pageShell);
+});
+
 onUnmounted(() => {
   renderToken += 1;
+  if (resizeFrame !== undefined) window.cancelAnimationFrame(resizeFrame);
+  resizeObserver?.disconnect();
   disposePdf();
 });
 
@@ -147,6 +161,7 @@ async function renderPage(token = ++renderToken, options: { keepCurrentCanvas?: 
   isLoading.value = true;
   errorMessage.value = "";
   cancelRenderTask();
+  lastPageShellWidth = pageShell.clientWidth;
 
   try {
     const page = await document.getPage(pageNumber.value);
@@ -204,6 +219,26 @@ async function renderPage(token = ++renderToken, options: { keepCurrentCanvas?: 
   } finally {
     if (token === renderToken) isLoading.value = false;
   }
+}
+
+function scheduleResizeRender() {
+  if (resizeFrame !== undefined) window.cancelAnimationFrame(resizeFrame);
+
+  resizeFrame = window.requestAnimationFrame(() => {
+    resizeFrame = undefined;
+    renderAfterResize();
+  });
+}
+
+function renderAfterResize() {
+  const pageShell = pageShellRef.value;
+  if (!pdfDocument || !pageShell) return;
+
+  const width = pageShell.clientWidth;
+  if (Math.abs(width - lastPageShellWidth) < 2) return;
+
+  lastPageShellWidth = width;
+  void renderPage(undefined, { keepCurrentCanvas: true });
 }
 
 function goPreviousPage() {

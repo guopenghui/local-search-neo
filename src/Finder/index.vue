@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import ConfirmDialog from "../components/ConfirmDialog.vue";
+import FloatingZoom from "../components/FloatingZoom.vue";
 import { useGlocalConfirmDialog } from "../components/useGlocalConfirmDialog";
 
 import ContextMenu from "./components/ContextMenu.vue";
@@ -193,11 +194,19 @@ function setActiveCategory(category: FinderCategory) {
       @sort-menu-open-change="footerSortMenuOpen = $event"
     />
 
-    <FinderPreviewPane
+    <FloatingZoom
       v-if="previewEnabled"
-      :selected-item="finderSearch.selectedItem"
-      @context-menu="contextMenu.open"
-    />
+      class="finder-preview-zoom"
+      expand-label="放大预览"
+      collapse-label="还原预览"
+      floating-label="悬浮预览窗口"
+      placeholder="预览已放大显示"
+    >
+      <FinderPreviewPane
+        :selected-item="finderSearch.selectedItem"
+        @context-menu="contextMenu.open"
+      />
+    </FloatingZoom>
 
     <SettingsDrawer
       :open="showSettingsDrawer"
@@ -266,7 +275,7 @@ function setActiveCategory(category: FinderCategory) {
   overflow: visible;
 }
 
-.preview-pane {
+.finder-preview-zoom {
   grid-column: 3;
   grid-row: 1;
 }
