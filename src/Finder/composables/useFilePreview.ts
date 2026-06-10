@@ -1,5 +1,4 @@
-import { ref, watch, type ComputedRef, type Ref } from "vue";
-import type { PreviewKind } from "../preview/previewTypes";
+import { ref, watch, type ComputedRef } from "vue";
 import {
   formatBytes,
   getArchiveTreePreviewBlockedReason,
@@ -19,12 +18,22 @@ import {
 const PREVIEW_BYTES = 20 * 1024;
 const LOG_PREVIEW_BYTES = 10 * 1024;
 
+export type PreviewKind =
+  | "empty"
+  | "text"
+  | "markdown"
+  | "code"
+  | "tree"
+  | "pdf"
+  | "image"
+  | "video"
+  | "audio";
+
 interface UseFilePreviewOptions {
   selectedItem: ComputedRef<FinderResult | undefined>;
-  previewEnabled: Ref<boolean>;
 }
 
-export function useFilePreview({ selectedItem, previewEnabled }: UseFilePreviewOptions) {
+export function useFilePreview({ selectedItem }: UseFilePreviewOptions) {
   const previewKind = ref<PreviewKind>("empty");
   const previewContent = ref("");
   const previewSource = ref("");
@@ -37,11 +46,6 @@ export function useFilePreview({ selectedItem, previewEnabled }: UseFilePreviewO
   async function loadPreview() {
     const sequence = ++previewLoadSequence;
     resetPreview();
-
-    if (!previewEnabled.value) {
-      previewStatus.value = "未开启预览";
-      return;
-    }
 
     const item = selectedItem.value;
     if (!item) {
@@ -203,7 +207,7 @@ export function useFilePreview({ selectedItem, previewEnabled }: UseFilePreviewO
     previewLanguage.value = "";
   }
 
-  watch([selectedItem, previewEnabled], () => void loadPreview());
+  watch([selectedItem], () => void loadPreview(), { immediate: true });
 
   return {
     previewKind,

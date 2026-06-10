@@ -1,27 +1,50 @@
 <script setup lang="ts">
-import AudioPreview from "./AudioPreview.vue";
-import CodePreview from "./CodePreview.vue";
-import EmptyPreview from "./EmptyPreview.vue";
-import ImagePreview from "./ImagePreview.vue";
-import MarkdownPreview from "./MarkdownPreview.vue";
-import PdfPreview from "./PdfPreview.vue";
-import TextPreview from "./TextPreview.vue";
-import TreePreview from "./TreePreview.vue";
-import VideoPreview from "./VideoPreview.vue";
-import type { PreviewKind } from "./previewTypes";
+import type { ComputedRef } from "vue";
+import type { FinderResult } from "../core/finderLogic";
+import AudioPreview from "../preview/AudioPreview.vue";
+import CodePreview from "../preview/CodePreview.vue";
+import EmptyPreview from "../preview/EmptyPreview.vue";
+import ImagePreview from "../preview/ImagePreview.vue";
+import MarkdownPreview from "../preview/MarkdownPreview.vue";
+import PdfPreview from "../preview/PdfPreview.vue";
+import TextPreview from "../preview/TextPreview.vue";
+import TreePreview from "../preview/TreePreview.vue";
+import VideoPreview from "../preview/VideoPreview.vue";
+import { useFilePreview } from "../composables/useFilePreview";
+import type { ContextMenuItem } from "../composables/useContextMenu";
 
-defineProps<{
-  previewKind: PreviewKind;
-  previewStatus: string;
-  previewContent: string;
-  previewSource: string;
-  previewEncoding: string;
-  previewLanguage: string;
+const { selectedItem } = defineProps<{
+  selectedItem: ComputedRef<FinderResult | undefined>;
 }>();
 
 const emit = defineEmits<{
-  "image-context-menu": [event: MouseEvent];
+  "context-menu": [event: MouseEvent, items: ContextMenuItem[]];
 }>();
+
+const {
+  previewKind,
+  previewStatus,
+  previewContent,
+  previewEncoding,
+  previewLanguage,
+  previewSource,
+} = useFilePreview({
+  selectedItem,
+});
+
+function openImagePreviewMenu(event: MouseEvent) {
+  const imagePath = selectedItem.value?.fullPath ?? "";
+  emit("context-menu", event, [
+    {
+      id: "copy-preview-image",
+      label: "复制图片",
+      disabled: !imagePath,
+      action: () => {
+        window.ztools.copyImage(imagePath);
+      },
+    },
+  ]);
+}
 </script>
 
 <template>
@@ -52,7 +75,7 @@ const emit = defineEmits<{
       <ImagePreview
         v-else-if="previewKind === 'image' && previewSource"
         :source="previewSource"
-        @context-menu="emit('image-context-menu', $event)"
+        @context-menu="openImagePreviewMenu"
       />
       <VideoPreview v-else-if="previewKind === 'video' && previewSource" :source="previewSource" />
       <AudioPreview v-else-if="previewKind === 'audio' && previewSource" :source="previewSource" />

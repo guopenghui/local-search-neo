@@ -13,7 +13,6 @@ interface UseFinderSearchOptions {
   buildQuery: () => string;
   sortMode: Ref<FinderSortMode>;
   matchPathEnabled: Ref<boolean>;
-  onSelectionRestored?: () => void;
 }
 
 export interface RunSearchOptions {
@@ -26,7 +25,6 @@ export function useFinderSearch({
   buildQuery,
   sortMode,
   matchPathEnabled,
-  onSelectionRestored,
 }: UseFinderSearchOptions) {
   const results = ref<FinderResult[]>([]);
   const everythingTotal = ref(0);
@@ -43,6 +41,17 @@ export function useFinderSearch({
   let searchSequence = 0;
 
   onUnmounted(clearSearchTimer);
+
+  function scrollSelectedIntoView() {
+    const index = visibleResults.value.findIndex((item) => item.fullPath === selectedPath.value);
+    if (index < 0) return;
+
+    document.querySelector(`[data-result-index="${index}"]`)?.scrollIntoView({
+      block: "nearest",
+    });
+  }
+
+  const onSelectionRestored = scrollSelectedIntoView;
 
   function queueSearch() {
     if (searchTimer) window.clearTimeout(searchTimer);
@@ -174,5 +183,6 @@ export function useFinderSearch({
     growVisibleCount,
     resetVisibleCount,
     clearSearchTimer,
+    scrollSelectedIntoView,
   };
 }

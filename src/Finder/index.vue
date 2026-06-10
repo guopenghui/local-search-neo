@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import ConfirmDialog from "../components/ConfirmDialog.vue";
 import { useGlocalConfirmDialog } from "../components/useGlocalConfirmDialog";
-import ContextMenu from "./components/ContextMenu.vue";
 
+import ContextMenu from "./components/ContextMenu.vue";
 import FinderFooter from "./components/FinderFooter.vue";
 import FinderResultList from "./components/FinderResultList.vue";
 import FinderSidebar from "./components/FinderSidebar.vue";
 import SettingsDrawer from "./components/SettingsDrawer.vue";
+import FinderPreviewPane from "./components/FinderPreviewPane.vue";
+
 import { useContextMenu } from "./composables/useContextMenu";
-import { useFilePreview } from "./composables/useFilePreview";
 import { useFinderCategories } from "./composables/useFinderCategories";
 import { useFinderEnterAction } from "./composables/useFinderEnterAction";
 import { useFinderFocus } from "./composables/useFinderFocus";
@@ -21,16 +22,22 @@ import { usePersistStorage } from "./composables/usePersistStorage";
 import { useResultActions } from "./composables/useResultActions";
 import { useSubInput } from "./composables/useSubInput";
 import type { FinderCategory } from "./core/finderLogic";
-import FinderPreviewPane from "./preview/FinderPreviewPane.vue";
+import { useEverything } from "./composables/useEverything";
 
 const PAGE_SIZE = 30;
 const MAX_RESULTS = 600;
 
 const footerSortMenuOpen = ref(false);
-const everythingStatus = shallowRef(window.services.everything.getStartupStatus());
-let everythingStatusTimer: number | undefined;
-const everythingReady = computed(() => everythingStatus.value.state === "ready");
-const everythingPending = computed(() => isEverythingStartupPending(everythingStatus.value.state));
+
+const {
+  everythingStatus,
+  everythingReady,
+  everythingPending,
+  ensureEverythingReady,
+  startEverythingStatusPolling,
+  stopEverythingStatusPolling,
+} = useEverything({ runSearch: () => finderSearch.runSearch() });
+
 const { previewEnabled, sortMode, matchPathEnabled } = usePersistStorage();
 
 const { bindSubInput, syncSubInputValue, focusSubInput } = useSubInput({
@@ -43,7 +50,7 @@ const {
   activeCategory,
   enabledCategories,
   allCategories,
-  selectCategory: setActiveCategory,
+  selectCategory,
   handleAddCustomCategory,
   handleUpdateCustomCategory,
   handleRemoveCustomCategory,
@@ -60,17 +67,14 @@ const finderSearch = useFinderSearch({
   sortMode,
   matchPathEnabled,
   buildQuery: buildFilteredEverythingQuery,
-  onSelectionRestored: scrollSelectedIntoView,
 });
+
 const resultStatusText = computed(() => {
   if (!everythingReady.value) return everythingStatus.value.message;
   return finderSearch.isLoading.value ? "搜索中..." : finderSearch.statusText.value;
 });
 const resultLoading = computed(() => finderSearch.isLoading.value || everythingPending.value);
-const filePreview = useFilePreview({
-  selectedItem: finderSearch.selectedItem,
-  previewEnabled,
-});
+
 const contextMenu = useContextMenu();
 const confirmDialog = useGlocalConfirmDialog();
 const resultActions = useResultActions({
@@ -85,12 +89,17 @@ useFinderEnterAction({
   search: finderSearch.runSearch,
 });
 
-useFinderKeyboard({
-  isNavigationBlocked: () =>
+function isNavigationBlocked() {
+  return (
     showSettingsDrawer.value ||
     footerSortMenuOpen.value ||
     contextMenu.visible.value ||
-    confirmDialog.state.open,
+    confirmDialog.state.open
+  );
+}
+
+useFinderKeyboard({
+  isNavigationBlocked,
   closeTransientOverlays: contextMenu.close,
   focusSubInput,
   moveSelection: finderSearch.moveSelection,
@@ -99,7 +108,7 @@ useFinderKeyboard({
     const selectedItem = finderSearch.selectedItem.value;
     if (selectedItem) resultActions.showInFolder(selectedItem);
   },
-  scrollSelectedIntoView,
+  scrollSelectedIntoView: finderSearch.scrollSelectedIntoView,
 });
 
 watch(
@@ -133,50 +142,7 @@ function queueSearch() {
   finderSearch.queueSearch();
 }
 
-async function ensureEverythingReady() {
-  syncEverythingStatus();
-  startEverythingStatusPolling();
-
-  try {
-    await window.services.everything.ensureReady();
-  } catch {
-    // 具体错误会通过 getStartupStatus 暴露给界面。
-  } finally {
-    syncEverythingStatus();
-    if (!everythingPending.value) stopEverythingStatusPolling();
-  }
-
-  if (everythingReady.value) {
-    finderSearch.runSearch();
-  }
-}
-
-function syncEverythingStatus() {
-  everythingStatus.value = window.services.everything.getStartupStatus();
-}
-
-function startEverythingStatusPolling() {
-  if (everythingStatusTimer) return;
-
-  everythingStatusTimer = window.setInterval(() => {
-    syncEverythingStatus();
-    if (!everythingPending.value) stopEverythingStatusPolling();
-  }, 300);
-}
-
-function stopEverythingStatusPolling() {
-  if (!everythingStatusTimer) return;
-
-  window.clearInterval(everythingStatusTimer);
-  everythingStatusTimer = undefined;
-}
-
-function isEverythingStartupPending(
-  state: ReturnType<typeof window.services.everything.getStartupStatus>["state"],
-) {
-  return state === "idle" || state === "checking" || state === "starting" || state === "waiting";
-}
-
+// 退出插件时，重置状态
 function closeTransientState(isKill = false) {
   contextMenu.close();
   closeSettingsDrawer({ restoreFocus: false });
@@ -189,34 +155,9 @@ function selectItem(item: { fullPath?: string }) {
   releaseFinderFocus();
 }
 
-function selectCategory(category: FinderCategory) {
-  setActiveCategory(category);
+function setActiveCategory(category: FinderCategory) {
+  selectCategory(category);
   releaseFinderFocus();
-}
-
-function scrollSelectedIntoView() {
-  const index = finderSearch.visibleResults.value.findIndex(
-    (item) => item.fullPath === finderSearch.selectedPath.value,
-  );
-  if (index < 0) return;
-
-  document.querySelector(`[data-result-index="${index}"]`)?.scrollIntoView({
-    block: "nearest",
-  });
-}
-
-function openImagePreviewMenu(event: MouseEvent) {
-  const imagePath = finderSearch.selectedItem.value?.fullPath ?? "";
-  contextMenu.open(event, [
-    {
-      id: "copy-preview-image",
-      label: "复制图片",
-      disabled: !imagePath,
-      action: () => {
-        window.ztools.copyImage(imagePath);
-      },
-    },
-  ]);
 }
 </script>
 
@@ -225,7 +166,7 @@ function openImagePreviewMenu(event: MouseEvent) {
     <FinderSidebar
       :categories="enabledCategories"
       :active-category-id="activeCategoryId"
-      @select="selectCategory"
+      @select="setActiveCategory"
       @open-settings="openSettingsDrawer"
     />
 
@@ -254,13 +195,8 @@ function openImagePreviewMenu(event: MouseEvent) {
 
     <FinderPreviewPane
       v-if="previewEnabled"
-      :preview-kind="filePreview.previewKind.value"
-      :preview-status="filePreview.previewStatus.value"
-      :preview-content="filePreview.previewContent.value"
-      :preview-source="filePreview.previewSource.value"
-      :preview-encoding="filePreview.previewEncoding.value"
-      :preview-language="filePreview.previewLanguage.value"
-      @image-context-menu="openImagePreviewMenu"
+      :selected-item="finderSearch.selectedItem"
+      @context-menu="contextMenu.open"
     />
 
     <SettingsDrawer
