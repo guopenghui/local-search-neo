@@ -3,7 +3,11 @@ import { onMounted } from "vue";
 import Finder from "./Finder/index.vue";
 import { useFinderEnterAction } from "./Finder/composables/useFinderEnterAction";
 import { getFileIconDataUrl, warmUpFileIconCache } from "./Finder/core/fileIconCache";
-import { DEFAULT_CATEGORIES, buildEverythingQuery } from "./Finder/core/finderLogic";
+import {
+  DEFAULT_CATEGORIES,
+  buildEverythingQuery,
+  mergeResultsByMatchPathPriority,
+} from "./Finder/core/finderLogic";
 import { useFinderCategories } from "./Finder/composables/useFinderCategories";
 import { usePersistStorage } from "./Finder/composables/usePersistStorage";
 import { useSubInput } from "./Finder/composables/useSubInput";
@@ -47,23 +51,39 @@ onMounted(() => {
       try {
         if (!window.services.everything.isAvailable()) return [];
         if (window.services.everything.getStartupStatus().state !== "ready") return [];
-        const result = window.services.everything.query(
+        const nameResult = window.services.everything.query(
           everythingQuery,
           MAIN_PUSH_RESULT_LIMIT,
           "modified-desc",
-          matchPathEnabled.value,
+          false,
         );
-        const items: MainPushSearchResult[] = result.items.map((item) => ({
-          title: item.path ?? getParentPath(item.fullPath),
-          text: item.name,
-          icon: window.ztools.getFileIcon(item.fullPath),
-          fullPath: item.fullPath,
-        }));
+        const matchPathResult = matchPathEnabled.value
+          ? window.services.everything.query(
+              everythingQuery,
+              MAIN_PUSH_RESULT_LIMIT,
+              "modified-desc",
+              true,
+            )
+          : undefined;
 
-        if (result.total > MAIN_PUSH_RESULT_LIMIT) {
+        const resultItems = matchPathResult
+          ? mergeResultsByMatchPathPriority(nameResult.items, matchPathResult.items)
+          : nameResult.items;
+        const total = matchPathResult?.total ?? nameResult.total;
+
+        const items: MainPushSearchResult[] = resultItems
+          .slice(0, MAIN_PUSH_RESULT_LIMIT)
+          .map((item) => ({
+            title: item.path ?? getParentPath(item.fullPath),
+            text: item.name,
+            icon: window.ztools.getFileIcon(item.fullPath),
+            fullPath: item.fullPath,
+          }));
+
+        if (total > MAIN_PUSH_RESULT_LIMIT) {
           items.pop();
           items.push({
-            text: `共有${result.total}个结果，查看更多...`,
+            text: `共有${total}个结果，查看更多...`,
           });
         }
 

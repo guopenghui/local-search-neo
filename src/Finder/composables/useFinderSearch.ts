@@ -3,6 +3,7 @@ import {
   getNextSelectedPath,
   getNextVisibleCount,
   getRestoredSelectedPath,
+  mergeResultsByMatchPathPriority,
   type FinderResult,
   type FinderSortMode,
 } from "../core/finderLogic";
@@ -76,14 +77,26 @@ export function useFinderSearch({
     visibleCount.value = pageSize;
 
     try {
-      const result = window.services.everything.query(
+      const nameResult = window.services.everything.query(
         everythingQuery,
         maxResults,
         currentSortMode,
-        currentMatchPathEnabled,
+        false,
       );
-      results.value = result.items;
-      everythingTotal.value = result.total;
+
+      if (currentMatchPathEnabled) {
+        const matchPathResult = window.services.everything.query(
+          everythingQuery,
+          maxResults,
+          currentSortMode,
+          true,
+        );
+        results.value = mergeResultsByMatchPathPriority(nameResult.items, matchPathResult.items);
+        everythingTotal.value = matchPathResult.total;
+      } else {
+        results.value = nameResult.items;
+        everythingTotal.value = nameResult.total;
+      }
       updateResultStatus();
       restoreSelection(options);
     } catch (error: unknown) {

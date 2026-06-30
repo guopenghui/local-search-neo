@@ -168,6 +168,23 @@ export function getRestoredSelectedPath(results: FinderResult[], currentPath: st
   return results[0]?.fullPath ?? "";
 }
 
+export function mergeResultsByMatchPathPriority<
+  T extends Pick<FinderResult, "name" | "path" | "fullPath">,
+>(nameResults: T[], matchPathResults: T[]): T[] {
+  const seen = new Set<string>();
+  const merged: T[] = [];
+
+  for (const item of [...nameResults, ...matchPathResults]) {
+    const key = getResultDedupeKey(item);
+    if (seen.has(key)) continue;
+
+    seen.add(key);
+    merged.push(item);
+  }
+
+  return merged;
+}
+
 export function isImagePreviewCandidate(
   file: Pick<FinderResult, "name" | "extension" | "isDirectory">,
 ): boolean {
@@ -263,6 +280,10 @@ export function formatBytes(bytes?: number): string {
   }
 
   return `${formatNumber(value)} ${units[unitIndex]}`;
+}
+
+function getResultDedupeKey(item: Pick<FinderResult, "name" | "path" | "fullPath">): string {
+  return (item.fullPath || `${item.path ?? ""}\\${item.name}`).toLowerCase();
 }
 
 function normalizeCategoryRule(rule: string): string {

@@ -17,6 +17,7 @@ import {
   isPdfPreviewCandidate,
   isTextPreviewCandidate,
   isVideoPreviewCandidate,
+  mergeResultsByMatchPathPriority,
   type FinderCategory,
   type FinderResult,
 } from "./finderLogic";
@@ -103,6 +104,30 @@ test("getRestoredSelectedPath keeps existing visible selection or picks sorted f
   assert.equal(getRestoredSelectedPath(sampleResults, ""), "C:\\beta\\b.txt");
   assert.equal(getRestoredSelectedPath(sampleResults, "D:\\missing.txt"), "C:\\beta\\b.txt");
   assert.equal(getRestoredSelectedPath([], "D:\\missing.txt"), "");
+});
+
+test("mergeResultsByMatchPathPriority keeps name matches first and removes duplicates", () => {
+  const nameResults: FinderResult[] = [
+    { name: "name-a.txt", path: "C:\\demo", fullPath: "C:\\demo\\name-a.txt" },
+    { name: "shared.txt", path: "C:\\demo", fullPath: "C:\\demo\\shared.txt" },
+    { name: "name-b.txt", path: "D:\\demo", fullPath: "D:\\demo\\name-b.txt" },
+  ];
+  const matchPathResults: FinderResult[] = [
+    { name: "shared.txt", path: "C:\\demo", fullPath: "c:\\demo\\shared.txt" },
+    { name: "path-a.txt", path: "C:\\demo", fullPath: "C:\\demo\\path-a.txt" },
+    { name: "path-b.txt", path: "D:\\demo", fullPath: "D:\\demo\\path-b.txt" },
+  ];
+
+  assert.deepEqual(
+    mergeResultsByMatchPathPriority(nameResults, matchPathResults).map((item) => item.fullPath),
+    [
+      "C:\\demo\\name-a.txt",
+      "C:\\demo\\shared.txt",
+      "D:\\demo\\name-b.txt",
+      "C:\\demo\\path-a.txt",
+      "D:\\demo\\path-b.txt",
+    ],
+  );
 });
 
 test("preview candidate helpers detect supported file types", () => {
