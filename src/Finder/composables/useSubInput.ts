@@ -22,7 +22,6 @@ export function useSubInput({ onInput, placeholder = "全盘搜索" }: UseSubInp
     if (onInput) {
       inputListeners.delete(onInput);
     }
-    disposeSubInput();
   });
 
   function bindSubInput() {
@@ -46,6 +45,7 @@ export function useSubInput({ onInput, placeholder = "全盘搜索" }: UseSubInp
     subInputReady = true;
   }
 
+  /** 当非用户操作需要修改子输入框的值, 不触发重新搜索 */
   function syncSubInputValue() {
     if (!subInputReady) return;
     programmaticInputValue = queryText.value;
@@ -56,19 +56,10 @@ export function useSubInput({ onInput, placeholder = "全盘搜索" }: UseSubInp
     window.ztools.subInputFocus();
   }
 
-  function disposeSubInput() {
-    if (!subInputReady) return;
-
-    window.ztools.removeSubInput();
-    subInputReady = false;
-    programmaticInputValue = undefined;
-  }
-
   return {
     bindSubInput,
     syncSubInputValue,
     focusSubInput,
-    disposeSubInput,
   };
 }
 

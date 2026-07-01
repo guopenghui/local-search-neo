@@ -124,8 +124,6 @@ watch(
 
 onMounted(() => {
   bindSubInput();
-  syncSubInputValue();
-  startEverythingStatusPolling();
   void ensureEverythingReady();
   window.ztools.onPluginOut(closeTransientState);
 });
