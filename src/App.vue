@@ -74,9 +74,9 @@ onMounted(() => {
         const items: MainPushSearchResult[] = resultItems
           .slice(0, MAIN_PUSH_RESULT_LIMIT)
           .map((item) => ({
-            title: item.path ?? getParentPath(item.fullPath),
+            title: item.path ?? (item.fullPath ? getParentPath(item.fullPath) : ""),
             text: item.name,
-            icon: window.ztools.getFileIcon(item.fullPath),
+            icon: item.fullPath ? window.ztools.getFileIcon(item.fullPath) : undefined,
             fullPath: item.fullPath,
           }));
 

@@ -91,7 +91,10 @@ export function useFinderSearch({
           currentSortMode,
           true,
         );
-        results.value = mergeResultsByMatchPathPriority(nameResult.items, matchPathResult.items);
+        results.value = mergeResultsByMatchPathPriority(
+          nameResult.items,
+          matchPathResult.items,
+        ).slice(0, maxResults);
         everythingTotal.value = matchPathResult.total;
       } else {
         results.value = nameResult.items;
