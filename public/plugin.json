@@ -4,7 +4,7 @@
   "author": "the_tree",
   "title": "本地搜索Neo",
   "description": "借助 Everything 来进行文件搜索",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "index.html",
   "preload": "preload/services.js",
   "logo": "logo.png",
