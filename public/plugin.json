@@ -2,6 +2,7 @@
   "$schema": "../node_modules/@ztools-center/ztools-api-types/resource/ztools.schema.json",
   "name": "local-search-neo",
   "author": "the_tree",
+  "homepage": "https://github.com/guopenghui/local-search-neo",
   "title": "本地搜索Neo",
   "description": "借助 Everything 来进行文件搜索",
   "version": "1.0.2",

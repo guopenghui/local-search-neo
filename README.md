@@ -2,6 +2,9 @@
 
 借助 Everything 进行本地文件搜索、分类浏览和快速预览的 ZTools 插件。
 
+> 项目地址：[https://github.com/guopenghui/local-search-neo](https://github.com/guopenghui/local-search-neo)  
+> 如有任何 Bug 或功能请求，欢迎提 [Issue](https://github.com/guopenghui/local-search-neo/issues)。
+
 > [!TIP]
 > 推荐使用本地安装版 everything
 >
@@ -120,15 +123,17 @@ node scripts/benchmark-everything-addon.cjs
 │   ├── src/                # Everything、文本预览、目录/压缩包树等原生能力
 │   └── index.d.ts          # addon 导出类型
 ├── public/
+│   ├── everything/         # 内置的 Everything.exe 二进制及配置文件 Everything.ini
 │   ├── plugin.json         # ZTools 插件配置
 │   └── preload/services.js # 预加载脚本，挂载 window.services，提供系统原生能力
 ├── scripts/                # addon 复制、验证和性能测试脚本
 ├── src/
 │   ├── App.vue             # 插件入口和 mainPush 处理
 │   ├── Finder/             # 搜索界面、结果列表、预览、设置等主要功能
+│   ├── assets/             # 静态资源目录
 │   ├── components/         # 通用组件
-│   ├── devMock.ts          # 浏览器开发 mock
 │   ├── env.d.ts            # window.services 等类型声明
+│   ├── main.css            # 主样式文件
 │   └── main.ts
 ├── AGENTS.md               # Agent 开发提示
 ├── package.json

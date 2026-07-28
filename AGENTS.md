@@ -38,7 +38,6 @@
 - 新增/修改 preload 服务时，同步更新：
   - `addon/index.d.ts`（如果是 addon 导出）
   - `src/env.d.ts`
-  - `src/devMock.ts`
 - 修改 addon 导出时同步更新：
   - `addon/src/lib.rs`
   - `addon/index.d.ts`
