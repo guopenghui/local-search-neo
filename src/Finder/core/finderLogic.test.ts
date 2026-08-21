@@ -3,6 +3,7 @@
 import {
   DEFAULT_CATEGORIES,
   buildEverythingQuery,
+  filterResultsExcludingPaths,
   formatBytes,
   getArchiveTreePreviewBlockedReason,
   getCodePreviewLanguage,
@@ -242,4 +243,19 @@ test("getDragTargetPaths resolves single vs multi-selection drag targets", () =>
   ]);
   assert.equal(getDragTargetPaths("C:\\c.txt", ["C:\\a.txt", "C:\\b.txt"]), "C:\\c.txt");
   assert.equal(getDragTargetPaths(""), "");
+});
+
+test("filterResultsExcludingPaths removes specified paths and preserves others", () => {
+  const items = [
+    { name: "1.txt", fullPath: "C:\\1.txt" },
+    { name: "2.txt", fullPath: "C:\\2.txt" },
+    { name: "3.txt", fullPath: "C:\\3.txt" },
+  ];
+
+  assert.deepEqual(filterResultsExcludingPaths(items, ["C:\\2.txt"]), [
+    { name: "1.txt", fullPath: "C:\\1.txt" },
+    { name: "3.txt", fullPath: "C:\\3.txt" },
+  ]);
+  assert.deepEqual(filterResultsExcludingPaths(items, ["C:\\missing.txt"]), items);
+  assert.deepEqual(filterResultsExcludingPaths(items, []), items);
 });

@@ -188,6 +188,15 @@ export function getRangeSelectedPaths(
   return visiblePaths.slice(start, end + 1);
 }
 
+export function filterResultsExcludingPaths<T extends Pick<FinderResult, "fullPath">>(
+  results: T[],
+  pathsToRemove: string[],
+): T[] {
+  if (pathsToRemove.length === 0) return results;
+  const toRemove = new Set(pathsToRemove);
+  return results.filter((item) => !item.fullPath || !toRemove.has(item.fullPath));
+}
+
 export function getDragTargetPaths(
   itemPath: string,
   selectedPaths: string[] = [],

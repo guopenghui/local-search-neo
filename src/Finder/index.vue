@@ -81,7 +81,6 @@ const confirmDialog = useGlocalConfirmDialog();
 const resultActions = useResultActions({
   onTrashed: (fullPaths) => {
     finderSearch.removeResultsByPaths(fullPaths);
-    finderSearch.runSearch();
   },
 });
 

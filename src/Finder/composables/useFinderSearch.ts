@@ -1,5 +1,6 @@
 import { computed, nextTick, onUnmounted, ref, type Ref } from "vue";
 import {
+  filterResultsExcludingPaths,
   getNextSelectedPath,
   getNextVisibleCount,
   getRangeSelectedPaths,
@@ -178,19 +179,15 @@ export function useFinderSearch({
   }
 
   function removeResultsByPaths(fullPaths: string[]) {
-    const pathsToRemove = new Set(fullPaths);
     const beforeLength = results.value.length;
-    results.value = results.value.filter(
-      (item) => !item.fullPath || !pathsToRemove.has(item.fullPath),
-    );
-    selectedPaths.value = selectedPaths.value.filter((p) => !pathsToRemove.has(p));
+    results.value = filterResultsExcludingPaths(results.value, fullPaths);
     if (results.value.length === beforeLength) return;
 
+    clearSelection();
     everythingTotal.value = Math.max(
       0,
       everythingTotal.value - (beforeLength - results.value.length),
     );
-    restoreSelection();
     updateResultStatus();
   }
 
