@@ -55,7 +55,6 @@ onBeforeUnmount(() => {
         :role="expanded ? 'dialog' : undefined"
         :aria-modal="expanded ? 'true' : undefined"
         :aria-label="expanded ? props.floatingLabel : undefined"
-        @click.stop
       >
         <button
           type="button"
