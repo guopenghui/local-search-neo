@@ -210,7 +210,7 @@ onUnmounted(() => {
 .sort-option:hover,
 .sort-option.active {
   color: #ffffff;
-  background: #424751;
+  background: var(--primary-color-dark-subtle-hover, #424751);
 }
 
 .preview-toggle {
@@ -248,7 +248,7 @@ onUnmounted(() => {
 }
 
 .preview-toggle input:checked + .toggle-track {
-  background: #3b82f6;
+  background: var(--primary-color);
 }
 
 .preview-toggle input:checked + .toggle-track::after {
@@ -296,7 +296,7 @@ onUnmounted(() => {
   .sort-option:hover,
   .sort-option.active {
     color: #111827;
-    background: #e9eef6;
+    background: var(--primary-color-subtle-hover);
   }
 
   .toggle-track {
@@ -308,7 +308,7 @@ onUnmounted(() => {
   }
 
   .preview-toggle input:checked + .toggle-track {
-    background: #2563eb;
+    background: var(--primary-color);
   }
 
   .result-count {

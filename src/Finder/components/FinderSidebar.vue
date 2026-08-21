@@ -98,12 +98,14 @@ const customCategories = computed(() =>
   padding: 0 2px;
   color: #c8d0db;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
   white-space: nowrap;
 }
 
 .category-button.active {
-  color: #3b82f6;
+  color: var(--primary-color);
 }
 
 .category-button:not(:disabled):active {
@@ -152,7 +154,7 @@ const customCategories = computed(() =>
   }
 
   .category-button.active {
-    color: #2563eb;
+    color: var(--primary-color-text, var(--primary-color));
   }
 
   .custom-category-button {

@@ -257,17 +257,17 @@ function openResultMenu(event: MouseEvent, item: FinderResult) {
 
 .result-row:hover,
 .result-row.selected {
-  background: #3c3e40;
+  background: var(--primary-color-dark-subtle-hover, #3c3e40);
 }
 
 .result-row.selected {
-  box-shadow: inset 3px 0 0 rgba(59, 130, 246, 0.5);
+  box-shadow: inset 3px 0 0 var(--primary-color-alpha-50);
 }
 
 .result-row.selected.active-focus,
 .result-row.active-focus {
-  background: #4a4b4d;
-  box-shadow: inset 3px 0 0 #3b82f6;
+  background: var(--primary-color-dark-subtle-bg, #4a4b4d);
+  box-shadow: inset 3px 0 0 var(--primary-color);
 }
 
 .file-icon {
@@ -362,7 +362,7 @@ function openResultMenu(event: MouseEvent, item: FinderResult) {
 }
 
 .loading-icon {
-  color: #3b82f6;
+  color: var(--primary-color);
   animation: loading-spin 0.9s linear infinite;
 }
 
@@ -380,17 +380,17 @@ function openResultMenu(event: MouseEvent, item: FinderResult) {
 
   .result-row:hover,
   .result-row.selected {
-    background: #e8edf4;
+    background: var(--primary-color-subtle-hover);
   }
 
   .result-row.selected {
-    box-shadow: inset 3px 0 0 rgba(37, 99, 235, 0.5);
+    box-shadow: inset 3px 0 0 var(--primary-color-alpha-50);
   }
 
   .result-row.selected.active-focus,
   .result-row.active-focus {
-    background: #dbeafe;
-    box-shadow: inset 3px 0 0 #2563eb;
+    background: var(--primary-color-subtle-bg);
+    box-shadow: inset 3px 0 0 var(--primary-color-text, var(--primary-color));
   }
 
   .file-name {

@@ -569,7 +569,7 @@ function toggleBuiltInCategories() {
 
 .settings-switch input:checked + .switch-track,
 .category-switch input:checked + .switch-track {
-  background: #3b82f6;
+  background: var(--primary-color);
 }
 
 .settings-switch input:checked + .switch-track::after,
@@ -604,7 +604,7 @@ function toggleBuiltInCategories() {
 
 .category-inline-input:focus,
 .category-inline-input:focus-visible {
-  border-color: #3b82f6;
+  border-color: var(--primary-color);
 }
 
 .category-type,
@@ -641,7 +641,7 @@ function toggleBuiltInCategories() {
 }
 
 .category-edit-actions button:first-child {
-  color: #60a5fa;
+  color: var(--primary-color-light);
 }
 
 .category-add-marker {
@@ -736,7 +736,7 @@ function toggleBuiltInCategories() {
 
   .settings-switch input:checked + .switch-track,
   .category-switch input:checked + .switch-track {
-    background: #2563eb;
+    background: var(--primary-color);
   }
 
   .category-rule {
@@ -751,7 +751,7 @@ function toggleBuiltInCategories() {
 
   .category-inline-input:focus,
   .category-inline-input:focus-visible {
-    border-color: #2563eb;
+    border-color: var(--primary-color);
   }
 
   .category-actions button:hover,
@@ -761,7 +761,7 @@ function toggleBuiltInCategories() {
   }
 
   .category-edit-actions button:first-child {
-    color: #2563eb;
+    color: var(--primary-color-text, var(--primary-color));
   }
 
   .category-actions .danger-action {
