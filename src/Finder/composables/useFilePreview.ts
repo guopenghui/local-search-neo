@@ -45,15 +45,16 @@ export function useFilePreview({ activeItem }: UseFilePreviewOptions) {
 
   async function loadPreview() {
     const sequence = ++previewLoadSequence;
-    resetPreview();
 
     const item = activeItem.value;
     if (!item) {
+      resetPreview();
       previewStatus.value = "选择文件后预览";
       return;
     }
 
     if (!item.fullPath) {
+      resetPreview();
       previewStatus.value = "缺少文件路径，无法预览";
       return;
     }
@@ -62,6 +63,7 @@ export function useFilePreview({ activeItem }: UseFilePreviewOptions) {
     if (sequence !== previewLoadSequence) return;
 
     if (!fileInfo.exists) {
+      resetPreview();
       previewStatus.value = "文件不存在，无法预览";
       return;
     }
@@ -77,34 +79,54 @@ export function useFilePreview({ activeItem }: UseFilePreviewOptions) {
     loadTextLikePreview(previewItem);
   }
 
+  function setPreviewState(options: {
+    kind: PreviewKind;
+    content?: string;
+    source?: string;
+    encoding?: string;
+    language?: string;
+    status?: string;
+  }) {
+    previewKind.value = options.kind;
+    previewContent.value = options.content ?? "";
+    previewSource.value = options.source ?? "";
+    previewEncoding.value = options.encoding ?? "";
+    previewLanguage.value = options.language ?? "";
+    previewStatus.value = options.status ?? "";
+  }
+
   function loadMediaPreview(item: FinderResult) {
     if (!item.fullPath) return false;
 
     if (isImagePreviewCandidate(item)) {
-      previewKind.value = "image";
-      previewSource.value = window.services.getFileUrl(item.fullPath);
-      previewStatus.value = "图片预览";
+      setPreviewState({
+        kind: "image",
+        source: window.services.getFileUrl(item.fullPath),
+      });
       return true;
     }
 
     if (isVideoPreviewCandidate(item)) {
-      previewKind.value = "video";
-      previewSource.value = window.services.getFileUrl(item.fullPath);
-      previewStatus.value = "视频预览";
+      setPreviewState({
+        kind: "video",
+        source: window.services.getFileUrl(item.fullPath),
+      });
       return true;
     }
 
     if (isAudioPreviewCandidate(item)) {
-      previewKind.value = "audio";
-      previewSource.value = window.services.getFileUrl(item.fullPath);
-      previewStatus.value = "音频预览";
+      setPreviewState({
+        kind: "audio",
+        source: window.services.getFileUrl(item.fullPath),
+      });
       return true;
     }
 
     if (isPdfPreviewCandidate(item)) {
-      previewKind.value = "pdf";
-      previewSource.value = item.fullPath;
-      previewStatus.value = "PDF 预览";
+      setPreviewState({
+        kind: "pdf",
+        source: item.fullPath,
+      });
       return true;
     }
 
@@ -116,11 +138,14 @@ export function useFilePreview({ activeItem }: UseFilePreviewOptions) {
 
     try {
       const tree = window.services.printDirectoryTree(item.fullPath);
-      previewKind.value = "tree";
-      previewContent.value = tree.text;
-      previewLanguage.value = "目录";
-      previewStatus.value = tree.truncated ? "目录结构 · 已截断" : "目录结构";
+      setPreviewState({
+        kind: "tree",
+        content: tree.text,
+        language: "目录",
+        status: tree.truncated ? "目录结构 · 已截断" : "目录结构",
+      });
     } catch (error: unknown) {
+      resetPreview();
       previewStatus.value = error instanceof Error ? error.message : "目录预览失败";
     }
   }
@@ -139,12 +164,15 @@ export function useFilePreview({ activeItem }: UseFilePreviewOptions) {
 
     try {
       const tree = window.services.printArchiveTree(item.fullPath);
-      previewKind.value = "tree";
-      previewContent.value = tree.text;
-      previewLanguage.value = "压缩包";
-      previewStatus.value = tree.truncated ? "文件结构 · 已截断" : "文件结构";
+      setPreviewState({
+        kind: "tree",
+        content: tree.text,
+        language: "压缩包",
+        status: tree.truncated ? "文件结构 · 已截断" : "文件结构",
+      });
       return true;
     } catch (error: unknown) {
+      resetPreview();
       previewStatus.value = error instanceof Error ? error.message : "压缩包预览失败";
       return true;
     }
@@ -165,6 +193,7 @@ export function useFilePreview({ activeItem }: UseFilePreviewOptions) {
     }
 
     if (!shouldPreviewAsText) {
+      resetPreview();
       previewStatus.value = "当前格式不支持预览";
       return;
     }
@@ -179,20 +208,22 @@ export function useFilePreview({ activeItem }: UseFilePreviewOptions) {
         textPreviewDirection,
       );
       if (!preview.isText) {
+        resetPreview();
         previewStatus.value = "当前格式不支持预览";
         return;
       }
 
-      previewKind.value = textPreviewKind ?? "text";
-      previewContent.value = preview.text;
-      previewEncoding.value = preview.encoding;
-      previewLanguage.value = getCodePreviewLanguage(item) ?? "plaintext";
-      previewStatus.value = getTextPreviewStatus(
-        previewKind.value,
-        item,
-        textPreviewBytes,
-        textPreviewDirection,
-      );
+      setPreviewState({
+        kind: textPreviewKind ?? "text",
+        content: preview.text,
+        encoding: preview.encoding,
+        language: getCodePreviewLanguage(item) ?? "plaintext",
+        status: getTextPreviewStatus(
+          textPreviewKind ?? "text",
+          textPreviewBytes,
+          textPreviewDirection,
+        ),
+      });
     } catch (error: unknown) {
       resetPreview();
       previewStatus.value = error instanceof Error ? error.message : "预览失败";
@@ -200,11 +231,7 @@ export function useFilePreview({ activeItem }: UseFilePreviewOptions) {
   }
 
   function resetPreview() {
-    previewKind.value = "empty";
-    previewContent.value = "";
-    previewSource.value = "";
-    previewEncoding.value = "";
-    previewLanguage.value = "";
+    setPreviewState({ kind: "empty" });
   }
 
   watch([activeItem], () => void loadPreview(), { immediate: true });
@@ -228,13 +255,7 @@ function getTextPreviewKind(
   return undefined;
 }
 
-function getTextPreviewStatus(
-  kind: PreviewKind,
-  item: Pick<FinderResult, "name" | "extension" | "isDirectory">,
-  bytes: number,
-  direction: "start" | "end",
-) {
-  if (kind === "markdown") return "Markdown 预览";
-  if (kind === "code") return `${getCodePreviewLanguage(item) ?? "plaintext"} · 代码预览`;
+function getTextPreviewStatus(kind: PreviewKind, bytes: number, direction: "start" | "end") {
+  if (kind !== "text") return "";
   return `显示${direction === "end" ? "后" : "前"} ${formatBytes(bytes)} 内容`;
 }

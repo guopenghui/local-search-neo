@@ -108,15 +108,20 @@ useFinderKeyboard({
   scrollSelectedIntoView: finderSearch.scrollSelectedIntoView,
 });
 
-watch(
-  [() => activeCategory.value.id, () => activeCategory.value.rule, sortMode, matchPathEnabled],
-  () => {
-    if (!everythingReady.value) return;
+watch([() => activeCategory.value.id, () => activeCategory.value.rule], () => {
+  if (!everythingReady.value) return;
 
-    finderSearch.resetVisibleCount();
-    finderSearch.runSearch();
-  },
-);
+  finderSearch.resetVisibleCount();
+  finderSearch.clearSelection();
+  finderSearch.runSearch();
+});
+
+watch([sortMode, matchPathEnabled], () => {
+  if (!everythingReady.value) return;
+
+  finderSearch.resetVisibleCount();
+  finderSearch.runSearch();
+});
 
 onMounted(() => {
   bindSubInput();

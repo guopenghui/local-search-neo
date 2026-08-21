@@ -84,7 +84,7 @@ function updateImageSize(event: Event) {
   min-width: 0;
   min-height: 0;
   box-sizing: border-box;
-  padding: 12px;
+  padding: 0;
   overflow: hidden;
 }
 
