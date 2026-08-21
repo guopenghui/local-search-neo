@@ -188,9 +188,12 @@ export function getRangeSelectedPaths(
   return visiblePaths.slice(start, end + 1);
 }
 
-export function getDragTargetPaths(itemPath: string, selectedPaths?: string[]): string | string[] {
+export function getDragTargetPaths(
+  itemPath: string,
+  selectedPaths: string[] = [],
+): string | string[] {
   if (!itemPath) return "";
-  if (selectedPaths && selectedPaths.length > 1 && selectedPaths.includes(itemPath)) {
+  if (selectedPaths.length > 1 && selectedPaths.includes(itemPath)) {
     return [...selectedPaths];
   }
   return itemPath;

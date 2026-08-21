@@ -9,7 +9,8 @@ import { formatBytes, type FinderResult, type SelectionMode } from "../core/find
 const props = defineProps<{
   visibleResults: FinderResult[];
   activePath: string;
-  selectedPaths?: string[];
+  selectedPaths: string[];
+  selectedItems: FinderResult[];
   isLoading: boolean;
   statusText: string;
   previewOpen: boolean;
@@ -29,16 +30,10 @@ const emit = defineEmits<{
   "context-menu": [event: MouseEvent, items: ContextMenuItem[]];
 }>();
 
-const selectedPathSet = computed(() => {
-  if (props.selectedPaths && props.selectedPaths.length > 0) {
-    return new Set(props.selectedPaths);
-  }
-  return props.activePath ? new Set([props.activePath]) : new Set<string>();
-});
+const selectedPathSet = computed(() => new Set(props.selectedPaths));
 
 function isRowSelected(fullPath?: string): boolean {
-  if (!fullPath) return false;
-  return selectedPathSet.value.has(fullPath);
+  return !!fullPath && selectedPathSet.value.has(fullPath);
 }
 
 const { displayItem, iconFor } = useFileIcons({
@@ -119,41 +114,56 @@ function openResultMenu(event: MouseEvent, item: FinderResult) {
   if (item.fullPath && !selectedPathSet.value.has(item.fullPath)) {
     emit("select", item, "single");
   }
-  const hasFullPath = !!item.fullPath;
-  const hasDirectoryPath = !!item.path;
+
+  const isMulti =
+    !!item.fullPath && selectedPathSet.value.has(item.fullPath) && props.selectedItems.length > 1;
+
+  const targetItems = isMulti ? props.selectedItems : [item];
+
+  const count = targetItems.length;
+  const countSuffix = isMulti ? ` (${count} 项)` : "";
+  const hasFullPath = targetItems.some((r) => !!r.fullPath);
+  const hasDirectoryPath = targetItems.some((r) => !!r.path);
 
   emit("context-menu", event, [
     {
-      id: "show-in-folder",
-      label: "打开所在目录",
+      id: "open-file",
+      label: `打开文件${countSuffix}`,
       disabled: !hasFullPath,
-      action: () => props.actions.showInFolder(item),
+      action: () => props.actions.open(targetItems),
     },
     {
-      id: "copy-full-path",
-      label: "复制路径",
+      id: "show-in-folder",
+      label: `打开所在目录${countSuffix}`,
       disabled: !hasFullPath,
-      action: () => props.actions.copyFullPath(item),
+      action: () => props.actions.showInFolder(targetItems),
+    },
+    { id: "separator-open", label: "", separator: true },
+    {
+      id: "copy-full-path",
+      label: `复制路径${countSuffix}`,
+      disabled: !hasFullPath,
+      action: () => props.actions.copyFullPath(targetItems),
     },
     {
       id: "copy-directory-path",
-      label: "复制所在路径",
+      label: `复制所在路径${countSuffix}`,
       disabled: !hasDirectoryPath,
-      action: () => props.actions.copyDirectoryPath(item),
+      action: () => props.actions.copyDirectoryPath(targetItems),
     },
     {
       id: "copy-file",
-      label: "复制文件",
+      label: `复制文件${countSuffix}`,
       disabled: !hasFullPath,
-      action: () => props.actions.copyFile(item),
+      action: () => props.actions.copyFile(targetItems),
     },
     { id: "separator-delete", label: "", separator: true },
     {
       id: "trash-item",
-      label: "删除（回收站）",
+      label: isMulti ? `删除 ${count} 项（回收站）` : "删除（回收站）",
       danger: true,
       disabled: !hasFullPath,
-      action: () => props.actions.trash(item),
+      action: () => props.actions.trash(targetItems),
     },
   ]);
 }

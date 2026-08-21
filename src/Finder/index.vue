@@ -79,8 +79,8 @@ const resultLoading = computed(() => finderSearch.isLoading.value || everythingP
 const contextMenu = useContextMenu();
 const confirmDialog = useGlocalConfirmDialog();
 const resultActions = useResultActions({
-  onTrashed: (fullPath) => {
-    finderSearch.removeResultByPath(fullPath);
+  onTrashed: (fullPaths) => {
+    finderSearch.removeResultsByPaths(fullPaths);
     finderSearch.runSearch();
   },
 });
@@ -104,11 +104,8 @@ useFinderKeyboard({
   closeTransientOverlays: contextMenu.close,
   focusSubInput,
   moveSelection: finderSearch.moveSelection,
-  openSelection: () => resultActions.open(finderSearch.activeItem.value),
-  showSelectionInFolder: () => {
-    const activeItem = finderSearch.activeItem.value;
-    if (activeItem) resultActions.showInFolder(activeItem);
-  },
+  openSelection: () => resultActions.open(finderSearch.selectedItems.value),
+  showSelectionInFolder: () => resultActions.showInFolder(finderSearch.selectedItems.value),
   scrollSelectedIntoView: finderSearch.scrollSelectedIntoView,
 });
 
@@ -174,6 +171,7 @@ function setActiveCategory(category: FinderCategory) {
         :visible-results="finderSearch.visibleResults.value"
         :active-path="finderSearch.activePath.value"
         :selected-paths="finderSearch.selectedPaths.value"
+        :selected-items="finderSearch.selectedItems.value"
         :is-loading="resultLoading"
         :status-text="resultStatusText"
         :preview-open="previewEnabled"
@@ -182,7 +180,7 @@ function setActiveCategory(category: FinderCategory) {
         @near-bottom="finderSearch.growVisibleCount"
         @select="selectItem"
         @context-menu="contextMenu.open"
-        @open="(item) => resultActions.open(item)"
+        @open="(item) => resultActions.open([item])"
       />
     </section>
 

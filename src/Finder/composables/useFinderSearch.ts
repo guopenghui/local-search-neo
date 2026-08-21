@@ -40,6 +40,13 @@ export function useFinderSearch({
   const activeItem = computed(() =>
     results.value.find((item) => item.fullPath === activePath.value),
   );
+  const selectedItems = computed<FinderResult[]>(() => {
+    if (selectedPaths.value.length === 0) {
+      return activeItem.value ? [activeItem.value] : [];
+    }
+    const pathSet = new Set(selectedPaths.value);
+    return results.value.filter((item) => item.fullPath && pathSet.has(item.fullPath));
+  });
 
   let searchTimer: number | undefined;
   let searchSequence = 0;
@@ -170,13 +177,19 @@ export function useFinderSearch({
     selectedPaths.value = [];
   }
 
-  function removeResultByPath(fullPath: string) {
+  function removeResultsByPaths(fullPaths: string[]) {
+    const pathsToRemove = new Set(fullPaths);
     const beforeLength = results.value.length;
-    results.value = results.value.filter((item) => item.fullPath !== fullPath);
-    selectedPaths.value = selectedPaths.value.filter((p) => p !== fullPath);
+    results.value = results.value.filter(
+      (item) => !item.fullPath || !pathsToRemove.has(item.fullPath),
+    );
+    selectedPaths.value = selectedPaths.value.filter((p) => !pathsToRemove.has(p));
     if (results.value.length === beforeLength) return;
 
-    everythingTotal.value = Math.max(0, everythingTotal.value - 1);
+    everythingTotal.value = Math.max(
+      0,
+      everythingTotal.value - (beforeLength - results.value.length),
+    );
     restoreSelection();
     updateResultStatus();
   }
@@ -215,6 +228,7 @@ export function useFinderSearch({
     activePath,
     activeItem,
     selectedPaths,
+    selectedItems,
     statusText,
     isLoading,
     visibleResults,
@@ -224,7 +238,7 @@ export function useFinderSearch({
     updateResultStatus,
     selectItem,
     clearSelection,
-    removeResultByPath,
+    removeResultsByPaths,
     moveSelection,
     growVisibleCount,
     resetVisibleCount,
