@@ -11,7 +11,7 @@ export interface FinderEnterAction {
 }
 
 interface UseFinderEnterActionOptions {
-  selectedPath: Ref<string>;
+  activePath: Ref<string>;
   search: (options?: RunSearchOptions) => void;
 }
 
@@ -30,7 +30,7 @@ export function useFinderEnterAction(options?: UseFinderEnterActionOptions) {
 
       setQueryText(action.payload);
       syncSubInputValue();
-      options.selectedPath.value = fullPath ?? "";
+      options.activePath.value = fullPath ?? "";
       options.search({ preserveSelection: !!fullPath });
     };
 

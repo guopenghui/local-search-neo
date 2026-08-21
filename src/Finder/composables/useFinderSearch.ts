@@ -2,10 +2,12 @@ import { computed, nextTick, onUnmounted, ref, type Ref } from "vue";
 import {
   getNextSelectedPath,
   getNextVisibleCount,
+  getRangeSelectedPaths,
   getRestoredSelectedPath,
   mergeResultsByMatchPathPriority,
   type FinderResult,
   type FinderSortMode,
+  type SelectionMode,
 } from "../core/finderLogic";
 
 interface UseFinderSearchOptions {
@@ -30,12 +32,13 @@ export function useFinderSearch({
   const results = ref<FinderResult[]>([]);
   const everythingTotal = ref(0);
   const visibleCount = ref(pageSize);
-  const selectedPath = ref("");
+  const activePath = ref("");
+  const selectedPaths = ref<string[]>([]);
   const statusText = ref("输入关键字开始搜索");
   const isLoading = ref(false);
   const visibleResults = computed(() => results.value.slice(0, visibleCount.value));
-  const selectedItem = computed(() =>
-    results.value.find((item) => item.fullPath === selectedPath.value),
+  const activeItem = computed(() =>
+    results.value.find((item) => item.fullPath === activePath.value),
   );
 
   let searchTimer: number | undefined;
@@ -44,7 +47,7 @@ export function useFinderSearch({
   onUnmounted(clearSearchTimer);
 
   function scrollSelectedIntoView() {
-    const index = visibleResults.value.findIndex((item) => item.fullPath === selectedPath.value);
+    const index = visibleResults.value.findIndex((item) => item.fullPath === activePath.value);
     if (index < 0) return;
 
     document.querySelector(`[data-result-index="${index}"]`)?.scrollIntoView({
@@ -123,29 +126,54 @@ export function useFinderSearch({
   }
 
   function restoreSelection(options: RunSearchOptions = {}) {
-    const currentPath = selectedPath.value;
-    const selectedPathExists = results.value.some((item) => item.fullPath === currentPath);
+    const currentPath = activePath.value;
+    const activePathExists = results.value.some((item) => item.fullPath === currentPath);
 
-    if (options.preserveSelection && currentPath && !selectedPathExists) {
+    if (options.preserveSelection && currentPath && !activePathExists) {
       nextTick(() => onSelectionRestored?.());
       return;
     }
 
-    selectedPath.value = getRestoredSelectedPath(results.value, currentPath);
+    activePath.value = getRestoredSelectedPath(results.value, currentPath);
+    selectedPaths.value = activePath.value ? [activePath.value] : [];
     nextTick(() => onSelectionRestored?.());
   }
 
-  function selectItem(item: FinderResult) {
-    selectedPath.value = item.fullPath ?? "";
+  function selectItem(item: FinderResult, mode: SelectionMode = "single") {
+    const targetPath = item.fullPath ?? "";
+    if (!targetPath) return;
+
+    if (mode === "toggle") {
+      if (selectedPaths.value.includes(targetPath)) {
+        selectedPaths.value = selectedPaths.value.filter((p) => p !== targetPath);
+        if (activePath.value === targetPath) {
+          activePath.value = selectedPaths.value[selectedPaths.value.length - 1] ?? "";
+        }
+      } else {
+        selectedPaths.value = [...selectedPaths.value, targetPath];
+        activePath.value = targetPath;
+      }
+    } else if (mode === "range") {
+      const visiblePaths = visibleResults.value
+        .map((r) => r.fullPath)
+        .filter((p): p is string => !!p);
+      const anchor = activePath.value || visiblePaths[0] || targetPath;
+      selectedPaths.value = getRangeSelectedPaths(visiblePaths, anchor, targetPath);
+    } else {
+      activePath.value = targetPath;
+      selectedPaths.value = [targetPath];
+    }
   }
 
   function clearSelection() {
-    selectedPath.value = "";
+    activePath.value = "";
+    selectedPaths.value = [];
   }
 
   function removeResultByPath(fullPath: string) {
     const beforeLength = results.value.length;
     results.value = results.value.filter((item) => item.fullPath !== fullPath);
+    selectedPaths.value = selectedPaths.value.filter((p) => p !== fullPath);
     if (results.value.length === beforeLength) return;
 
     everythingTotal.value = Math.max(0, everythingTotal.value - 1);
@@ -157,10 +185,11 @@ export function useFinderSearch({
     const paths = results.value
       .map((item) => item.fullPath)
       .filter((path): path is string => !!path);
-    const nextPath = getNextSelectedPath(paths, selectedPath.value, direction);
+    const nextPath = getNextSelectedPath(paths, activePath.value, direction);
     if (!nextPath) return;
 
-    selectedPath.value = nextPath;
+    activePath.value = nextPath;
+    selectedPaths.value = [nextPath];
     const nextIndex = results.value.findIndex((item) => item.fullPath === nextPath);
     if (nextIndex >= visibleCount.value - 4) {
       visibleCount.value = getNextVisibleCount(visibleCount.value, results.value.length, pageSize);
@@ -183,11 +212,12 @@ export function useFinderSearch({
     results,
     everythingTotal,
     visibleCount,
-    selectedPath,
+    activePath,
+    activeItem,
+    selectedPaths,
     statusText,
     isLoading,
     visibleResults,
-    selectedItem,
     queueSearch,
     runSearch,
     restoreSelection,

@@ -30,10 +30,10 @@ export type PreviewKind =
   | "audio";
 
 interface UseFilePreviewOptions {
-  selectedItem: ComputedRef<FinderResult | undefined>;
+  activeItem: ComputedRef<FinderResult | undefined>;
 }
 
-export function useFilePreview({ selectedItem }: UseFilePreviewOptions) {
+export function useFilePreview({ activeItem }: UseFilePreviewOptions) {
   const previewKind = ref<PreviewKind>("empty");
   const previewContent = ref("");
   const previewSource = ref("");
@@ -47,7 +47,7 @@ export function useFilePreview({ selectedItem }: UseFilePreviewOptions) {
     const sequence = ++previewLoadSequence;
     resetPreview();
 
-    const item = selectedItem.value;
+    const item = activeItem.value;
     if (!item) {
       previewStatus.value = "选择文件后预览";
       return;
@@ -207,7 +207,7 @@ export function useFilePreview({ selectedItem }: UseFilePreviewOptions) {
     previewLanguage.value = "";
   }
 
-  watch([selectedItem], () => void loadPreview(), { immediate: true });
+  watch([activeItem], () => void loadPreview(), { immediate: true });
 
   return {
     previewKind,

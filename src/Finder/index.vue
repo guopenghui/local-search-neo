@@ -22,7 +22,7 @@ import { useFinderSettings } from "./composables/useFinderSettings";
 import { usePersistStorage } from "./composables/usePersistStorage";
 import { useResultActions } from "./composables/useResultActions";
 import { useSubInput } from "./composables/useSubInput";
-import type { FinderCategory } from "./core/finderLogic";
+import type { FinderCategory, FinderResult, SelectionMode } from "./core/finderLogic";
 import { useEverything } from "./composables/useEverything";
 
 const PAGE_SIZE = 30;
@@ -86,7 +86,7 @@ const resultActions = useResultActions({
 });
 
 useFinderEnterAction({
-  selectedPath: finderSearch.selectedPath,
+  activePath: finderSearch.activePath,
   search: finderSearch.runSearch,
 });
 
@@ -104,10 +104,10 @@ useFinderKeyboard({
   closeTransientOverlays: contextMenu.close,
   focusSubInput,
   moveSelection: finderSearch.moveSelection,
-  openSelection: () => resultActions.open(finderSearch.selectedItem.value),
+  openSelection: () => resultActions.open(finderSearch.activeItem.value),
   showSelectionInFolder: () => {
-    const selectedItem = finderSearch.selectedItem.value;
-    if (selectedItem) resultActions.showInFolder(selectedItem);
+    const activeItem = finderSearch.activeItem.value;
+    if (activeItem) resultActions.showInFolder(activeItem);
   },
   scrollSelectedIntoView: finderSearch.scrollSelectedIntoView,
 });
@@ -149,8 +149,8 @@ function closeTransientState(isKill = false) {
   window.services.everything.handlePluginOut(isKill);
 }
 
-function selectItem(item: { fullPath?: string }) {
-  finderSearch.selectedPath.value = item.fullPath ?? "";
+function selectItem(item: FinderResult, mode?: SelectionMode) {
+  finderSearch.selectItem(item, mode);
   releaseFinderFocus();
 }
 
@@ -172,7 +172,8 @@ function setActiveCategory(category: FinderCategory) {
     <section class="finder-main">
       <FinderResultList
         :visible-results="finderSearch.visibleResults.value"
-        :selected-path="finderSearch.selectedPath.value"
+        :active-path="finderSearch.activePath.value"
+        :selected-paths="finderSearch.selectedPaths.value"
         :is-loading="resultLoading"
         :status-text="resultStatusText"
         :preview-open="previewEnabled"
@@ -181,7 +182,7 @@ function setActiveCategory(category: FinderCategory) {
         @near-bottom="finderSearch.growVisibleCount"
         @select="selectItem"
         @context-menu="contextMenu.open"
-        @open="resultActions.open(finderSearch.selectedItem.value)"
+        @open="(item) => resultActions.open(item)"
       />
     </section>
 
@@ -200,10 +201,7 @@ function setActiveCategory(category: FinderCategory) {
       floating-label="悬浮预览窗口"
       placeholder="预览已放大显示"
     >
-      <FinderPreviewPane
-        :selected-item="finderSearch.selectedItem"
-        @context-menu="contextMenu.open"
-      />
+      <FinderPreviewPane :active-item="finderSearch.activeItem" @context-menu="contextMenu.open" />
     </FloatingZoom>
 
     <SettingsDrawer

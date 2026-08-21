@@ -71,6 +71,9 @@ interface Services {
 }
 
 declare global {
+  interface ZToolsApi {
+    startDrag(filePath: string | string[]): void;
+  }
   interface Window {
     services: Services;
   }

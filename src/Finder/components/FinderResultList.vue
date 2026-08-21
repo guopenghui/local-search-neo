@@ -1,13 +1,15 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { LoaderCircle } from "@lucide/vue";
 import type { ContextMenuItem } from "../composables/useContextMenu";
 import { useFileIcons } from "../composables/useFileIcons";
 import type { ResultActions } from "../composables/useResultActions";
-import { formatBytes, type FinderResult } from "../core/finderLogic";
+import { formatBytes, type FinderResult, type SelectionMode } from "../core/finderLogic";
 
 const props = defineProps<{
   visibleResults: FinderResult[];
-  selectedPath: string;
+  activePath: string;
+  selectedPaths?: string[];
   isLoading: boolean;
   statusText: string;
   previewOpen: boolean;
@@ -22,10 +24,22 @@ interface HighlightSegment {
 
 const emit = defineEmits<{
   nearBottom: [];
-  select: [item: FinderResult];
-  open: [];
+  select: [item: FinderResult, mode?: SelectionMode];
+  open: [item: FinderResult];
   "context-menu": [event: MouseEvent, items: ContextMenuItem[]];
 }>();
+
+const selectedPathSet = computed(() => {
+  if (props.selectedPaths && props.selectedPaths.length > 0) {
+    return new Set(props.selectedPaths);
+  }
+  return props.activePath ? new Set([props.activePath]) : new Set<string>();
+});
+
+function isRowSelected(fullPath?: string): boolean {
+  if (!fullPath) return false;
+  return selectedPathSet.value.has(fullPath);
+}
 
 const { displayItem, iconFor } = useFileIcons({
   visibleResults: () => props.visibleResults,
@@ -36,6 +50,25 @@ function handleListScroll(event: Event) {
   const element = event.currentTarget as HTMLElement;
   const distanceToBottom = element.scrollHeight - element.scrollTop - element.clientHeight;
   if (distanceToBottom < 120) emit("nearBottom");
+}
+
+function handleRowClick(event: MouseEvent, item: FinderResult) {
+  let mode: SelectionMode = "single";
+  if (event.ctrlKey || event.metaKey) {
+    mode = "toggle";
+  } else if (event.shiftKey) {
+    mode = "range";
+  }
+  emit("select", item, mode);
+}
+
+function handleDragStart(event: DragEvent, item: FinderResult) {
+  event.preventDefault();
+  if (!item.fullPath) return;
+  if (!selectedPathSet.value.has(item.fullPath)) {
+    emit("select", item, "single");
+  }
+  props.actions.startDrag(item, props.selectedPaths);
 }
 
 function fileInitial(item: FinderResult) {
@@ -83,7 +116,9 @@ function highlightSegments(value: string | undefined, fallback = ""): HighlightS
 }
 
 function openResultMenu(event: MouseEvent, item: FinderResult) {
-  emit("select", item);
+  if (item.fullPath && !selectedPathSet.value.has(item.fullPath)) {
+    emit("select", item, "single");
+  }
   const hasFullPath = !!item.fullPath;
   const hasDirectoryPath = !!item.path;
 
@@ -130,13 +165,17 @@ function openResultMenu(event: MouseEvent, item: FinderResult) {
       v-for="(item, index) in visibleResults"
       :key="item.fullPath"
       :data-result-index="index"
+      :draggable="!!item.fullPath"
       class="result-row"
-      :class="{ selected: item.fullPath === selectedPath }"
+      :class="{
+        selected: isRowSelected(item.fullPath),
+        'active-focus': item.fullPath === activePath,
+      }"
       tabindex="-1"
-      @mousedown.left.prevent
+      @dragstart="handleDragStart($event, item)"
       @contextmenu.prevent.stop="openResultMenu($event, item)"
-      @click="emit('select', item)"
-      @dblclick="emit('open')"
+      @click="handleRowClick($event, item)"
+      @dblclick="emit('open', item)"
     >
       <span class="file-icon" :class="{ 'fallback-icon': !iconFor(item) }">
         <img v-if="iconFor(item)" :src="iconFor(item)" alt="" />
@@ -198,6 +237,7 @@ function openResultMenu(event: MouseEvent, item: FinderResult) {
   border-bottom: 1px solid transparent;
   color: inherit;
   font: inherit;
+  user-select: none;
 }
 
 .result-row:focus,
@@ -207,10 +247,15 @@ function openResultMenu(event: MouseEvent, item: FinderResult) {
 
 .result-row:hover,
 .result-row.selected {
-  background: #4a4b4d;
+  background: #3c3e40;
 }
 
 .result-row.selected {
+  box-shadow: inset 3px 0 0 rgba(59, 130, 246, 0.5);
+}
+
+.result-row.selected.active-focus {
+  background: #4a4b4d;
   box-shadow: inset 3px 0 0 #3b82f6;
 }
 

@@ -1,5 +1,5 @@
 import { useGlocalConfirmDialog } from "../../components/useGlocalConfirmDialog";
-import type { FinderResult } from "../core/finderLogic";
+import { getDragTargetPaths, type FinderResult } from "../core/finderLogic";
 
 interface UseResultActionsOptions {
   onTrashed: (fullPath: string) => void;
@@ -12,6 +12,7 @@ export interface ResultActions {
   copyDirectoryPath(item: FinderResult): void;
   copyFile(item: FinderResult): void;
   trash(item: FinderResult): Promise<void>;
+  startDrag(item: FinderResult, selectedPaths?: string[]): void;
 }
 
 const { confirm } = useGlocalConfirmDialog();
@@ -37,6 +38,12 @@ export function useResultActions({ onTrashed }: UseResultActionsOptions): Result
     if (item.fullPath) window.ztools.copyFile(item.fullPath);
   }
 
+  function startDrag(item: FinderResult, selectedPaths?: string[]) {
+    if (!item.fullPath) return;
+    const target = getDragTargetPaths(item.fullPath, selectedPaths);
+    window.ztools.startDrag(target);
+  }
+
   async function trash(item: FinderResult) {
     if (!item.fullPath) return;
 
@@ -59,5 +66,6 @@ export function useResultActions({ onTrashed }: UseResultActionsOptions): Result
     copyDirectoryPath,
     copyFile,
     trash,
+    startDrag,
   };
 }
