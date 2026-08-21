@@ -264,7 +264,8 @@ function openResultMenu(event: MouseEvent, item: FinderResult) {
   box-shadow: inset 3px 0 0 rgba(59, 130, 246, 0.5);
 }
 
-.result-row.selected.active-focus {
+.result-row.selected.active-focus,
+.result-row.active-focus {
   background: #4a4b4d;
   box-shadow: inset 3px 0 0 #3b82f6;
 }
@@ -383,6 +384,12 @@ function openResultMenu(event: MouseEvent, item: FinderResult) {
   }
 
   .result-row.selected {
+    box-shadow: inset 3px 0 0 rgba(37, 99, 235, 0.5);
+  }
+
+  .result-row.selected.active-focus,
+  .result-row.active-focus {
+    background: #dbeafe;
     box-shadow: inset 3px 0 0 #2563eb;
   }
 
