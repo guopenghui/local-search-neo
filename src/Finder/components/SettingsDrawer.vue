@@ -127,8 +127,12 @@ function toggleBuiltInCategories() {
         <section class="settings-section">
           <section class="settings-card search-settings">
             <div>
-              <h3>搜索设置</h3>
-              <p>启用后，普通关键字会同时匹配路径和文件名，结果更多但可能变慢。</p>
+              <h3>匹配路径</h3>
+              <p>启用后，普通关键字会同时匹配路径和文件名，可以快速过滤同名文件。</p>
+              <p>
+                如 <code>config.json .codex user</code> 可以快速搜出
+                <code>**/User/**/.codex/**/config.json </code>文件
+              </p>
             </div>
             <label class="settings-switch">
               <input
@@ -288,7 +292,7 @@ function toggleBuiltInCategories() {
 .settings-layer {
   position: fixed;
   inset: 0;
-  z-index: 20;
+  z-index: 500;
   display: grid;
   align-items: end;
 }

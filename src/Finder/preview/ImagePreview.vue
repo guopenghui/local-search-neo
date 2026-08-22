@@ -46,9 +46,24 @@ const fitSize = computed(() => {
 });
 
 const imageStyle = computed(() => {
-  if (!fitSize.value) return {};
-  const currentWidth = Math.round(fitSize.value.width * zoomLevel.value);
-  const currentHeight = Math.round(fitSize.value.height * zoomLevel.value);
+  if (zoomLevel.value === 1 || !imageNaturalSize.value || !viewportSize.value) {
+    return {
+      maxWidth: "100%",
+      maxHeight: "100%",
+      width: "auto",
+      height: "auto",
+    };
+  }
+
+  const nw = imageNaturalSize.value.width;
+  const nh = imageNaturalSize.value.height;
+  const vw = Math.max(viewportSize.value.width, 20);
+  const vh = Math.max(viewportSize.value.height, 20);
+
+  const baseScale = Math.min(vw / nw, vh / nh, 1);
+  const currentWidth = Math.max(Math.round(nw * baseScale * zoomLevel.value), 1);
+  const currentHeight = Math.max(Math.round(nh * baseScale * zoomLevel.value), 1);
+
   return {
     width: `${currentWidth}px`,
     height: `${currentHeight}px`,
@@ -86,8 +101,25 @@ watch(
   },
 );
 
-watch(zoomLevel, () => {
-  void nextTick(checkOverflow);
+function centerScroll() {
+  if (!shellRef.value) return;
+  const maxScrollX = shellRef.value.scrollWidth - shellRef.value.clientWidth;
+  const maxScrollY = shellRef.value.scrollHeight - shellRef.value.clientHeight;
+  if (maxScrollX > 0) {
+    shellRef.value.scrollLeft = maxScrollX / 2;
+  }
+  if (maxScrollY > 0) {
+    shellRef.value.scrollTop = maxScrollY / 2;
+  }
+}
+
+watch(zoomLevel, (newZoom, oldZoom) => {
+  void nextTick(() => {
+    checkOverflow();
+    if (newZoom > 1 && oldZoom === 1) {
+      centerScroll();
+    }
+  });
 });
 
 function updateImageSize(event: Event) {
@@ -232,7 +264,11 @@ onBeforeUnmount(() => {
     <div
       ref="shellRef"
       class="preview-media-shell"
-      :class="{ 'has-overflow': hasOverflow, 'is-panning': isPanning }"
+      :class="{
+        'has-overflow': hasOverflow,
+        'is-panning': isPanning,
+        'is-zoomed': zoomLevel !== 1,
+      }"
       @wheel="handleWheel"
       @mousedown="handleMouseDown"
       @dblclick="handleDoubleClick"
@@ -330,15 +366,22 @@ onBeforeUnmount(() => {
 }
 
 .preview-media-shell {
-  display: grid;
-  place-items: center;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   height: 100%;
   min-width: 0;
   min-height: 0;
   box-sizing: border-box;
   padding: 0;
+  overflow: hidden;
+}
+
+.preview-media-shell.is-zoomed {
   overflow: auto;
+  display: block;
 }
 
 .preview-media-shell.has-overflow {
@@ -351,15 +394,37 @@ onBeforeUnmount(() => {
 }
 
 .image-stage-wrap {
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   margin: auto;
+}
+
+.preview-media-shell.is-zoomed .image-stage-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: max-content;
+  height: max-content;
+  min-width: 100%;
+  min-height: 100%;
+  padding: 24px;
+  box-sizing: border-box;
 }
 
 .preview-image {
   display: block;
   box-sizing: border-box;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
   object-fit: contain;
+  flex-shrink: 0;
   background-color: #ffffff;
   background-image: conic-gradient(
     #e5e5e5 0 25%,
