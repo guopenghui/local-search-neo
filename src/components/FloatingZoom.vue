@@ -123,25 +123,31 @@ onBeforeUnmount(() => {
 
 .floating-zoom-toggle {
   position: absolute;
-  top: 34px;
-  right: 5px;
-  z-index: 2;
-  display: grid;
+  top: 4px;
+  right: 6px;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 22px;
   height: 22px;
+  box-sizing: border-box;
   padding: 0;
-  place-items: center;
-  color: #dce3ea;
-  background: rgb(20 24 29 / 78%);
-  border: 1px solid rgb(255 255 255 / 16%);
+  color: #c3c8cf;
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: 4px;
-  box-shadow: 0 6px 18px rgb(0 0 0 / 28%);
-  font-size: 15px;
-  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .floating-zoom-toggle:hover {
-  background: rgb(40 47 56 / 92%);
+  color: #ffffff;
+  background: #2b2e33;
+  border-color: #454950;
 }
 
 .floating-zoom-backdrop {
@@ -164,14 +170,15 @@ onBeforeUnmount(() => {
   }
 
   .floating-zoom-toggle {
-    color: #1f2937;
-    background: rgb(255 255 255 / 88%);
-    border-color: rgb(15 23 42 / 14%);
-    box-shadow: 0 6px 18px rgb(15 23 42 / 14%);
+    color: #4f5b6a;
+    background: transparent;
+    border-color: transparent;
   }
 
   .floating-zoom-toggle:hover {
-    background: #ffffff;
+    color: #111827;
+    background: #eef2f7;
+    border-color: #cbd5e1;
   }
 
   .floating-zoom-backdrop {
