@@ -36,5 +36,60 @@
         }
       ]
     }
-  ]
+  ],
+  "tools": {
+    "everything_search": {
+      "description": "使用 Everything 本地搜索引擎高速检索 Windows 文件和目录，支持 Everything 丰富语法（如 ext:pdf, folder:xxx, 通配符等）",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Everything 风格搜索关键词或语法（例如 '年度总结 *.docx', 'ext:png;jpg', 'folder:node_modules', 'C:\\Windows notepad' 等）"
+          },
+          "n": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 30,
+            "default": 20,
+            "description": "最大返回结果数量（范围 10-30，默认 20）"
+          }
+        },
+        "required": ["query"],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "description": "搜索命中的总数量"
+          },
+          "results": {
+            "type": "array",
+            "description": "搜索命中的文件/目录结果列表",
+            "items": {
+              "type": "object",
+              "properties": {
+                "fullPath": {
+                  "type": "string",
+                  "description": "完整绝对路径"
+                },
+                "size": {
+                  "type": "integer",
+                  "description": "文件大小（字节）"
+                },
+                "modified": {
+                  "type": "string",
+                  "description": "最后修改时间 ISO 格式"
+                }
+              },
+              "required": ["fullPath"]
+            }
+          }
+        },
+        "required": ["total", "results"]
+      }
+    }
+  }
 }
