@@ -226,83 +226,68 @@ export function mergeResultsByMatchPathPriority<T extends Pick<FinderResult, "fu
   return merged;
 }
 
-export function isImagePreviewCandidate(
-  file: Pick<FinderResult, "name" | "extension" | "isDirectory">,
-): boolean {
+export interface PreviewCandidate {
+  name: string;
+  extension?: string;
+  size?: number;
+  isDirectory?: boolean;
+}
+
+export function isImagePreviewCandidate(file: PreviewCandidate): boolean {
   if (file.isDirectory) return false;
   return IMAGE_PREVIEW_EXTENSIONS.has(getResultExtension(file));
 }
 
-export function isVideoPreviewCandidate(
-  file: Pick<FinderResult, "name" | "extension" | "isDirectory">,
-): boolean {
+export function isVideoPreviewCandidate(file: PreviewCandidate): boolean {
   if (file.isDirectory) return false;
   return VIDEO_PREVIEW_EXTENSIONS.has(getResultExtension(file));
 }
 
-export function isAudioPreviewCandidate(
-  file: Pick<FinderResult, "name" | "extension" | "isDirectory">,
-): boolean {
+export function isAudioPreviewCandidate(file: PreviewCandidate): boolean {
   if (file.isDirectory) return false;
   return AUDIO_PREVIEW_EXTENSIONS.has(getResultExtension(file));
 }
 
-export function isPdfPreviewCandidate(
-  file: Pick<FinderResult, "name" | "extension" | "isDirectory">,
-): boolean {
+export function isPdfPreviewCandidate(file: PreviewCandidate): boolean {
   if (file.isDirectory) return false;
   return PDF_PREVIEW_EXTENSIONS.has(getResultExtension(file));
 }
 
-export function isArchiveTreePreviewCandidate(
-  file: Pick<FinderResult, "name" | "extension" | "size" | "isDirectory">,
-): boolean {
+export function isArchiveTreePreviewCandidate(file: PreviewCandidate): boolean {
   if (file.isDirectory) return false;
   return isArchiveTreePreviewSupported(file) && !getArchiveTreePreviewBlockedReason(file);
 }
 
-export function getArchiveTreePreviewBlockedReason(
-  file: Pick<FinderResult, "name" | "extension" | "size" | "isDirectory">,
-): string | undefined {
+export function getArchiveTreePreviewBlockedReason(file: PreviewCandidate): string | undefined {
   if (file.isDirectory || !isArchiveTreePreviewSupported(file)) return undefined;
-  if (isTarArchive(file) && file.size > MAX_TAR_ARCHIVE_TREE_PREVIEW_FILE_SIZE) {
+  if (isTarArchive(file) && (file.size ?? 0) > MAX_TAR_ARCHIVE_TREE_PREVIEW_FILE_SIZE) {
     return `压缩包超过 ${formatBytes(MAX_TAR_ARCHIVE_TREE_PREVIEW_FILE_SIZE)}，不提供预览`;
   }
   return undefined;
 }
 
-export function isMarkdownPreviewCandidate(
-  file: Pick<FinderResult, "name" | "extension" | "isDirectory">,
-): boolean {
+export function isMarkdownPreviewCandidate(file: PreviewCandidate): boolean {
   if (file.isDirectory) return false;
   return MARKDOWN_PREVIEW_EXTENSIONS.has(getResultExtension(file));
 }
 
-export function getCodePreviewLanguage(
-  file: Pick<FinderResult, "name" | "extension" | "isDirectory">,
-): string | undefined {
+export function getCodePreviewLanguage(file: PreviewCandidate): string | undefined {
   if (file.isDirectory) return undefined;
   return CODE_PREVIEW_LANGUAGE_BY_EXTENSION[getResultExtension(file)];
 }
 
-export function isCodePreviewCandidate(
-  file: Pick<FinderResult, "name" | "extension" | "isDirectory">,
-): boolean {
+export function isCodePreviewCandidate(file: PreviewCandidate): boolean {
   return getCodePreviewLanguage(file) !== undefined;
 }
 
-export function isLogPreviewCandidate(
-  file: Pick<FinderResult, "name" | "extension" | "isDirectory">,
-): boolean {
+export function isLogPreviewCandidate(file: PreviewCandidate): boolean {
   if (file.isDirectory) return false;
   return LOG_PREVIEW_EXTENSIONS.has(getResultExtension(file));
 }
 
-export function isTextPreviewCandidate(
-  file: Pick<FinderResult, "name" | "extension" | "size" | "isDirectory">,
-): boolean {
+export function isTextPreviewCandidate(file: PreviewCandidate): boolean {
   if (file.isDirectory) return false;
-  if (file.size > MAX_TEXT_PREVIEW_FILE_SIZE) return false;
+  if ((file.size ?? 0) > MAX_TEXT_PREVIEW_FILE_SIZE) return false;
 
   return TEXT_PREVIEW_EXTENSIONS.has(getResultExtension(file));
 }
@@ -340,18 +325,18 @@ function normalizeCategoryRule(rule: string): string {
   return extensions.length > 0 ? `ext:${extensions.join(";")}` : "";
 }
 
-function isArchiveTreePreviewSupported(file: Pick<FinderResult, "name" | "extension">): boolean {
+function isArchiveTreePreviewSupported(file: PreviewCandidate): boolean {
   const ext = getResultExtension(file);
   return ARCHIVE_TREE_PREVIEW_EXTENSIONS.has(ext) || file.name.toLowerCase().endsWith(".tar.gz");
 }
 
-function isTarArchive(file: Pick<FinderResult, "name" | "extension">): boolean {
+function isTarArchive(file: PreviewCandidate): boolean {
   const ext = getResultExtension(file);
   const normalizedName = file.name.toLowerCase();
   return ext === "tar" || ext === "tgz" || normalizedName.endsWith(".tar.gz");
 }
 
-function getResultExtension(file: Pick<FinderResult, "name" | "extension">): string {
+function getResultExtension(file: PreviewCandidate): string {
   return (file.extension || getExtension(file.name)).toLowerCase();
 }
 

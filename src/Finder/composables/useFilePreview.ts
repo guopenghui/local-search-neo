@@ -13,6 +13,7 @@ import {
   isTextPreviewCandidate,
   isVideoPreviewCandidate,
   type FinderResult,
+  type PreviewCandidate,
 } from "../core/finderLogic";
 
 const PREVIEW_BYTES = 20 * 1024;
@@ -232,9 +233,7 @@ export function useFilePreview({ activeItem }: UseFilePreviewOptions) {
   };
 }
 
-function getTextPreviewKind(
-  item: Pick<FinderResult, "name" | "extension" | "size" | "isDirectory">,
-): PreviewKind | undefined {
+function getTextPreviewKind(item: PreviewCandidate): PreviewKind | undefined {
   if (isMarkdownPreviewCandidate(item)) return "markdown";
   if (isCodePreviewCandidate(item)) return "code";
   if (isTextPreviewCandidate(item)) return "text";
