@@ -361,6 +361,8 @@ function setActiveCategory(category: FinderCategory) {
 }
 
 .finder-footer-bar {
+  position: relative;
+  z-index: 25;
   grid-column: 2 / -1;
   grid-row: 2;
   min-width: 0;

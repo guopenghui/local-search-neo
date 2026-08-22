@@ -108,7 +108,7 @@ onUnmounted(() => {
 <style scoped>
 .finder-footer {
   position: relative;
-  z-index: 5;
+  z-index: 25;
   display: grid;
   grid-template-columns: minmax(120px, 1fr) auto max-content;
   align-items: center;
