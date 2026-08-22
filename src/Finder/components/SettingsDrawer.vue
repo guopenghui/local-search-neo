@@ -125,7 +125,7 @@ function toggleBuiltInCategories() {
         </header>
 
         <section class="settings-section">
-          <section class="search-settings">
+          <section class="settings-card search-settings">
             <div>
               <h3>搜索设置</h3>
               <p>启用后，普通关键字会同时匹配路径和文件名，结果更多但可能变慢。</p>
@@ -141,41 +141,86 @@ function toggleBuiltInCategories() {
             </label>
           </section>
 
-          <div class="category-section-header">
-            <div>
-              <h3>分组管理</h3>
-              <p>关闭后，该分组不会显示在左侧分组栏。内置分组不支持删除。</p>
-            </div>
-          </div>
-
-          <div class="category-list">
-            <div class="category-list-header">
-              <span>启用</span>
-              <span>名称</span>
-              <span>规则</span>
-              <span>类型</span>
-              <span>操作</span>
+          <section class="settings-card category-settings">
+            <div class="category-section-header">
+              <div>
+                <h3>分组管理</h3>
+                <p>关闭后，该分组不会显示在左侧分组栏。内置分组不支持删除。</p>
+              </div>
             </div>
 
-            <div class="category-group">
-              <button
-                type="button"
-                class="category-group-toggle"
-                :aria-expanded="!builtInCollapsed"
-                @click="toggleBuiltInCategories"
-              >
-                <span class="category-group-arrow" aria-hidden="true"></span>
-                <span>内置分组</span>
-                <span class="category-group-count">{{ builtInCategories.length }} 个</span>
-              </button>
+            <div class="category-list">
+              <div class="category-list-header">
+                <span>启用</span>
+                <span>名称</span>
+                <span>规则</span>
+                <span>类型</span>
+                <span>操作</span>
+              </div>
 
-              <template v-if="!builtInCollapsed">
-                <div
-                  v-for="category in builtInCategories"
-                  :key="category.id"
-                  class="category-row"
-                  :class="{ disabled: !category.enabled }"
+              <div class="category-group">
+                <button
+                  type="button"
+                  class="category-group-toggle"
+                  :aria-expanded="!builtInCollapsed"
+                  @click="toggleBuiltInCategories"
                 >
+                  <span class="category-group-arrow" aria-hidden="true"></span>
+                  <span>内置分组</span>
+                  <span class="category-group-count">{{ builtInCategories.length }} 个</span>
+                </button>
+
+                <template v-if="!builtInCollapsed">
+                  <div
+                    v-for="category in builtInCategories"
+                    :key="category.id"
+                    class="category-row"
+                    :class="{ disabled: !category.enabled }"
+                  >
+                    <label class="category-switch" title="启用该分组">
+                      <input
+                        type="checkbox"
+                        :checked="category.enabled"
+                        @change="handleCategoryEnabledChange(category, $event)"
+                      />
+                      <span class="switch-track"></span>
+                    </label>
+                    <span class="category-name">{{ category.label }}</span>
+                    <span class="category-rule" :title="category.rule || '全部'">{{
+                      category.rule || "全部"
+                    }}</span>
+                    <span class="category-type">{{ categoryTypeLabel(category) }}</span>
+                    <span class="category-actions">
+                      <span class="built-in-note">内置</span>
+                    </span>
+                  </div>
+                </template>
+              </div>
+
+              <template v-for="category in customCategories" :key="category.id">
+                <form
+                  v-if="editingCategoryId === category.id"
+                  class="category-row category-edit-row"
+                  @submit.prevent="submitCategory"
+                >
+                  <label class="category-switch" title="启用该分组">
+                    <input
+                      type="checkbox"
+                      :checked="category.enabled"
+                      @change="handleCategoryEnabledChange(category, $event)"
+                    />
+                    <span class="switch-track"></span>
+                  </label>
+                  <input v-model="label" class="category-inline-input" autocomplete="off" />
+                  <input v-model="rule" class="category-inline-input" autocomplete="off" />
+                  <span class="category-type">自定义</span>
+                  <span class="category-edit-actions">
+                    <button type="submit">保存</button>
+                    <button type="button" @click="resetDraft">取消</button>
+                  </span>
+                </form>
+
+                <div v-else class="category-row" :class="{ disabled: !category.enabled }">
                   <label class="category-switch" title="启用该分组">
                     <input
                       type="checkbox"
@@ -190,92 +235,49 @@ function toggleBuiltInCategories() {
                   }}</span>
                   <span class="category-type">{{ categoryTypeLabel(category) }}</span>
                   <span class="category-actions">
-                    <span class="built-in-note">内置</span>
+                    <button type="button" @click="editCategory(category)">编辑</button>
+                    <button type="button" class="danger-action" @click="removeCategory(category)">
+                      删除
+                    </button>
                   </span>
                 </div>
               </template>
-            </div>
 
-            <template v-for="category in customCategories" :key="category.id">
               <form
-                v-if="editingCategoryId === category.id"
+                v-if="isAdding"
                 class="category-row category-edit-row"
                 @submit.prevent="submitCategory"
               >
-                <label class="category-switch" title="启用该分组">
-                  <input
-                    type="checkbox"
-                    :checked="category.enabled"
-                    @change="handleCategoryEnabledChange(category, $event)"
-                  />
-                  <span class="switch-track"></span>
-                </label>
-                <input v-model="label" class="category-inline-input" autocomplete="off" />
-                <input v-model="rule" class="category-inline-input" autocomplete="off" />
+                <span class="category-add-marker">＋</span>
+                <input
+                  v-model="label"
+                  class="category-inline-input"
+                  autocomplete="off"
+                  placeholder="例如 日志"
+                />
+                <input
+                  v-model="rule"
+                  class="category-inline-input"
+                  autocomplete="off"
+                  placeholder="log;txt 或 path:C:\Windows"
+                />
                 <span class="category-type">自定义</span>
                 <span class="category-edit-actions">
-                  <button type="submit">保存</button>
+                  <button type="submit">添加</button>
                   <button type="button" @click="resetDraft">取消</button>
                 </span>
               </form>
 
-              <div v-else class="category-row" :class="{ disabled: !category.enabled }">
-                <label class="category-switch" title="启用该分组">
-                  <input
-                    type="checkbox"
-                    :checked="category.enabled"
-                    @change="handleCategoryEnabledChange(category, $event)"
-                  />
-                  <span class="switch-track"></span>
-                </label>
-                <span class="category-name">{{ category.label }}</span>
-                <span class="category-rule" :title="category.rule || '全部'">{{
-                  category.rule || "全部"
-                }}</span>
-                <span class="category-type">{{ categoryTypeLabel(category) }}</span>
-                <span class="category-actions">
-                  <button type="button" @click="editCategory(category)">编辑</button>
-                  <button type="button" class="danger-action" @click="removeCategory(category)">
-                    删除
-                  </button>
-                </span>
-              </div>
-            </template>
-
-            <form
-              v-if="isAdding"
-              class="category-row category-edit-row"
-              @submit.prevent="submitCategory"
-            >
-              <span class="category-add-marker">＋</span>
-              <input
-                v-model="label"
-                class="category-inline-input"
-                autocomplete="off"
-                placeholder="例如 日志"
-              />
-              <input
-                v-model="rule"
-                class="category-inline-input"
-                autocomplete="off"
-                placeholder="log;txt 或 path:C:\Windows"
-              />
-              <span class="category-type">自定义</span>
-              <span class="category-edit-actions">
-                <button type="submit">添加</button>
-                <button type="button" @click="resetDraft">取消</button>
-              </span>
-            </form>
-
-            <button
-              v-else
-              type="button"
-              class="category-row category-add-trigger"
-              @click="startAddCategory"
-            >
-              <span>＋ 添加自定义分组</span>
-            </button>
-          </div>
+              <button
+                v-else
+                type="button"
+                class="category-row category-add-trigger"
+                @click="startAddCategory"
+              >
+                <span>＋ 添加自定义分组</span>
+              </button>
+            </div>
+          </section>
         </section>
       </section>
     </div>
@@ -412,13 +414,40 @@ function toggleBuiltInCategories() {
 .settings-section {
   display: grid;
   align-content: start;
-  gap: 12px;
+  gap: 14px;
   min-height: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
   padding-right: 2px;
 }
 
-.search-settings,
+.settings-section::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.settings-card {
+  box-sizing: border-box;
+  padding: 14px;
+  background: #303234;
+  border: 1px solid #47494c;
+  border-radius: 8px;
+}
+
+.search-settings {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.category-settings {
+  display: grid;
+  gap: 12px;
+}
+
 .category-section-header {
   display: flex;
   align-items: center;
@@ -426,22 +455,14 @@ function toggleBuiltInCategories() {
   gap: 16px;
 }
 
-.search-settings {
-  padding: 12px;
-  background: #303234;
-  border: 1px solid #47494c;
-  border-radius: 8px;
-}
-
-.search-settings h3,
-.category-section-header h3 {
+.settings-card h3 {
   margin: 0;
   color: #ffffff;
-  font-size: 15px;
+  font-size: 14px;
+  font-weight: 600;
 }
 
-.search-settings p,
-.category-section-header p {
+.settings-card p {
   margin: 4px 0 0;
   color: #aeb4bb;
   font-size: 12px;
@@ -465,8 +486,9 @@ function toggleBuiltInCategories() {
 
 .category-list {
   display: grid;
-  border: 1px solid #47494c;
-  border-radius: 8px;
+  border: 1px solid #3f4246;
+  border-radius: 6px;
+  overflow: hidden;
 }
 
 .category-list-header,
@@ -697,7 +719,7 @@ function toggleBuiltInCategories() {
     background: #edf2f7;
   }
 
-  .search-settings {
+  .settings-card {
     background: #ffffff;
     border-color: #d6dde8;
   }

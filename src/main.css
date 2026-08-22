@@ -54,6 +54,12 @@ textarea {
   margin: 0;
 }
 
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     --primary-color-text: color-mix(in srgb, var(--primary-color) 85%, black);
