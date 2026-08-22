@@ -33,12 +33,12 @@ const {
 });
 
 function openImagePreviewMenu(event: MouseEvent) {
-  const imagePath = activeItem.value?.fullPath ?? "";
+  const imagePath = activeItem.value?.fullPath;
+  if (!imagePath) return;
   emit("context-menu", event, [
     {
       id: "copy-preview-image",
       label: "复制图片",
-      disabled: !imagePath,
       action: () => {
         window.ztools.copyFile(imagePath);
       },

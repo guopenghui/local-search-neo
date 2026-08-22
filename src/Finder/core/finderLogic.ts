@@ -12,13 +12,13 @@ export interface FinderCategory {
 
 export interface FinderResult {
   name: string;
-  path?: string;
-  fullPath?: string;
-  highlightedName?: string;
-  highlightedPath?: string;
-  extension?: string;
-  size?: number;
-  modifiedAt?: number;
+  path: string;
+  fullPath: string;
+  highlightedName: string;
+  highlightedPath: string;
+  extension: string;
+  size: number;
+  modifiedAt: number;
   isDirectory?: boolean;
 }
 
@@ -194,7 +194,7 @@ export function filterResultsExcludingPaths<T extends Pick<FinderResult, "fullPa
 ): T[] {
   if (pathsToRemove.length === 0) return results;
   const toRemove = new Set(pathsToRemove);
-  return results.filter((item) => !item.fullPath || !toRemove.has(item.fullPath));
+  return results.filter((item) => !toRemove.has(item.fullPath));
 }
 
 export function getDragTargetPaths(
@@ -208,9 +208,10 @@ export function getDragTargetPaths(
   return itemPath;
 }
 
-export function mergeResultsByMatchPathPriority<
-  T extends Pick<FinderResult, "name" | "path" | "fullPath">,
->(nameResults: T[], matchPathResults: T[]): T[] {
+export function mergeResultsByMatchPathPriority<T extends Pick<FinderResult, "fullPath">>(
+  nameResults: T[],
+  matchPathResults: T[],
+): T[] {
   const seen = new Set<string>();
   const merged: T[] = [];
 
@@ -264,7 +265,7 @@ export function getArchiveTreePreviewBlockedReason(
   file: Pick<FinderResult, "name" | "extension" | "size" | "isDirectory">,
 ): string | undefined {
   if (file.isDirectory || !isArchiveTreePreviewSupported(file)) return undefined;
-  if (isTarArchive(file) && (file.size ?? 0) > MAX_TAR_ARCHIVE_TREE_PREVIEW_FILE_SIZE) {
+  if (isTarArchive(file) && file.size > MAX_TAR_ARCHIVE_TREE_PREVIEW_FILE_SIZE) {
     return `压缩包超过 ${formatBytes(MAX_TAR_ARCHIVE_TREE_PREVIEW_FILE_SIZE)}，不提供预览`;
   }
   return undefined;
@@ -301,7 +302,7 @@ export function isTextPreviewCandidate(
   file: Pick<FinderResult, "name" | "extension" | "size" | "isDirectory">,
 ): boolean {
   if (file.isDirectory) return false;
-  if ((file.size ?? 0) > MAX_TEXT_PREVIEW_FILE_SIZE) return false;
+  if (file.size > MAX_TEXT_PREVIEW_FILE_SIZE) return false;
 
   return TEXT_PREVIEW_EXTENSIONS.has(getResultExtension(file));
 }
@@ -322,8 +323,8 @@ export function formatBytes(bytes?: number): string {
   return `${formatNumber(value)} ${units[unitIndex]}`;
 }
 
-function getResultDedupeKey(item: Pick<FinderResult, "name" | "path" | "fullPath">): string {
-  return (item.fullPath || `${item.path ?? ""}\\${item.name}`).toLowerCase();
+function getResultDedupeKey(item: Pick<FinderResult, "fullPath">): string {
+  return item.fullPath.toLowerCase();
 }
 
 function normalizeCategoryRule(rule: string): string {

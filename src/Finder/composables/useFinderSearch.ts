@@ -46,7 +46,7 @@ export function useFinderSearch({
       return activeItem.value ? [activeItem.value] : [];
     }
     const pathSet = new Set(selectedPaths.value);
-    return results.value.filter((item) => item.fullPath && pathSet.has(item.fullPath));
+    return results.value.filter((item) => pathSet.has(item.fullPath));
   });
 
   let searchTimer: number | undefined;
@@ -162,9 +162,7 @@ export function useFinderSearch({
         activePath.value = targetPath;
       }
     } else if (mode === "range") {
-      const visiblePaths = visibleResults.value
-        .map((r) => r.fullPath)
-        .filter((p): p is string => !!p);
+      const visiblePaths = visibleResults.value.map((r) => r.fullPath);
       const anchor = activePath.value || visiblePaths[0] || targetPath;
       selectedPaths.value = getRangeSelectedPaths(visiblePaths, anchor, targetPath);
     } else {
@@ -192,9 +190,7 @@ export function useFinderSearch({
   }
 
   function moveSelection(direction: -1 | 1) {
-    const paths = results.value
-      .map((item) => item.fullPath)
-      .filter((path): path is string => !!path);
+    const paths = results.value.map((item) => item.fullPath);
     const nextPath = getNextSelectedPath(paths, activePath.value, direction);
     if (!nextPath) return;
 

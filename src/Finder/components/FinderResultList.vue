@@ -32,8 +32,8 @@ const emit = defineEmits<{
 
 const selectedPathSet = computed(() => new Set(props.selectedPaths));
 
-function isRowSelected(fullPath?: string): boolean {
-  return !!fullPath && selectedPathSet.value.has(fullPath);
+function isRowSelected(fullPath: string): boolean {
+  return selectedPathSet.value.has(fullPath);
 }
 
 const { displayItem, iconFor } = useFileIcons({
@@ -59,7 +59,6 @@ function handleRowClick(event: MouseEvent, item: FinderResult) {
 
 function handleDragStart(event: DragEvent, item: FinderResult) {
   event.preventDefault();
-  if (!item.fullPath) return;
   if (!selectedPathSet.value.has(item.fullPath)) {
     emit("select", item, "single");
   }
@@ -111,50 +110,41 @@ function highlightSegments(value: string | undefined, fallback = ""): HighlightS
 }
 
 function openResultMenu(event: MouseEvent, item: FinderResult) {
-  if (item.fullPath && !selectedPathSet.value.has(item.fullPath)) {
+  if (!selectedPathSet.value.has(item.fullPath)) {
     emit("select", item, "single");
   }
 
-  const isMulti =
-    !!item.fullPath && selectedPathSet.value.has(item.fullPath) && props.selectedItems.length > 1;
-
+  const isMulti = selectedPathSet.value.has(item.fullPath) && props.selectedItems.length > 1;
   const targetItems = isMulti ? props.selectedItems : [item];
 
   const count = targetItems.length;
   const countSuffix = isMulti ? ` (${count} 项)` : "";
-  const hasFullPath = targetItems.some((r) => !!r.fullPath);
-  const hasDirectoryPath = targetItems.some((r) => !!r.path);
 
   emit("context-menu", event, [
     {
       id: "open-file",
       label: `打开文件${countSuffix}`,
-      disabled: !hasFullPath,
       action: () => props.actions.open(targetItems),
     },
     {
       id: "show-in-folder",
       label: `打开所在目录${countSuffix}`,
-      disabled: !hasFullPath,
       action: () => props.actions.showInFolder(targetItems),
     },
     { id: "separator-open", label: "", separator: true },
     {
       id: "copy-full-path",
       label: `复制路径${countSuffix}`,
-      disabled: !hasFullPath,
       action: () => props.actions.copyFullPath(targetItems),
     },
     {
       id: "copy-directory-path",
       label: `复制所在路径${countSuffix}`,
-      disabled: !hasDirectoryPath,
       action: () => props.actions.copyDirectoryPath(targetItems),
     },
     {
       id: "copy-file",
       label: `复制文件${countSuffix}`,
-      disabled: !hasFullPath,
       action: () => props.actions.copyFile(targetItems),
     },
     { id: "separator-delete", label: "", separator: true },
@@ -162,7 +152,6 @@ function openResultMenu(event: MouseEvent, item: FinderResult) {
       id: "trash-item",
       label: isMulti ? `删除 ${count} 项（回收站）` : "删除（回收站）",
       danger: true,
-      disabled: !hasFullPath,
       action: () => props.actions.trash(targetItems),
     },
   ]);
@@ -175,7 +164,7 @@ function openResultMenu(event: MouseEvent, item: FinderResult) {
       v-for="(item, index) in visibleResults"
       :key="item.fullPath"
       :data-result-index="index"
-      :draggable="!!item.fullPath"
+      :draggable="true"
       class="result-row"
       :class="{
         selected: isRowSelected(item.fullPath),
@@ -200,7 +189,7 @@ function openResultMenu(event: MouseEvent, item: FinderResult) {
             >{{ segment.text }}</span
           >
         </span>
-        <span class="file-path" :title="item.fullPath || item.path">
+        <span class="file-path" :title="item.fullPath">
           <span
             v-for="(segment, segmentIndex) in highlightSegments(item.highlightedPath, item.path)"
             :key="segmentIndex"

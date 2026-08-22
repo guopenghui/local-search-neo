@@ -53,12 +53,6 @@ export function useFilePreview({ activeItem }: UseFilePreviewOptions) {
       return;
     }
 
-    if (!item.fullPath) {
-      resetPreview();
-      previewStatus.value = "缺少文件路径，无法预览";
-      return;
-    }
-
     const fileInfo = await window.services.getFileInfo(item.fullPath);
     if (sequence !== previewLoadSequence) return;
 
@@ -96,8 +90,6 @@ export function useFilePreview({ activeItem }: UseFilePreviewOptions) {
   }
 
   function loadMediaPreview(item: FinderResult) {
-    if (!item.fullPath) return false;
-
     if (isImagePreviewCandidate(item)) {
       setPreviewState({
         kind: "image",
@@ -134,8 +126,6 @@ export function useFilePreview({ activeItem }: UseFilePreviewOptions) {
   }
 
   function loadDirectoryTreePreview(item: FinderResult) {
-    if (!item.fullPath) return;
-
     try {
       const tree = window.services.printDirectoryTree(item.fullPath);
       setPreviewState({
@@ -151,8 +141,6 @@ export function useFilePreview({ activeItem }: UseFilePreviewOptions) {
   }
 
   function loadArchiveTreePreview(item: FinderResult) {
-    if (!item.fullPath) return false;
-
     const blockedReason = getArchiveTreePreviewBlockedReason(item);
     if (blockedReason) {
       resetPreview();
@@ -179,8 +167,6 @@ export function useFilePreview({ activeItem }: UseFilePreviewOptions) {
   }
 
   function loadTextLikePreview(item: FinderResult) {
-    if (!item.fullPath) return;
-
     const textPreviewKind = getTextPreviewKind(item);
     let shouldPreviewAsText = textPreviewKind !== undefined;
 

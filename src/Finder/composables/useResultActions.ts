@@ -20,58 +20,52 @@ const { confirm } = useGlocalConfirmDialog();
 export function useResultActions({ onTrashed }: UseResultActionsOptions): ResultActions {
   function open(items: FinderResult[]) {
     for (const item of items) {
-      if (item.fullPath) window.ztools.shellOpenPath(item.fullPath);
+      window.ztools.shellOpenPath(item.fullPath);
     }
   }
 
   function showInFolder(items: FinderResult[]) {
     for (const item of items) {
-      if (item.fullPath) window.ztools.shellShowItemInFolder(item.fullPath);
+      window.ztools.shellShowItemInFolder(item.fullPath);
     }
   }
 
   function copyFullPath(items: FinderResult[]) {
-    const paths = items.map((item) => item.fullPath).filter((p): p is string => !!p);
+    const paths = items.map((item) => item.fullPath);
     if (paths.length > 0) window.ztools.copyText(paths.join("\r\n"));
   }
 
   function copyDirectoryPath(items: FinderResult[]) {
-    const directories = Array.from(
-      new Set(items.map((item) => item.path).filter((p): p is string => !!p)),
-    );
+    const directories = Array.from(new Set(items.map((item) => item.path)));
     if (directories.length > 0) window.ztools.copyText(directories.join("\r\n"));
   }
 
   function copyFile(items: FinderResult[]) {
-    const paths = items.map((item) => item.fullPath).filter((p): p is string => !!p);
+    const paths = items.map((item) => item.fullPath);
     if (paths.length > 0) window.ztools.copyFile(paths);
   }
 
   function startDrag(item: FinderResult, selectedPaths: string[]) {
-    if (!item.fullPath) return;
     const target = getDragTargetPaths(item.fullPath, selectedPaths);
     window.ztools.startDrag(target);
   }
 
   async function trash(items: FinderResult[]) {
-    const validItems = items.filter(
-      (item): item is FinderResult & { fullPath: string } => !!item.fullPath,
-    );
-    if (validItems.length === 0) return;
+    if (items.length === 0) return;
 
-    const isSingle = validItems.length === 1;
+    const isSingle = items.length === 1;
     const confirmed = await confirm({
-      title: isSingle ? "删除文件" : `删除 ${validItems.length} 个文件`,
+      title: isSingle ? "删除文件" : `删除 ${items.length} 个文件`,
       message: isSingle
-        ? `确定要将“${validItems[0].name}”移入回收站吗？`
-        : `确定要将选中的 ${validItems.length} 个文件移入回收站吗？`,
+        ? `确定要将“${items[0].name}”移入回收站吗？`
+        : `确定要将选中的 ${items.length} 个文件移入回收站吗？`,
       confirmText: "删除",
       danger: true,
     });
     if (!confirmed) return;
 
     const results = await Promise.allSettled(
-      validItems.map(async (item) => {
+      items.map(async (item) => {
         await window.ztools.shellTrashItem(item.fullPath);
         return item.fullPath;
       }),

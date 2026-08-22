@@ -33,6 +33,9 @@ const sampleResults: FinderResult[] = [
     name: "b.txt",
     path: "C:\\beta",
     fullPath: "C:\\beta\\b.txt",
+    highlightedName: "b.txt",
+    highlightedPath: "C:\\beta",
+    extension: "txt",
     size: 10,
     modifiedAt: 200,
   },
@@ -40,6 +43,9 @@ const sampleResults: FinderResult[] = [
     name: "a.log",
     path: "C:\\alpha",
     fullPath: "C:\\alpha\\a.log",
+    highlightedName: "a.log",
+    highlightedPath: "C:\\alpha",
+    extension: "log",
     size: 30,
     modifiedAt: 100,
   },
@@ -47,7 +53,11 @@ const sampleResults: FinderResult[] = [
     name: "folder",
     path: "C:\\alpha",
     fullPath: "C:\\alpha\\folder",
+    highlightedName: "folder",
+    highlightedPath: "C:\\alpha",
+    extension: "",
     isDirectory: true,
+    size: 0,
     modifiedAt: 300,
   },
 ];
@@ -93,7 +103,7 @@ test("getNextVisibleCount grows by page size without exceeding total", () => {
 });
 
 test("getNextSelectedPath moves selection with arrow keys", () => {
-  const orderedPaths = sampleResults.map((item) => item.fullPath as string);
+  const orderedPaths = sampleResults.map((item) => item.fullPath);
 
   assert.equal(getNextSelectedPath(orderedPaths, "", 1), "C:\\beta\\b.txt");
   assert.equal(getNextSelectedPath(orderedPaths, "C:\\beta\\b.txt", 1), "C:\\alpha\\a.log");
@@ -111,14 +121,68 @@ test("getRestoredSelectedPath keeps existing visible selection or picks sorted f
 
 test("mergeResultsByMatchPathPriority keeps name matches first and removes duplicates", () => {
   const nameResults: FinderResult[] = [
-    { name: "name-a.txt", path: "C:\\demo", fullPath: "C:\\demo\\name-a.txt" },
-    { name: "shared.txt", path: "C:\\demo", fullPath: "C:\\demo\\shared.txt" },
-    { name: "name-b.txt", path: "D:\\demo", fullPath: "D:\\demo\\name-b.txt" },
+    {
+      name: "name-a.txt",
+      path: "C:\\demo",
+      fullPath: "C:\\demo\\name-a.txt",
+      highlightedName: "name-a.txt",
+      highlightedPath: "C:\\demo",
+      extension: "txt",
+      size: 100,
+      modifiedAt: 1,
+    },
+    {
+      name: "shared.txt",
+      path: "C:\\demo",
+      fullPath: "C:\\demo\\shared.txt",
+      highlightedName: "shared.txt",
+      highlightedPath: "C:\\demo",
+      extension: "txt",
+      size: 100,
+      modifiedAt: 1,
+    },
+    {
+      name: "name-b.txt",
+      path: "D:\\demo",
+      fullPath: "D:\\demo\\name-b.txt",
+      highlightedName: "name-b.txt",
+      highlightedPath: "D:\\demo",
+      extension: "txt",
+      size: 100,
+      modifiedAt: 1,
+    },
   ];
   const matchPathResults: FinderResult[] = [
-    { name: "shared.txt", path: "C:\\demo", fullPath: "c:\\demo\\shared.txt" },
-    { name: "path-a.txt", path: "C:\\demo", fullPath: "C:\\demo\\path-a.txt" },
-    { name: "path-b.txt", path: "D:\\demo", fullPath: "D:\\demo\\path-b.txt" },
+    {
+      name: "shared.txt",
+      path: "C:\\demo",
+      fullPath: "c:\\demo\\shared.txt",
+      highlightedName: "shared.txt",
+      highlightedPath: "C:\\demo",
+      extension: "txt",
+      size: 100,
+      modifiedAt: 1,
+    },
+    {
+      name: "path-a.txt",
+      path: "C:\\demo",
+      fullPath: "C:\\demo\\path-a.txt",
+      highlightedName: "path-a.txt",
+      highlightedPath: "C:\\demo",
+      extension: "txt",
+      size: 100,
+      modifiedAt: 1,
+    },
+    {
+      name: "path-b.txt",
+      path: "D:\\demo",
+      fullPath: "D:\\demo\\path-b.txt",
+      highlightedName: "path-b.txt",
+      highlightedPath: "D:\\demo",
+      extension: "txt",
+      size: 100,
+      modifiedAt: 1,
+    },
   ];
 
   assert.deepEqual(

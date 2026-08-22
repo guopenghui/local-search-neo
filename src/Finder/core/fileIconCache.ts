@@ -68,7 +68,7 @@ export function shouldLoadFileIcon(file: IconFile): boolean {
 
   const extension = getResultExtension(file);
   if (!extension) return false;
-  if (PATH_DEPENDENT_EXTENSIONS.has(extension)) return !!file.fullPath;
+  if (PATH_DEPENDENT_EXTENSIONS.has(extension)) return true;
 
   return !sharedIconCache.has(getExtensionCacheKey(extension));
 }
@@ -80,7 +80,7 @@ function getFileIconEntry(file: IconFile): IconCacheEntry | null {
   if (!extension) return loadSharedIcon(UNKNOWN_CACHE_KEY, UNKNOWN_FILE_ICON_PATH);
 
   if (PATH_DEPENDENT_EXTENSIONS.has(extension)) {
-    return file.fullPath ? readIcon(file.fullPath) : null;
+    return readIcon(file.fullPath);
   }
 
   return loadSharedIcon(getExtensionCacheKey(extension), getExtensionIconPath(extension));
@@ -174,8 +174,8 @@ function hashIcon(icon: string): string {
   return `${icon.length}:${(hash >>> 0).toString(16)}`;
 }
 
-function getResultExtension(file: Pick<FinderResult, "name" | "extension" | "fullPath">): string {
-  return (file.extension || getExtension(file.name || file.fullPath || "")).toLowerCase();
+function getResultExtension(file: Pick<FinderResult, "name" | "extension">): string {
+  return (file.extension || getExtension(file.name)).toLowerCase();
 }
 
 function getExtension(name: string): string {

@@ -74,9 +74,9 @@ onMounted(() => {
         const items: MainPushSearchResult[] = resultItems
           .slice(0, MAIN_PUSH_RESULT_LIMIT)
           .map((item) => ({
-            title: item.path ?? (item.fullPath ? getParentPath(item.fullPath) : ""),
+            title: item.path,
             text: item.name,
-            icon: item.fullPath ? window.ztools.getFileIcon(item.fullPath) : undefined,
+            icon: window.ztools.getFileIcon(item.fullPath),
             fullPath: item.fullPath,
           }));
 
@@ -102,11 +102,6 @@ onMounted(() => {
     },
   );
 });
-
-function getParentPath(fullPath: string): string {
-  const index = Math.max(fullPath.lastIndexOf("\\"), fullPath.lastIndexOf("/"));
-  return index > 0 ? fullPath.slice(0, index) : fullPath;
-}
 </script>
 
 <template>

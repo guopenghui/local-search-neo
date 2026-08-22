@@ -156,10 +156,10 @@ ztools.registerTool("everything_search", async (params) => {
   const queryResult = everythingAddon.query(search, maxResults, "modified-desc", matchPath);
   return {
     total: queryResult.total,
-    results: (queryResult.items || []).map((item) => ({
+    results: queryResult.items.map((item) => ({
       fullPath: item.fullPath,
       size: item.size,
-      modified: item.modifiedAt ? new Date(item.modifiedAt).toISOString() : undefined,
+      modified: new Date(item.modifiedAt).toISOString(),
     })),
   };
 });
