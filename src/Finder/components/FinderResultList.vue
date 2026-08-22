@@ -228,6 +228,7 @@ function openResultMenu(event: MouseEvent, item: FinderResult) {
   overflow: auto;
   min-height: 0;
   height: 100%;
+  outline: none;
 }
 
 .result-row {
