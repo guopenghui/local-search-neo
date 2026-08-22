@@ -39,7 +39,41 @@ const {
   stopEverythingStatusPolling,
 } = useEverything({ runSearch: () => finderSearch.runSearch() });
 
-const { previewEnabled, sortMode, matchPathEnabled } = usePersistStorage();
+const { previewEnabled, sortMode, matchPathEnabled, resultListWidth, setResultListWidth } =
+  usePersistStorage();
+
+const MIN_LIST_WIDTH = 220;
+const DEFAULT_LIST_WIDTH = 315;
+const isResizingList = ref(false);
+
+function onResizerMouseDown(event: MouseEvent) {
+  if (event.button !== 0) return;
+  event.preventDefault();
+  isResizingList.value = true;
+  const startX = event.clientX;
+  const startWidth = resultListWidth.value;
+
+  function onMouseMove(moveEvent: MouseEvent) {
+    const deltaX = moveEvent.clientX - startX;
+    const maxAllowedWidth = Math.max(MIN_LIST_WIDTH, window.innerWidth - 64 - 260);
+    const targetWidth = Math.min(maxAllowedWidth, Math.max(MIN_LIST_WIDTH, startWidth + deltaX));
+    resultListWidth.value = targetWidth;
+  }
+
+  function onMouseUp() {
+    isResizingList.value = false;
+    window.removeEventListener("mousemove", onMouseMove);
+    window.removeEventListener("mouseup", onMouseUp);
+    setResultListWidth(resultListWidth.value);
+  }
+
+  window.addEventListener("mousemove", onMouseMove);
+  window.addEventListener("mouseup", onMouseUp);
+}
+
+function onResizerDoubleClick() {
+  setResultListWidth(DEFAULT_LIST_WIDTH);
+}
 
 const { bindSubInput, syncSubInputValue, focusSubInput } = useSubInput({
   onInput: queueSearch,
@@ -162,7 +196,11 @@ function setActiveCategory(category: FinderCategory) {
 </script>
 
 <template>
-  <main class="finder-shell" :class="{ 'preview-open': previewEnabled }">
+  <main
+    class="finder-shell"
+    :class="{ 'preview-open': previewEnabled, 'is-resizing': isResizingList }"
+    :style="{ '--result-list-width': `${resultListWidth}px` }"
+  >
     <FinderSidebar
       :categories="enabledCategories"
       :active-category-id="activeCategoryId"
@@ -186,6 +224,16 @@ function setActiveCategory(category: FinderCategory) {
         @context-menu="contextMenu.open"
         @open="(item) => resultActions.open([item])"
       />
+      <div
+        v-if="previewEnabled"
+        class="finder-split-resizer"
+        :class="{ 'is-resizing': isResizingList }"
+        title="拖动调整列表宽度，双击恢复默认"
+        @mousedown="onResizerMouseDown"
+        @dblclick="onResizerDoubleClick"
+      >
+        <span class="resizer-line"></span>
+      </div>
     </section>
 
     <FinderFooter
@@ -256,6 +304,11 @@ function setActiveCategory(category: FinderCategory) {
   user-select: none;
 }
 
+.finder-shell.is-resizing {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
 .finder-shell.preview-open {
   grid-template-columns: 64px var(--result-list-width) minmax(0, 1fr);
 }
@@ -265,12 +318,41 @@ function setActiveCategory(category: FinderCategory) {
 }
 
 .finder-main {
+  position: relative;
+  z-index: 10;
   grid-column: 2;
   grid-row: 1;
   min-width: 0;
   min-height: 0;
   max-height: 100%;
   overflow: visible;
+}
+
+.finder-split-resizer {
+  position: absolute;
+  top: 0;
+  right: -5px;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 10px;
+  cursor: col-resize;
+}
+
+.resizer-line {
+  width: 2px;
+  height: 100%;
+  border-radius: 1px;
+  background: transparent;
+  transition: background-color 0.15s ease;
+  pointer-events: none;
+}
+
+.finder-split-resizer:hover .resizer-line,
+.finder-split-resizer.is-resizing .resizer-line {
+  background: var(--primary-color);
 }
 
 .finder-preview-zoom {
@@ -301,8 +383,6 @@ function setActiveCategory(category: FinderCategory) {
 
 @media (max-width: 760px) {
   .finder-shell {
-    --result-list-width: 270px;
-
     grid-template-columns: 60px minmax(0, 1fr);
   }
 

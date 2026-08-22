@@ -5,6 +5,7 @@ interface FinderPreferences {
   previewEnabled: boolean;
   sortMode: FinderSortMode;
   matchPathEnabled: boolean;
+  resultListWidth: number;
   categoryEnabled: Record<string, boolean>;
 }
 
@@ -15,6 +16,7 @@ const DEFAULT_PREFERENCES: FinderPreferences = {
   previewEnabled: false,
   sortMode: "modified-desc",
   matchPathEnabled: true,
+  resultListWidth: 315,
   categoryEnabled: {},
 };
 
@@ -33,6 +35,10 @@ const matchPathEnabled = computed({
   get: () => preferences.value.matchPathEnabled,
   set: setMatchPathEnabled,
 });
+const resultListWidth = computed({
+  get: () => preferences.value.resultListWidth,
+  set: setResultListWidth,
+});
 
 let loaded = false;
 
@@ -42,6 +48,8 @@ export function usePersistStorage() {
     previewEnabled,
     sortMode,
     matchPathEnabled,
+    resultListWidth,
+    setResultListWidth,
     customCategories,
     addCustomCategory,
     updateCustomCategory,
@@ -116,6 +124,14 @@ function setMatchPathEnabled(value: boolean) {
   savePreferences();
 }
 
+function setResultListWidth(value: number) {
+  preferences.value = {
+    ...preferences.value,
+    resultListWidth: Math.round(value),
+  };
+  savePreferences();
+}
+
 function addCustomCategory(label: string, rule: string) {
   const category = {
     id: `custom-${Date.now()}`,
@@ -178,6 +194,10 @@ function normalizePreferences(stored: Partial<FinderPreferences>): FinderPrefere
     previewEnabled: stored.previewEnabled ?? DEFAULT_PREFERENCES.previewEnabled,
     sortMode: stored.sortMode ?? DEFAULT_PREFERENCES.sortMode,
     matchPathEnabled: stored.matchPathEnabled ?? DEFAULT_PREFERENCES.matchPathEnabled,
+    resultListWidth:
+      typeof stored.resultListWidth === "number" && stored.resultListWidth >= 200
+        ? stored.resultListWidth
+        : DEFAULT_PREFERENCES.resultListWidth,
     categoryEnabled: { ...DEFAULT_PREFERENCES.categoryEnabled, ...stored.categoryEnabled },
   };
 }
