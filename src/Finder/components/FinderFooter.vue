@@ -48,16 +48,21 @@ function selectSortMode(mode: FinderSortMode) {
 
 function handleGlobalPointerdown(event: PointerEvent) {
   if (!showSortMenu.value) return;
-  if (event.target instanceof HTMLElement && event.target.closest(".sort-select")) return;
+  const target = event.target;
+  if (target instanceof HTMLElement) {
+    if (target.closest(".sort-trigger") || target.closest(".sort-menu")) {
+      return;
+    }
+  }
   setSortMenuOpen(false);
 }
 
 onMounted(() => {
-  window.addEventListener("pointerdown", handleGlobalPointerdown);
+  window.addEventListener("pointerdown", handleGlobalPointerdown, true);
 });
 
 onUnmounted(() => {
-  window.removeEventListener("pointerdown", handleGlobalPointerdown);
+  window.removeEventListener("pointerdown", handleGlobalPointerdown, true);
 });
 </script>
 
@@ -107,12 +112,12 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: minmax(120px, 1fr) auto max-content;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
   overflow: visible;
-  padding: 0 14px;
+  padding: 0 12px;
   background: #3a3a39;
   color: #c6ccd3;
   font-size: 12px;
@@ -135,10 +140,11 @@ onUnmounted(() => {
 }
 
 .sort-select {
-  --sort-select-width: 158px;
+  --sort-select-width: 148px;
   position: relative;
   display: flex;
   align-items: center;
+  width: fit-content;
   min-width: 0;
 }
 
@@ -146,16 +152,16 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   width: var(--sort-select-width);
-  height: 30px;
+  height: 24px;
   box-sizing: border-box;
-  padding: 0 11px 0 12px;
+  padding: 0 8px 0 10px;
   color: #e7ebf0;
   background: #34373b;
   border: 1px solid #555b63;
-  border-radius: 5px;
-  font-size: 12px;
+  border-radius: 4px;
+  font-size: 11.5px;
   line-height: 1;
   cursor: pointer;
   transition:
@@ -171,8 +177,8 @@ onUnmounted(() => {
 }
 
 .sort-trigger-arrow {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   margin-top: -3px;
   border-right: 1.5px solid currentColor;
   border-bottom: 1.5px solid currentColor;
@@ -182,13 +188,13 @@ onUnmounted(() => {
 
 .sort-menu {
   position: absolute;
-  bottom: calc(100% + 8px);
+  bottom: calc(100% + 6px);
   left: 0;
   z-index: 30;
   display: grid;
   width: var(--sort-select-width);
   box-sizing: border-box;
-  padding: 6px;
+  padding: 5px;
   background: #2b2e33;
   border: 1px solid #515862;
   border-radius: 6px;
@@ -196,12 +202,12 @@ onUnmounted(() => {
 }
 
 .sort-option {
-  height: 30px;
-  padding: 0 10px;
+  height: 26px;
+  padding: 0 8px;
   color: #dfe4ea;
   background: transparent;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: 11.5px;
   line-height: 1;
   text-align: left;
   cursor: pointer;
@@ -218,8 +224,8 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-width: 150px;
+  gap: 7px;
+  min-width: 140px;
 }
 
 .preview-toggle input {
@@ -228,8 +234,8 @@ onUnmounted(() => {
 }
 
 .toggle-track {
-  width: 36px;
-  height: 18px;
+  width: 30px;
+  height: 16px;
   border-radius: 999px;
   background: #80848a;
   position: relative;
@@ -240,8 +246,8 @@ onUnmounted(() => {
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background: #e8eaed;
   transition: transform 0.15s ease;
@@ -252,7 +258,7 @@ onUnmounted(() => {
 }
 
 .preview-toggle input:checked + .toggle-track::after {
-  transform: translateX(18px);
+  transform: translateX(14px);
 }
 
 .result-count {

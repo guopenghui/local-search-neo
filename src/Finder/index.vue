@@ -245,7 +245,7 @@ function setActiveCategory(category: FinderCategory) {
 
   display: grid;
   grid-template-columns: 64px minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr) 42px;
+  grid-template-rows: minmax(0, 1fr) 32px;
   height: 100vh;
   min-height: 0;
   max-height: 100vh;
