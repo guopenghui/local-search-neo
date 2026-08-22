@@ -95,6 +95,15 @@ function updateImageSize(event: Event) {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+  background-color: #ffffff;
+  background-image: conic-gradient(
+    #e5e5e5 0 25%,
+    #ffffff 25% 50%,
+    #e5e5e5 50% 75%,
+    #ffffff 75% 100%
+  );
+  background-size: 16px 16px;
+  box-shadow: 0 2px 14px rgb(0 0 0 / 18%);
 }
 
 .svg-image {
