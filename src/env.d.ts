@@ -78,5 +78,3 @@ declare global {
     services: Services;
   }
 }
-
-export {};

@@ -43,6 +43,6 @@
   - `addon/index.d.ts`
   - `addon/README.md`
 - 预览相关逻辑优先看 `src/Finder/composables/useFilePreview.ts`。
-- 文件类型判断和纯逻辑测试优先放在 `src/Finder/core/finderLogic.ts` / `.test.ts`。
+- 文件类型判断与纯逻辑测试优先放在 `src/Finder/core/`（如 `previewCandidate.ts`、`finderLogic.ts` 及对应 `.test.ts`）。
 - 不要直接假设 ZTools API 签名；先查 `node_modules/@ztools-center/ztools-api-types/ztools.api.d.ts`。
 - 查 Rust crate API 时优先看 docs.rs 文档，不要直接翻依赖源码。

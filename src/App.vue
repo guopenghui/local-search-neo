@@ -2,7 +2,7 @@
 import { onMounted } from "vue";
 import Finder from "./Finder/index.vue";
 import { useFinderEnterAction } from "./Finder/composables/useFinderEnterAction";
-import { getFileIconDataUrl, warmUpFileIconCache } from "./Finder/core/fileIconCache";
+import { warmUpFileIconCache } from "./Finder/core/fileIconCache";
 import {
   DEFAULT_CATEGORIES,
   buildEverythingQuery,

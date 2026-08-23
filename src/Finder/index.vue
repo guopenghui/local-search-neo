@@ -35,7 +35,6 @@ const {
   everythingReady,
   everythingPending,
   ensureEverythingReady,
-  startEverythingStatusPolling,
   stopEverythingStatusPolling,
 } = useEverything({ runSearch: () => finderSearch.runSearch() });
 
@@ -75,7 +74,7 @@ function onResizerDoubleClick() {
   setResultListWidth(DEFAULT_LIST_WIDTH);
 }
 
-const { bindSubInput, syncSubInputValue, focusSubInput } = useSubInput({
+const { bindSubInput, focusSubInput } = useSubInput({
   onInput: queueSearch,
 });
 

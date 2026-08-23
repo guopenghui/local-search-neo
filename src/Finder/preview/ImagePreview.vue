@@ -15,7 +15,6 @@ const MAX_ZOOM = 5;
 const ZOOM_STEP = 0.25;
 
 const shellRef = shallowRef<HTMLElement | null>(null);
-const imageEl = shallowRef<HTMLImageElement | null>(null);
 const imageNaturalSize = shallowRef<{ width: number; height: number } | null>(null);
 const viewportSize = shallowRef<{ width: number; height: number } | null>(null);
 const zoomLevel = shallowRef(1);
@@ -275,7 +274,6 @@ onBeforeUnmount(() => {
     >
       <div class="image-stage-wrap">
         <img
-          ref="imageEl"
           class="preview-image"
           :class="{ 'svg-image': isSvg }"
           :src="source"

@@ -1,6 +1,7 @@
 import { ref, watch, type ComputedRef } from "vue";
+import { formatBytes } from "../core/formatters";
+import type { FinderResult } from "../core/finderLogic";
 import {
-  formatBytes,
   getArchiveTreePreviewBlockedReason,
   getCodePreviewLanguage,
   isArchiveTreePreviewCandidate,
@@ -12,9 +13,8 @@ import {
   isPdfPreviewCandidate,
   isTextPreviewCandidate,
   isVideoPreviewCandidate,
-  type FinderResult,
   type PreviewCandidate,
-} from "../core/finderLogic";
+} from "../core/previewCandidate";
 
 const PREVIEW_BYTES = 20 * 1024;
 const LOG_PREVIEW_BYTES = 10 * 1024;

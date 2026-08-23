@@ -12,7 +12,7 @@
     "format": "oxfmt --write . && npm --prefix addon run format",
     "format:check": "oxfmt --check . && npm --prefix addon run format:check",
     "check": "npm run lint && npm run format:check && npm test",
-    "test": "node scripts/run-ts-tests.cjs src/Finder/core/finderLogic.test.ts",
+    "test": "node scripts/run-ts-tests.cjs src/Finder/core/finderLogic.test.ts src/Finder/core/previewCandidate.test.ts",
     "test:everything-addon": "node scripts/test-everything-addon.cjs",
     "bench:everything": "node scripts/benchmark-everything-addon.cjs",
     "predev": "npm run prepare:pdfjs && npm run build:addon",

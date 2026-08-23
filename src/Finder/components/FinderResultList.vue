@@ -4,7 +4,8 @@ import { LoaderCircle } from "@lucide/vue";
 import type { ContextMenuItem } from "../composables/useContextMenu";
 import { useFileIcons } from "../composables/useFileIcons";
 import type { ResultActions } from "../composables/useResultActions";
-import { formatBytes, type FinderResult, type SelectionMode } from "../core/finderLogic";
+import type { FinderResult, SelectionMode } from "../core/finderLogic";
+import { formatBytes } from "../core/formatters";
 
 const props = defineProps<{
   visibleResults: FinderResult[];
