@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { GripVertical } from "@lucide/vue";
+import { GripVertical, RotateCcw } from "@lucide/vue";
 import { ref, watch } from "vue";
 import type { FinderCategory } from "../core/finderLogic";
 
@@ -225,10 +225,11 @@ function resetDragState() {
               <button
                 type="button"
                 class="category-reset-order-btn"
-                title="恢复内置与自定义分组的默认顺序"
+                title="恢复默认排序"
+                aria-label="恢复默认排序"
                 @click="emit('resetCategoryOrder')"
               >
-                恢复默认排序
+                <RotateCcw :size="16" :stroke-width="2" aria-hidden="true" />
               </button>
             </div>
 
@@ -392,7 +393,7 @@ function resetDragState() {
   height: calc(100% - 48px);
   max-height: calc(100% - 48px);
   box-sizing: border-box;
-  padding: 18px 20px 20px;
+  padding: 18px 4px 0 0;
   overflow: hidden;
   color: #f5f7fa;
   background: #2d2f32;
@@ -451,6 +452,7 @@ function resetDragState() {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+  padding: 0 16px 0 20px;
 }
 
 .settings-header h2 {
@@ -503,7 +505,7 @@ function resetDragState() {
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-gutter: stable;
-  padding-right: 2px;
+  padding: 0 16px 20px 20px;
 }
 
 .settings-section::-webkit-scrollbar-button {
@@ -593,27 +595,33 @@ function resetDragState() {
 }
 
 .category-reset-order-btn {
-  border: 1px solid #4f545a;
-  background: #27282b;
-  color: #cbd1d8;
-  font-size: 12px;
-  padding: 4px 10px;
-  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #727982;
+  border-radius: 6px;
   cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.15s ease;
+  flex-shrink: 0;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .category-reset-order-btn:hover {
-  background: #36383c;
-  color: #ffffff;
-  border-color: #60666e;
+  color: #cbd1d8;
+  background: #3a3d42;
 }
 
 .category-reset-order-btn:focus,
 .category-reset-order-btn:focus-visible {
   outline: none;
-  border-color: var(--primary-color);
+  color: #cbd1d8;
+  background: #3a3d42;
 }
 
 .category-row {
@@ -859,15 +867,14 @@ function resetDragState() {
   }
 
   .category-reset-order-btn {
-    border-color: #d1d7e0;
-    background: #f8fafc;
-    color: #4b5563;
+    color: #9aa4b2;
+    background: transparent;
+    border: 0;
   }
 
   .category-reset-order-btn:hover {
-    background: #edf2f7;
-    color: #111827;
-    border-color: #b0b9c6;
+    color: #374151;
+    background: #e5e9f0;
   }
 
   .category-row.is-dragging {
