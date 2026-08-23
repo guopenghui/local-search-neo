@@ -45,6 +45,51 @@ export const DEFAULT_CATEGORIES: FinderCategory[] = [
   { id: "archive", label: "压缩文件", kind: "extension", rule: "ext:zip;rar;7z;tar;gz;iso" },
 ];
 
+export const DEFAULT_CATEGORY_ORDER: string[] = DEFAULT_CATEGORIES.map((c) => c.id);
+
+export function normalizeCategoryOrder(
+  storedOrder: string[] | undefined,
+  allCategoryIds: string[],
+): string[] {
+  const validIdSet = new Set(allCategoryIds);
+  const result: string[] = [];
+  const seen = new Set<string>();
+
+  if (Array.isArray(storedOrder)) {
+    for (const id of storedOrder) {
+      if (typeof id === "string" && validIdSet.has(id) && !seen.has(id)) {
+        seen.add(id);
+        result.push(id);
+      }
+    }
+  }
+
+  for (const id of allCategoryIds) {
+    if (!seen.has(id)) {
+      seen.add(id);
+      result.push(id);
+    }
+  }
+
+  return result;
+}
+
+export function reorderArray<T>(list: T[], fromIndex: number, toIndex: number): T[] {
+  if (
+    fromIndex < 0 ||
+    fromIndex >= list.length ||
+    toIndex < 0 ||
+    toIndex >= list.length ||
+    fromIndex === toIndex
+  ) {
+    return [...list];
+  }
+  const result = [...list];
+  const [removed] = result.splice(fromIndex, 1);
+  result.splice(toIndex, 0, removed);
+  return result;
+}
+
 export function buildEverythingQuery(keyword: string, category: FinderCategory): string {
   const trimmedKeyword = keyword.trim();
   const rule = normalizeCategoryRule(category.rule);

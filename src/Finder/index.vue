@@ -93,6 +93,8 @@ const {
   enabledCategories,
   allCategories,
   selectCategory,
+  handleReorderCategories,
+  handleResetCategoryOrder,
   handleAddCustomCategory,
   handleUpdateCustomCategory,
   handleRemoveCustomCategory,
@@ -287,6 +289,8 @@ function setActiveCategory(category: FinderCategory) {
       @remove-category="handleRemoveCustomCategory"
       @set-category-enabled="handleSetCategoryEnabled"
       @set-match-path-enabled="matchPathEnabled = $event"
+      @reorder-categories="handleReorderCategories"
+      @reset-category-order="handleResetCategoryOrder"
     />
 
     <ContextMenu

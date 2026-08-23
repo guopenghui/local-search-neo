@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { Settings } from "@lucide/vue";
-import { computed } from "vue";
 import type { FinderCategory } from "../core/finderLogic";
 
-const props = defineProps<{
+defineProps<{
   categories: FinderCategory[];
   activeCategoryId: string;
 }>();
@@ -12,36 +11,19 @@ const emit = defineEmits<{
   select: [category: FinderCategory];
   openSettings: [];
 }>();
-
-const builtInCategories = computed(() =>
-  props.categories.filter((category) => category.kind !== "custom"),
-);
-const customCategories = computed(() =>
-  props.categories.filter((category) => category.kind === "custom"),
-);
 </script>
 
 <template>
   <aside class="finder-sidebar">
     <button
-      v-for="category in builtInCategories"
+      v-for="category in categories"
       :key="category.id"
       class="category-button"
-      :class="{ active: category.id === activeCategoryId }"
-      tabindex="-1"
-      @mousedown.left.prevent
-      @click="emit('select', category)"
-    >
-      <span>{{ category.label }}</span>
-    </button>
-
-    <div v-if="customCategories.length > 0" class="category-separator"></div>
-
-    <button
-      v-for="category in customCategories"
-      :key="category.id"
-      class="category-button custom-category-button"
-      :class="{ active: category.id === activeCategoryId }"
+      :class="{
+        active: category.id === activeCategoryId,
+        'custom-category-button': category.kind === 'custom',
+      }"
+      :title="category.label"
       tabindex="-1"
       @mousedown.left.prevent
       @click="emit('select', category)"
@@ -131,12 +113,6 @@ const customCategories = computed(() =>
   color: #d4d8df;
 }
 
-.category-separator {
-  height: 1px;
-  margin: 6px 6px;
-  background: #444a53;
-}
-
 .sidebar-settings {
   display: grid;
   place-items: center;
@@ -174,10 +150,6 @@ const customCategories = computed(() =>
 
   .custom-category-button {
     color: #374151;
-  }
-
-  .category-separator {
-    background: #d7dee8;
   }
 
   .sidebar-settings {

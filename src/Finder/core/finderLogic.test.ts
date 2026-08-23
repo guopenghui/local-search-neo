@@ -2,6 +2,7 @@
 
 import {
   DEFAULT_CATEGORIES,
+  DEFAULT_CATEGORY_ORDER,
   buildEverythingQuery,
   filterResultsExcludingPaths,
   getDragTargetPaths,
@@ -10,6 +11,8 @@ import {
   getRangeSelectedPaths,
   getRestoredSelectedPath,
   mergeResultsByMatchPathPriority,
+  normalizeCategoryOrder,
+  reorderArray,
   type FinderCategory,
   type FinderResult,
 } from "./finderLogic";
@@ -230,4 +233,35 @@ test("filterResultsExcludingPaths removes specified paths and preserves others",
   ]);
   assert.deepEqual(filterResultsExcludingPaths(items, ["C:\\missing.txt"]), items);
   assert.deepEqual(filterResultsExcludingPaths(items, []), items);
+});
+
+test("normalizeCategoryOrder retains valid IDs, deduplicates, and appends missing IDs", () => {
+  const allIds = ["all", "folder", "excel", "custom-1", "custom-2"];
+  // Valid partial stored order with deleted ID and duplicates
+  const stored = ["custom-2", "folder", "custom-2", "deleted-id", "all"];
+  const result = normalizeCategoryOrder(stored, allIds);
+
+  assert.deepEqual(result, ["custom-2", "folder", "all", "excel", "custom-1"]);
+
+  // Undefined stored order falls back to natural order
+  assert.deepEqual(normalizeCategoryOrder(undefined, allIds), allIds);
+  assert.deepEqual(normalizeCategoryOrder([], allIds), allIds);
+  assert.deepEqual(
+    normalizeCategoryOrder(DEFAULT_CATEGORY_ORDER, DEFAULT_CATEGORY_ORDER),
+    DEFAULT_CATEGORY_ORDER,
+  );
+});
+
+test("reorderArray moves items correctly within bounds and handles invalid indices", () => {
+  const list = ["A", "B", "C", "D"];
+
+  // Move forward: 0 -> 2
+  assert.deepEqual(reorderArray(list, 0, 2), ["B", "C", "A", "D"]);
+  // Move backward: 3 -> 1
+  assert.deepEqual(reorderArray(list, 3, 1), ["A", "D", "B", "C"]);
+  // Same index
+  assert.deepEqual(reorderArray(list, 1, 1), ["A", "B", "C", "D"]);
+  // Out of bounds
+  assert.deepEqual(reorderArray(list, -1, 2), ["A", "B", "C", "D"]);
+  assert.deepEqual(reorderArray(list, 1, 10), ["A", "B", "C", "D"]);
 });

@@ -1,5 +1,10 @@
 import { computed, shallowRef } from "vue";
-import type { FinderCategory, FinderSortMode } from "../core/finderLogic";
+import {
+  DEFAULT_CATEGORY_ORDER,
+  type FinderCategory,
+  type FinderSortMode,
+  normalizeCategoryOrder,
+} from "../core/finderLogic";
 
 interface FinderPreferences {
   previewEnabled: boolean;
@@ -8,6 +13,7 @@ interface FinderPreferences {
   resultListWidth: number;
   sidebarWidth: number;
   categoryEnabled: Record<string, boolean>;
+  categoryOrder: string[];
 }
 
 const PREFERENCES_STORAGE_KEY = "preferences";
@@ -20,6 +26,7 @@ const DEFAULT_PREFERENCES: FinderPreferences = {
   resultListWidth: 315,
   sidebarWidth: 64,
   categoryEnabled: {},
+  categoryOrder: [...DEFAULT_CATEGORY_ORDER],
 };
 
 const preferences = shallowRef<FinderPreferences>({ ...DEFAULT_PREFERENCES });
@@ -45,6 +52,7 @@ const sidebarWidth = computed({
   get: () => preferences.value.sidebarWidth,
   set: setSidebarWidth,
 });
+const categoryOrder = computed(() => preferences.value.categoryOrder);
 
 let loaded = false;
 
@@ -58,6 +66,9 @@ export function usePersistStorage() {
     setResultListWidth,
     sidebarWidth,
     setSidebarWidth,
+    categoryOrder,
+    setCategoryOrder,
+    resetCategoryOrder,
     customCategories,
     addCustomCategory,
     updateCustomCategory,
@@ -154,6 +165,22 @@ function setSidebarWidth(value: number, persist = true) {
   }
 }
 
+function setCategoryOrder(order: string[]) {
+  preferences.value = {
+    ...preferences.value,
+    categoryOrder: [...order],
+  };
+  savePreferences();
+}
+
+function resetCategoryOrder(allAvailableCategoryIds: string[]) {
+  preferences.value = {
+    ...preferences.value,
+    categoryOrder: normalizeCategoryOrder(DEFAULT_CATEGORY_ORDER, allAvailableCategoryIds),
+  };
+  savePreferences();
+}
+
 function addCustomCategory(label: string, rule: string) {
   const category = {
     id: `custom-${Date.now()}`,
@@ -163,7 +190,15 @@ function addCustomCategory(label: string, rule: string) {
   } satisfies FinderCategory;
 
   customCategories.value = [...customCategories.value, category];
-  setCategoryEnabled(category.id, true);
+  preferences.value = {
+    ...preferences.value,
+    categoryEnabled: {
+      ...preferences.value.categoryEnabled,
+      [category.id]: true,
+    },
+    categoryOrder: [...preferences.value.categoryOrder, category.id],
+  };
+  savePreferences();
   saveCustomCategories();
   return category;
 }
@@ -183,7 +218,13 @@ function updateCustomCategory(id: string, input: Pick<FinderCategory, "label" | 
 
 function removeCustomCategory(category: FinderCategory) {
   customCategories.value = customCategories.value.filter((item) => item.id !== category.id);
-  removeCategoryEnabledState(category.id);
+  const { [category.id]: _removed, ...categoryEnabled } = preferences.value.categoryEnabled;
+  preferences.value = {
+    ...preferences.value,
+    categoryEnabled,
+    categoryOrder: preferences.value.categoryOrder.filter((id) => id !== category.id),
+  };
+  savePreferences();
   saveCustomCategories();
 }
 
@@ -202,16 +243,11 @@ function setCategoryEnabled(categoryId: string, enabled: boolean) {
   savePreferences();
 }
 
-function removeCategoryEnabledState(categoryId: string) {
-  const { [categoryId]: _removed, ...categoryEnabled } = preferences.value.categoryEnabled;
-  preferences.value = {
-    ...preferences.value,
-    categoryEnabled,
-  };
-  savePreferences();
-}
-
 function normalizePreferences(stored: Partial<FinderPreferences>): FinderPreferences {
+  const rawOrder = Array.isArray(stored.categoryOrder)
+    ? stored.categoryOrder.filter((item): item is string => typeof item === "string")
+    : [...DEFAULT_CATEGORY_ORDER];
+
   return {
     previewEnabled: stored.previewEnabled ?? DEFAULT_PREFERENCES.previewEnabled,
     sortMode: stored.sortMode ?? DEFAULT_PREFERENCES.sortMode,
@@ -225,6 +261,7 @@ function normalizePreferences(stored: Partial<FinderPreferences>): FinderPrefere
         ? stored.sidebarWidth
         : DEFAULT_PREFERENCES.sidebarWidth,
     categoryEnabled: { ...DEFAULT_PREFERENCES.categoryEnabled, ...stored.categoryEnabled },
+    categoryOrder: rawOrder,
   };
 }
 
