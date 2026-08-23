@@ -95,13 +95,28 @@ const customCategories = computed(() =>
   align-items: center;
   justify-content: center;
   min-height: 38px;
-  padding: 0 2px;
+  height: auto;
+  padding: 6px 0;
   color: #c8d0db;
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
   letter-spacing: 0.3px;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  text-align: center;
+  line-height: 1.25;
+  box-sizing: border-box;
+}
+
+.category-button span {
+  display: block;
+  width: 100%;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  text-align: center;
 }
 
 .category-button.active {

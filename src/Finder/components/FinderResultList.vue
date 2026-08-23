@@ -252,13 +252,13 @@ function openResultMenu(event: MouseEvent, item: FinderResult) {
 }
 
 .result-row.selected {
-  box-shadow: inset 3px 0 0 var(--primary-color-alpha-50);
+  box-shadow: inset 2px 0 0 var(--primary-color-alpha-50);
 }
 
 .result-row.selected.active-focus,
 .result-row.active-focus {
   background: var(--primary-color-dark-subtle-bg, #4a4b4d);
-  box-shadow: inset 3px 0 0 var(--primary-color);
+  box-shadow: inset 2px 0 0 var(--primary-color);
 }
 
 .file-icon {
@@ -375,13 +375,13 @@ function openResultMenu(event: MouseEvent, item: FinderResult) {
   }
 
   .result-row.selected {
-    box-shadow: inset 3px 0 0 var(--primary-color-alpha-50);
+    box-shadow: inset 2px 0 0 var(--primary-color-alpha-50);
   }
 
   .result-row.selected.active-focus,
   .result-row.active-focus {
     background: var(--primary-color-subtle-bg);
-    box-shadow: inset 3px 0 0 var(--primary-color-text, var(--primary-color));
+    box-shadow: inset 2px 0 0 var(--primary-color-text, var(--primary-color));
   }
 
   .file-name {

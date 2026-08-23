@@ -6,6 +6,7 @@ interface FinderPreferences {
   sortMode: FinderSortMode;
   matchPathEnabled: boolean;
   resultListWidth: number;
+  sidebarWidth: number;
   categoryEnabled: Record<string, boolean>;
 }
 
@@ -17,6 +18,7 @@ const DEFAULT_PREFERENCES: FinderPreferences = {
   sortMode: "modified-desc",
   matchPathEnabled: true,
   resultListWidth: 315,
+  sidebarWidth: 64,
   categoryEnabled: {},
 };
 
@@ -39,6 +41,10 @@ const resultListWidth = computed({
   get: () => preferences.value.resultListWidth,
   set: setResultListWidth,
 });
+const sidebarWidth = computed({
+  get: () => preferences.value.sidebarWidth,
+  set: setSidebarWidth,
+});
 
 let loaded = false;
 
@@ -50,6 +56,8 @@ export function usePersistStorage() {
     matchPathEnabled,
     resultListWidth,
     setResultListWidth,
+    sidebarWidth,
+    setSidebarWidth,
     customCategories,
     addCustomCategory,
     updateCustomCategory,
@@ -124,12 +132,26 @@ function setMatchPathEnabled(value: boolean) {
   savePreferences();
 }
 
-function setResultListWidth(value: number) {
+function setResultListWidth(value: number, persist = true) {
+  if (typeof value !== "number" || Number.isNaN(value)) return;
   preferences.value = {
     ...preferences.value,
     resultListWidth: Math.round(value),
   };
-  savePreferences();
+  if (persist) {
+    savePreferences();
+  }
+}
+
+function setSidebarWidth(value: number, persist = true) {
+  if (typeof value !== "number" || Number.isNaN(value)) return;
+  preferences.value = {
+    ...preferences.value,
+    sidebarWidth: Math.round(value),
+  };
+  if (persist) {
+    savePreferences();
+  }
 }
 
 function addCustomCategory(label: string, rule: string) {
@@ -198,6 +220,10 @@ function normalizePreferences(stored: Partial<FinderPreferences>): FinderPrefere
       typeof stored.resultListWidth === "number" && stored.resultListWidth >= 200
         ? stored.resultListWidth
         : DEFAULT_PREFERENCES.resultListWidth,
+    sidebarWidth:
+      typeof stored.sidebarWidth === "number" && stored.sidebarWidth >= 48
+        ? stored.sidebarWidth
+        : DEFAULT_PREFERENCES.sidebarWidth,
     categoryEnabled: { ...DEFAULT_PREFERENCES.categoryEnabled, ...stored.categoryEnabled },
   };
 }

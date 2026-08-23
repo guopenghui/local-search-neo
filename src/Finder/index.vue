@@ -4,6 +4,7 @@ import ConfirmDialog from "../components/ConfirmDialog.vue";
 import FloatingZoom from "../components/FloatingZoom.vue";
 import { useGlocalConfirmDialog } from "../components/useGlocalConfirmDialog";
 
+import SplitResizer from "./components/SplitResizer.vue";
 import ContextMenu from "./components/ContextMenu.vue";
 import FinderFooter from "./components/FinderFooter.vue";
 import FinderResultList from "./components/FinderResultList.vue";
@@ -38,40 +39,47 @@ const {
   stopEverythingStatusPolling,
 } = useEverything({ runSearch: () => finderSearch.runSearch() });
 
-const { previewEnabled, sortMode, matchPathEnabled, resultListWidth, setResultListWidth } =
-  usePersistStorage();
+const {
+  previewEnabled,
+  sortMode,
+  matchPathEnabled,
+  resultListWidth,
+  setResultListWidth,
+  sidebarWidth,
+  setSidebarWidth,
+} = usePersistStorage();
+
+const MIN_SIDEBAR_WIDTH = 48;
+const DEFAULT_SIDEBAR_WIDTH = 64;
+const isResizingSidebar = ref(false);
 
 const MIN_LIST_WIDTH = 220;
 const DEFAULT_LIST_WIDTH = 315;
 const isResizingList = ref(false);
 
-function onResizerMouseDown(event: MouseEvent) {
-  if (event.button !== 0) return;
-  event.preventDefault();
-  isResizingList.value = true;
-  const startX = event.clientX;
-  const startWidth = resultListWidth.value;
-
-  function onMouseMove(moveEvent: MouseEvent) {
-    const deltaX = moveEvent.clientX - startX;
-    const maxAllowedWidth = Math.max(MIN_LIST_WIDTH, window.innerWidth - 64 - 260);
-    const targetWidth = Math.min(maxAllowedWidth, Math.max(MIN_LIST_WIDTH, startWidth + deltaX));
-    resultListWidth.value = targetWidth;
-  }
-
-  function onMouseUp() {
-    isResizingList.value = false;
-    window.removeEventListener("mousemove", onMouseMove);
-    window.removeEventListener("mouseup", onMouseUp);
-    setResultListWidth(resultListWidth.value);
-  }
-
-  window.addEventListener("mousemove", onMouseMove);
-  window.addEventListener("mouseup", onMouseUp);
+function onSidebarWidthUpdate(width: number) {
+  setSidebarWidth(width, false);
 }
 
-function onResizerDoubleClick() {
-  setResultListWidth(DEFAULT_LIST_WIDTH);
+function onSidebarWidthChange(width: number) {
+  setSidebarWidth(width, true);
+}
+
+function getSidebarMaxWidth(): number {
+  const minMainSpace = previewEnabled.value ? resultListWidth.value + 160 : 200;
+  return Math.max(MIN_SIDEBAR_WIDTH, Math.min(260, window.innerWidth - minMainSpace));
+}
+
+function onResultListWidthUpdate(width: number) {
+  setResultListWidth(width, false);
+}
+
+function onResultListWidthChange(width: number) {
+  setResultListWidth(width, true);
+}
+
+function getResultListMaxWidth(): number {
+  return Math.max(MIN_LIST_WIDTH, window.innerWidth - sidebarWidth.value - 260);
 }
 
 const { bindSubInput, focusSubInput } = useSubInput({
@@ -197,15 +205,30 @@ function setActiveCategory(category: FinderCategory) {
 <template>
   <main
     class="finder-shell"
-    :class="{ 'preview-open': previewEnabled, 'is-resizing': isResizingList }"
-    :style="{ '--result-list-width': `${resultListWidth}px` }"
+    :class="{ 'preview-open': previewEnabled, 'is-resizing': isResizingList || isResizingSidebar }"
+    :style="{
+      '--sidebar-width': `${sidebarWidth}px`,
+      '--result-list-width': `${resultListWidth}px`,
+    }"
   >
-    <FinderSidebar
-      :categories="enabledCategories"
-      :active-category-id="activeCategoryId"
-      @select="setActiveCategory"
-      @open-settings="openSettingsDrawer"
-    />
+    <div class="finder-sidebar-pane">
+      <FinderSidebar
+        :categories="enabledCategories"
+        :active-category-id="activeCategoryId"
+        @select="setActiveCategory"
+        @open-settings="openSettingsDrawer"
+      />
+      <SplitResizer
+        :model-value="sidebarWidth"
+        :min="MIN_SIDEBAR_WIDTH"
+        :max="getSidebarMaxWidth"
+        :default-width="DEFAULT_SIDEBAR_WIDTH"
+        title="拖动调整侧边栏宽度，双击恢复默认"
+        @update:model-value="onSidebarWidthUpdate"
+        @change="onSidebarWidthChange"
+        @resizing-change="isResizingSidebar = $event"
+      />
+    </div>
 
     <section class="finder-main">
       <FinderResultList
@@ -223,16 +246,17 @@ function setActiveCategory(category: FinderCategory) {
         @context-menu="contextMenu.open"
         @open="(item) => resultActions.open([item])"
       />
-      <div
+      <SplitResizer
         v-if="previewEnabled"
-        class="finder-split-resizer"
-        :class="{ 'is-resizing': isResizingList }"
+        :model-value="resultListWidth"
+        :min="MIN_LIST_WIDTH"
+        :max="getResultListMaxWidth"
+        :default-width="DEFAULT_LIST_WIDTH"
         title="拖动调整列表宽度，双击恢复默认"
-        @mousedown="onResizerMouseDown"
-        @dblclick="onResizerDoubleClick"
-      >
-        <span class="resizer-line"></span>
-      </div>
+        @update:model-value="onResultListWidthUpdate"
+        @change="onResultListWidthChange"
+        @resizing-change="isResizingList = $event"
+      />
     </section>
 
     <FinderFooter
@@ -288,10 +312,11 @@ function setActiveCategory(category: FinderCategory) {
 
 <style scoped>
 .finder-shell {
+  --sidebar-width: 64px;
   --result-list-width: 315px;
 
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr);
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) 32px;
   height: 100vh;
   min-height: 0;
@@ -309,11 +334,25 @@ function setActiveCategory(category: FinderCategory) {
 }
 
 .finder-shell.preview-open {
-  grid-template-columns: 64px var(--result-list-width) minmax(0, 1fr);
+  grid-template-columns: var(--sidebar-width) var(--result-list-width) minmax(0, 1fr);
 }
 
-.finder-sidebar {
+.finder-sidebar-pane {
+  position: relative;
+  z-index: 20;
+  grid-column: 1;
   grid-row: 1 / -1;
+  min-width: 0;
+  min-height: 0;
+  max-height: 100%;
+  overflow: visible;
+  display: flex;
+}
+
+.finder-sidebar-pane :deep(.finder-sidebar) {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
 }
 
 .finder-main {
@@ -325,33 +364,6 @@ function setActiveCategory(category: FinderCategory) {
   min-height: 0;
   max-height: 100%;
   overflow: visible;
-}
-
-.finder-split-resizer {
-  position: absolute;
-  top: 0;
-  right: -5px;
-  bottom: 0;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 10px;
-  cursor: col-resize;
-}
-
-.resizer-line {
-  width: 2px;
-  height: 100%;
-  border-radius: 1px;
-  background: transparent;
-  transition: background-color 0.15s ease;
-  pointer-events: none;
-}
-
-.finder-split-resizer:hover .resizer-line,
-.finder-split-resizer.is-resizing .resizer-line {
-  background: var(--primary-color);
 }
 
 .finder-preview-zoom {
@@ -368,7 +380,7 @@ function setActiveCategory(category: FinderCategory) {
 }
 
 .preview-open .finder-main {
-  border-right: 1px solid #1f2022;
+  border-right: 1px solid #47494c;
 }
 
 @media (prefers-color-scheme: light) {
@@ -384,21 +396,21 @@ function setActiveCategory(category: FinderCategory) {
 
 @media (max-width: 760px) {
   .finder-shell {
-    grid-template-columns: 60px minmax(0, 1fr);
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   }
 
   .finder-shell.preview-open {
-    grid-template-columns: 60px var(--result-list-width) minmax(0, 1fr);
+    grid-template-columns: var(--sidebar-width) var(--result-list-width) minmax(0, 1fr);
   }
 }
 
 @media (max-width: 560px) {
   .finder-shell {
-    grid-template-columns: 56px minmax(0, 1fr);
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   }
 
   .finder-shell.preview-open {
-    grid-template-columns: 56px minmax(0, 1fr);
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   }
 }
 </style>
