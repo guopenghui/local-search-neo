@@ -185,6 +185,7 @@ const emit = defineEmits<{
 
   .sidebar-settings:hover {
     background: #dce3ec;
+    color: #111827;
   }
 }
 </style>
