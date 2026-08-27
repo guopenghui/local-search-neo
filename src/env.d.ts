@@ -77,4 +77,34 @@ declare global {
   interface Window {
     services: Services;
   }
+
+  interface PluginEnterAction {
+    code: string;
+    type: "text" | "img" | "file" | "regex" | "over" | "window";
+    payload: string | MatchFile[] | MatchWindow;
+    from: "main" | "panel" | "hotkey" | "reirect";
+    option?: {
+      fullPath: string;
+    };
+  }
+
+  interface MatchFile {
+    isFile: boolean;
+    isDirectory: boolean;
+    name: string;
+    path: string;
+  }
+
+  interface MatchWindow {
+    id: number;
+    class: string;
+    title: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    appPath: string;
+    pid: number;
+    app: string;
+  }
 }

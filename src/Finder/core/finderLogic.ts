@@ -90,11 +90,9 @@ export function reorderArray<T>(list: T[], fromIndex: number, toIndex: number): 
   return result;
 }
 
-export function buildEverythingQuery(keyword: string, category: FinderCategory): string {
-  const trimmedKeyword = keyword.trim();
+export function buildEverythingQuery(keyword: string, category: FinderCategory, prefix: string = ""): string {
   const rule = normalizeCategoryRule(category.rule);
-
-  return [trimmedKeyword, rule].filter(Boolean).join(" ");
+  return [prefix.trim(), keyword.trim(), rule].filter(Boolean).join(" ");
 }
 
 export function getNextVisibleCount(current: number, total: number, pageSize: number): number {

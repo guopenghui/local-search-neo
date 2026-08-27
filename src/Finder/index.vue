@@ -103,7 +103,7 @@ const {
 const { showSettingsDrawer, openSettingsDrawer, closeSettingsDrawer } = useFinderSettings({
   focusSubInput,
 });
-const { buildFilteredEverythingQuery } = useFinderQuery();
+const { buildFilteredEverythingQuery, prefixFilter } = useFinderQuery();
 const isFolderQuery = computed(() => /(?:^|\s)folder:/i.test(buildFilteredEverythingQuery()));
 const finderSearch = useFinderSearch({
   pageSize: PAGE_SIZE,
@@ -240,6 +240,7 @@ function setActiveCategory(category: FinderCategory) {
         :selected-items="finderSearch.selectedItems.value"
         :is-loading="resultLoading"
         :status-text="resultStatusText"
+        :prefix="prefixFilter "
         :preview-open="previewEnabled"
         :is-folder-query="isFolderQuery"
         :actions="resultActions"

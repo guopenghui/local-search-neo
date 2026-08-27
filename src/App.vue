@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
 import Finder from "./Finder/index.vue";
-import { useFinderEnterAction } from "./Finder/composables/useFinderEnterAction";
+import {
+  useFinderEnterAction,
+  type FinderEnterAction,
+} from "./Finder/composables/useFinderEnterAction";
 import { warmUpFileIconCache } from "./Finder/core/fileIconCache";
 import {
   DEFAULT_CATEGORIES,
@@ -24,18 +27,39 @@ const { handleEnterAction } = useFinderEnterAction();
 const { syncSubInputValue } = useSubInput();
 loadPersistStorage();
 
+async function buildEnterAction(action: PluginEnterAction): Promise<FinderEnterAction> {
+  if (action.code === "oversearch") {
+    return {
+      query: action.payload as string,
+    };
+  } else if (action.code === "explorerfind") {
+    const path = await window.ztools.readCurrentFolderPath();
+    console.log("path", path)
+    const name = path.split("\\").filter(Boolean).pop();
+    return {
+      prefix: path,
+      placeholder: `在"${name}"中查找`,
+    };
+  } else if (action.code === "folderfind") {
+    const { name, path } = (action.payload as MatchFile[])[0];
+    return {
+      prefix: path,
+      placeholder: `在"${name}"中查找`,
+    };
+  } else {
+    return {};
+  }
+}
+
 onMounted(() => {
   warmUpFileIconCache();
 
-  window.ztools.onPluginEnter<string, Partial<MainPushSearchResult> | undefined>((action) => {
+  window.ztools.onPluginEnter<any, Partial<MainPushSearchResult> | undefined>(async (action) => {
     if (action.from === "main") {
       syncSubInputValue();
     } else {
       resetActiveCategory();
-      handleEnterAction({
-        payload: action.code === "oversearch" ? action.payload : "",
-        option: action.option,
-      });
+      handleEnterAction(await buildEnterAction(action as any));
     }
 
     window.ztools.subInputFocus();
@@ -95,8 +119,8 @@ onMounted(() => {
     (action) => {
       resetActiveCategory();
       handleEnterAction({
-        payload: action.payload,
-        option: action.option as MainPushSearchResult,
+        query: action.payload as string,
+        fullPath: (action.option as MainPushSearchResult).fullPath,
       });
       return true;
     },

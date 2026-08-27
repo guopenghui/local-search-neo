@@ -35,6 +35,38 @@
           "label": "文件搜索"
         }
       ]
+    },
+    {
+      "code": "explorerfind",
+      "explain": "「文件资源管理器」窗口所在目录内搜索",
+      "cmds": [
+        {
+          "type": "window",
+          "match": {
+            "app": [
+              "explorer.exe",
+              "SearchApp.exe",
+              "SearchHost.exe",
+              "FESearchHost.exe",
+              "prevhost.exe"
+            ],
+            "class": ["CabinetWClass", "ExploreWClass"]
+          },
+          "label": "窗口目录内搜索"
+        }
+      ]
+    },
+    {
+      "code": "folderfind",
+      "explain": "选中的文件夹内搜索",
+      "cmds": [
+        {
+          "type": "files",
+          "fileType": "directory",
+          "maxLength": 1,
+          "label": "文件夹内搜索"
+        }
+      ]
     }
   ],
   "tools": {

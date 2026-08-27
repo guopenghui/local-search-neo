@@ -15,6 +15,7 @@ const props = defineProps<{
   isLoading: boolean;
   statusText: string;
   previewOpen: boolean;
+  prefix: string;
   isFolderQuery: boolean;
   actions: ResultActions;
 }>();
@@ -96,7 +97,9 @@ function highlightSegments(value: string | undefined, fallback = ""): HighlightS
     if (source[index] !== "*") continue;
 
     if (index > start) {
-      segments.push({ text: source.slice(start, index), highlighted });
+      const text = source.slice(start, index);
+      const matchPrefix = start === 1 && text === props.prefix;
+      segments.push({ text, highlighted: !matchPrefix && highlighted });
     }
 
     highlighted = !highlighted;
