@@ -88,6 +88,31 @@ test("buildEverythingQuery supports custom Everything rules and extension shorth
   );
 });
 
+test("buildEverythingQuery handles folder prefix and paths with spaces", () => {
+  const pdfCategory = DEFAULT_CATEGORIES.find(
+    (category) => category.id === "pdf",
+  ) as FinderCategory;
+
+  assert.equal(
+    buildEverythingQuery("report", pdfCategory, "D:\\workspace"),
+    "D:\\workspace report ext:pdf",
+  );
+  assert.equal(
+    buildEverythingQuery("report", pdfCategory, "C:\\Program Files\\App"),
+    '"C:\\Program Files\\App" report ext:pdf',
+  );
+  assert.equal(
+    buildEverythingQuery("report", pdfCategory, '"C:\\Program Files\\App"'),
+    '"C:\\Program Files\\App" report ext:pdf',
+  );
+  assert.equal(buildEverythingQuery("", DEFAULT_CATEGORIES[0], "D:\\workspace"), "D:\\workspace");
+  assert.equal(
+    buildEverythingQuery("", DEFAULT_CATEGORIES[0], "D:\\My Documents"),
+    '"D:\\My Documents"',
+  );
+  assert.equal(buildEverythingQuery("test", DEFAULT_CATEGORIES[0], "   "), "test");
+});
+
 test("getNextVisibleCount grows by page size without exceeding total", () => {
   assert.equal(getNextVisibleCount(0, 100, 40), 40);
   assert.equal(getNextVisibleCount(40, 100, 40), 80);

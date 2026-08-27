@@ -85,21 +85,66 @@ function formatModified(value?: number) {
   )}:${pad(date.getSeconds())}`;
 }
 
-function highlightSegments(value: string | undefined, fallback = ""): HighlightSegment[] {
+/**
+ * 判断当前高亮片段是否属于搜索前缀目录本身。
+ *
+ * 背景与原理：
+ * 在「文件夹内搜索」模式下，前缀目录路径（如 "D:\Projects\App"）会被拼入 Everything 查询语句。
+ * Everything 会将前缀路径视作匹配项，导致返回的 `highlightedPath` 中前缀目录被包裹 `*...*` 高亮标记。
+ *
+ * 为消除前缀高亮并保留子路径中用户真实搜索词的高亮：
+ * 1. 在当前结果的所有路径中，前 [0, cleanPrefix.length] 字符区间物理上必定属于前缀目录；
+ * 2. 若当前片段的结束位置 `plainOffset + text.length` 未超出前缀目录长度，说明其纯粹由前缀匹配引起，应消除高亮；
+ * 3. `normText === normPrefix` 作为后备兜底，防止极端斜杠或分词切分差异。
+ */
+function isPrefixSegment(text: string, plainOffset: number, prefix: string): boolean {
+  if (!prefix) return false;
+  const cleanPrefix = prefix
+    .replace(/^"|"$/g, "")
+    .trim()
+    .replace(/[\\/]+$/, "");
+  if (!cleanPrefix) return false;
+
+  // 片段结束位置在前缀长度范围内（+1 兼容尾部路径分隔符 \），属于前缀路径
+  if (plainOffset + text.length <= cleanPrefix.length + 1) {
+    return true;
+  }
+
+  // 兜底：忽略大小写与斜杠差异的全等比对
+  const normText = text.replace(/\\+/g, "/").replace(/\/+$/, "").toLowerCase();
+  const normPrefix = cleanPrefix.replace(/\\+/g, "/").replace(/\/+$/, "").toLowerCase();
+  return normText === normPrefix;
+}
+
+/**
+ * 解析 Everything 返回的高亮标记字符串（成对的 `*` 包裹匹配项），拆分为片段列表供模板渲染。
+ *
+ * @param value Everything 返回的含 `*` 高亮标记文本（如 `*C:\path*\*file*.txt`）
+ * @param fallback 无高亮标记时的回退纯文本
+ * @param isPath 是否为路径字段；为 true 时会结合 props.prefix 消除前缀目录的高亮
+ */
+function highlightSegments(
+  value: string | undefined,
+  fallback = "",
+  isPath = false,
+): HighlightSegment[] {
   const source = value || fallback;
   if (!source) return [];
 
   const segments: HighlightSegment[] = [];
   let highlighted = false;
   let start = 0;
+  let plainOffset = 0;
 
   for (let index = 0; index < source.length; index += 1) {
     if (source[index] !== "*") continue;
 
     if (index > start) {
       const text = source.slice(start, index);
-      const matchPrefix = start === 1 && text === props.prefix;
-      segments.push({ text, highlighted: !matchPrefix && highlighted });
+      // 路径字段需检测是否为前缀目录本身；若为前缀匹配则消除高亮
+      const isPrefix = isPath && props.prefix && isPrefixSegment(text, plainOffset, props.prefix);
+      segments.push({ text, highlighted: !isPrefix && highlighted });
+      plainOffset += text.length;
     }
 
     highlighted = !highlighted;
@@ -195,7 +240,11 @@ function openResultMenu(event: MouseEvent, item: FinderResult) {
         </span>
         <span class="file-path" :title="item.fullPath">
           <span
-            v-for="(segment, segmentIndex) in highlightSegments(item.highlightedPath, item.path)"
+            v-for="(segment, segmentIndex) in highlightSegments(
+              item.highlightedPath,
+              item.path,
+              true,
+            )"
             :key="segmentIndex"
             :class="{ 'highlight-match': segment.highlighted }"
             >{{ segment.text }}</span

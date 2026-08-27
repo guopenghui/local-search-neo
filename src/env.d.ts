@@ -80,11 +80,11 @@ declare global {
 
   interface PluginEnterAction {
     code: string;
-    type: "text" | "img" | "file" | "regex" | "over" | "window";
+    type: "text" | "img" | "files" | "regex" | "over" | "window";
     payload: string | MatchFile[] | MatchWindow;
-    from: "main" | "panel" | "hotkey" | "reirect";
+    from: "main" | "panel" | "hotkey" | "redirect";
     option?: {
-      fullPath: string;
+      fullPath?: string;
     };
   }
 

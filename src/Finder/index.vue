@@ -240,7 +240,7 @@ function setActiveCategory(category: FinderCategory) {
         :selected-items="finderSearch.selectedItems.value"
         :is-loading="resultLoading"
         :status-text="resultStatusText"
-        :prefix="prefixFilter "
+        :prefix="prefixFilter"
         :preview-open="previewEnabled"
         :is-folder-query="isFolderQuery"
         :actions="resultActions"

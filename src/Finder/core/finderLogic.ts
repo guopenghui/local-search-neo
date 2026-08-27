@@ -90,9 +90,32 @@ export function reorderArray<T>(list: T[], fromIndex: number, toIndex: number): 
   return result;
 }
 
-export function buildEverythingQuery(keyword: string, category: FinderCategory, prefix: string = ""): string {
+/**
+ * 构建发送给 Everything 搜索引擎的最终查询语句。
+ *
+ * 组合逻辑：
+ * 1. `prefix`（可选）：限制搜索的目标前缀目录。
+ *    - 若前缀包含空格（如 `C:\Program Files\App`），根据 Everything 语法规则必须用双引号包裹 `"${prefix}"`，
+ *      否则空格会被解析为 AND 运算符导致拆词检索失效；若已有双引号则保留。
+ * 2. `keyword`：用户在输入框中键入的搜索词。
+ * 3. `category.rule`：当前分类的筛选规则（如 `ext:pdf`、`folder:` 等）。
+ */
+export function buildEverythingQuery(
+  keyword: string,
+  category: FinderCategory,
+  prefix: string = "",
+): string {
   const rule = normalizeCategoryRule(category.rule);
-  return [prefix.trim(), keyword.trim(), rule].filter(Boolean).join(" ");
+  const trimmedPrefix = prefix.trim();
+  const formattedPrefix = trimmedPrefix
+    ? trimmedPrefix.startsWith('"') && trimmedPrefix.endsWith('"')
+      ? trimmedPrefix
+      : /\s/.test(trimmedPrefix)
+        ? `"${trimmedPrefix}"`
+        : trimmedPrefix
+    : "";
+
+  return [formattedPrefix, keyword.trim(), rule].filter(Boolean).join(" ");
 }
 
 export function getNextVisibleCount(current: number, total: number, pageSize: number): number {

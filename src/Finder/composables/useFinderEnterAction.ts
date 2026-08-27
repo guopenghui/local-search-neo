@@ -8,7 +8,7 @@ export type FinderEnterAction = {
   query?: string;
   placeholder?: string;
   fullPath?: string;
-}
+};
 
 interface UseFinderEnterActionOptions {
   activePath: Ref<string>;
