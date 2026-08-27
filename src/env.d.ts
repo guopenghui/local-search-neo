@@ -66,7 +66,7 @@ interface Services {
     maxBytes?: number,
     direction?: TextPreviewDirection,
   ) => TextPreviewResult;
-  printDirectoryTree: (directory: string, options?: FileTreeOptions) => FileTreeResult;
+  printDirectoryTree: (directory: string, options?: FileTreeOptions) => Promise<FileTreeResult>;
   printArchiveTree: (file: string, options?: FileTreeOptions) => FileTreeResult;
 }
 

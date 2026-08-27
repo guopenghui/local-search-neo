@@ -241,3 +241,40 @@ function normalizeCategoryRule(rule: string): string {
 
   return extensions.length > 0 ? `ext:${extensions.join(";")}` : "";
 }
+
+export type MatchPathQueryPlan =
+  | { mode: "single"; matchPath: false }
+  | { mode: "single"; matchPath: true }
+  | { mode: "dual" };
+
+/**
+ * 决定当前查询是否需要 MatchPath 以及具体的执行计划。
+ *
+ * 优化策略：
+ * 1. 若用户禁用了 matchPathEnabled，始终单次查询（matchPath: false）。
+ * 2. 若用户输入的关键词为空（例如仅点击切换分类，无 keyword）：
+ *    此时 matchPath=true 与 matchPath=false 的 Everything 返回结果严格一致，执行单次查询（matchPath: false）即可，
+ *    避免无意义的双重 IPC 检索与数百个重复对象的序列化。
+ * 3. 若用户输入的关键词包含路径分隔符（`\` 或 `/`）：
+ *    因为纯文件名中不可能包含路径字符，直接单次查询（matchPath: true），免去一次注定命中为空的 matchPath: false 查询。
+ * 4. 普通纯词搜索：执行两阶段双重查询并合并，优先呈现文件名命中的项。
+ */
+export function getMatchPathQueryPlan(
+  matchPathEnabled: boolean,
+  keyword: string,
+): MatchPathQueryPlan {
+  if (!matchPathEnabled) {
+    return { mode: "single", matchPath: false };
+  }
+
+  const trimmed = keyword.trim();
+  if (!trimmed) {
+    return { mode: "single", matchPath: false };
+  }
+
+  if (trimmed.includes("\\") || trimmed.includes("/")) {
+    return { mode: "single", matchPath: true };
+  }
+
+  return { mode: "dual" };
+}

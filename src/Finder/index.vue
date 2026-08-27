@@ -104,7 +104,7 @@ const {
 const { showSettingsDrawer, openSettingsDrawer, closeSettingsDrawer } = useFinderSettings({
   focusSubInput,
 });
-const { buildFilteredEverythingQuery, prefixFilter } = useFinderQuery();
+const { buildFilteredEverythingQuery, prefixFilter, queryText } = useFinderQuery();
 const isFolderQuery = computed(() => /(?:^|\s)folder:/i.test(buildFilteredEverythingQuery()));
 const finderSearch = useFinderSearch({
   pageSize: PAGE_SIZE,
@@ -112,6 +112,7 @@ const finderSearch = useFinderSearch({
   sortMode,
   matchPathEnabled,
   buildQuery: buildFilteredEverythingQuery,
+  queryKeyword: () => queryText.value,
 });
 
 const resultStatusText = computed(() => {

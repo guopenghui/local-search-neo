@@ -29,6 +29,7 @@
 - `npm --prefix addon test`：Rust addon 测试。
 - `npm --prefix addon run build-release`：构建 release addon。
 - `npm run build`：完整构建，会先准备 pdfjs 和 addon。
+- `npm run version:set -- <version|patch|minor|major>`：统一修改 `plugin.json`、`package.json` 和 `package-lock.json` 的版本号。
 - `node scripts/test-everything-addon.cjs`：简单验证 addon 导出、Everything 状态、版本和查询结果。
 - `node scripts/benchmark-everything-addon.cjs`：压测/对比 Everything addon 查询性能。
 

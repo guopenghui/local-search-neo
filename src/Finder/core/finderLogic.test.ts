@@ -6,6 +6,7 @@ import {
   buildEverythingQuery,
   filterResultsExcludingPaths,
   getDragTargetPaths,
+  getMatchPathQueryPlan,
   getNextCyclicCategory,
   getNextSelectedPath,
   getNextVisibleCount,
@@ -315,4 +316,27 @@ test("reorderArray moves items correctly within bounds and handles invalid indic
   // Out of bounds
   assert.deepEqual(reorderArray(list, -1, 2), ["A", "B", "C", "D"]);
   assert.deepEqual(reorderArray(list, 1, 10), ["A", "B", "C", "D"]);
+});
+
+test("getMatchPathQueryPlan optimizes search execution based on keyword and matchPathEnabled", () => {
+  // 1. matchPathEnabled 关闭时，始终单次查询
+  assert.deepEqual(getMatchPathQueryPlan(false, ""), { mode: "single", matchPath: false });
+  assert.deepEqual(getMatchPathQueryPlan(false, "test"), { mode: "single", matchPath: false });
+  assert.deepEqual(getMatchPathQueryPlan(false, "src/components"), {
+    mode: "single",
+    matchPath: false,
+  });
+
+  // 2. keyword 为空或全空格（如纯分类切换），只执行单次 matchPath: false 查询
+  assert.deepEqual(getMatchPathQueryPlan(true, ""), { mode: "single", matchPath: false });
+  assert.deepEqual(getMatchPathQueryPlan(true, "   "), { mode: "single", matchPath: false });
+
+  // 3. keyword 包含路径分隔符（/ 或 \），直接单次 matchPath: true 查询
+  assert.deepEqual(getMatchPathQueryPlan(true, "src/main"), { mode: "single", matchPath: true });
+  assert.deepEqual(getMatchPathQueryPlan(true, "app\\assets"), { mode: "single", matchPath: true });
+  assert.deepEqual(getMatchPathQueryPlan(true, "C:\\Users"), { mode: "single", matchPath: true });
+
+  // 4. keyword 为普通纯词，执行双阶段查询
+  assert.deepEqual(getMatchPathQueryPlan(true, "report"), { mode: "dual" });
+  assert.deepEqual(getMatchPathQueryPlan(true, "test.pdf"), { mode: "dual" });
 });

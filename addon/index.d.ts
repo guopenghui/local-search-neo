@@ -81,5 +81,8 @@ export function readTextPreview(
   maxBytes?: number,
   direction?: TextPreviewDirection,
 ): TextPreviewResult;
-export function printDirectoryTree(directory: string, options?: FileTreeOptions): FileTreeResult;
+export function printDirectoryTree(
+  directory: string,
+  options?: FileTreeOptions,
+): Promise<FileTreeResult>;
 export function printArchiveTree(file: string, options?: FileTreeOptions): FileTreeResult;

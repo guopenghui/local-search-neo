@@ -1,6 +1,6 @@
 {
   "name": "local-search-neo",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "借助 Everything 来进行文件搜索",
   "type": "module",
   "scripts": {
@@ -19,7 +19,8 @@
     "dev": "vite",
     "prebuild": "npm run prepare:pdfjs && npm run build:addon",
     "build": "vue-tsc && vite build",
-    "postbuild": "node scripts/prepare-dist.cjs"
+    "postbuild": "node scripts/prepare-dist.cjs",
+    "version:set": "node scripts/set-version.cjs"
   },
   "dependencies": {
     "@lucide/vue": "^1.17.0",

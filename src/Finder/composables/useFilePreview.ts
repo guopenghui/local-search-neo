@@ -65,7 +65,7 @@ export function useFilePreview({ activeItem }: UseFilePreviewOptions) {
 
     const previewItem = { ...item, ...fileInfo };
     if (previewItem.isDirectory) {
-      loadDirectoryTreePreview(previewItem);
+      await loadDirectoryTreePreview(previewItem, sequence);
       return;
     }
 
@@ -126,9 +126,10 @@ export function useFilePreview({ activeItem }: UseFilePreviewOptions) {
     return false;
   }
 
-  function loadDirectoryTreePreview(item: FinderResult) {
+  async function loadDirectoryTreePreview(item: FinderResult, sequence: number) {
     try {
-      const tree = window.services.printDirectoryTree(item.fullPath);
+      const tree = await window.services.printDirectoryTree(item.fullPath);
+      if (sequence !== previewLoadSequence) return;
       setPreviewState({
         kind: "tree",
         content: tree.text,
@@ -136,6 +137,7 @@ export function useFilePreview({ activeItem }: UseFilePreviewOptions) {
         status: tree.truncated ? "目录结构 · 已截断" : "目录结构",
       });
     } catch (error: unknown) {
+      if (sequence !== previewLoadSequence) return;
       resetPreview();
       previewStatus.value = error instanceof Error ? error.message : "目录预览失败";
     }
