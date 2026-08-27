@@ -136,6 +136,30 @@ export function getNextSelectedPath(
   return paths[nextIndex];
 }
 
+/**
+ * 循环切换分类列表。
+ *
+ * @param categories 启用的分类列表
+ * @param currentCategoryId 当前激活的分类 ID
+ * @param direction 切换方向：1 为向下切换（末尾循环至首项），-1 为向上切换（首项循环至末尾）
+ * @returns 切换后的目标分类对象，列表为空时返回 undefined
+ */
+export function getNextCyclicCategory<T extends { id: string }>(
+  categories: T[],
+  currentCategoryId: string,
+  direction: -1 | 1,
+): T | undefined {
+  if (categories.length === 0) return undefined;
+
+  const currentIndex = categories.findIndex((category) => category.id === currentCategoryId);
+  if (currentIndex === -1) {
+    return direction === 1 ? categories[0] : categories[categories.length - 1];
+  }
+
+  const nextIndex = (currentIndex + direction + categories.length) % categories.length;
+  return categories[nextIndex];
+}
+
 export function getRestoredSelectedPath(results: FinderResult[], currentPath: string): string {
   if (results.length === 0) return "";
 

@@ -6,6 +6,7 @@ import {
   buildEverythingQuery,
   filterResultsExcludingPaths,
   getDragTargetPaths,
+  getNextCyclicCategory,
   getNextSelectedPath,
   getNextVisibleCount,
   getRangeSelectedPaths,
@@ -127,6 +128,31 @@ test("getNextSelectedPath moves selection with arrow keys", () => {
   assert.equal(getNextSelectedPath(orderedPaths, "C:\\alpha\\a.log", -1), "C:\\beta\\b.txt");
   assert.equal(getNextSelectedPath(orderedPaths, "C:\\alpha\\folder", 1), "C:\\alpha\\folder");
   assert.equal(getNextSelectedPath(orderedPaths, "C:\\beta\\b.txt", -1), "C:\\beta\\b.txt");
+});
+
+test("getNextCyclicCategory cycles category forward and backward with wrap-around", () => {
+  const categories = [
+    { id: "all", label: "全部" },
+    { id: "folder", label: "文件夹" },
+    { id: "pdf", label: "PDF" },
+  ];
+
+  // Tab: 向下切换，最后一个回到第一个
+  assert.equal(getNextCyclicCategory(categories, "all", 1)?.id, "folder");
+  assert.equal(getNextCyclicCategory(categories, "folder", 1)?.id, "pdf");
+  assert.equal(getNextCyclicCategory(categories, "pdf", 1)?.id, "all");
+
+  // Shift+Tab: 向上切换，第一个回到最后一个
+  assert.equal(getNextCyclicCategory(categories, "all", -1)?.id, "pdf");
+  assert.equal(getNextCyclicCategory(categories, "pdf", -1)?.id, "folder");
+  assert.equal(getNextCyclicCategory(categories, "folder", -1)?.id, "all");
+
+  // 当前分类不存在时回退
+  assert.equal(getNextCyclicCategory(categories, "unknown", 1)?.id, "all");
+  assert.equal(getNextCyclicCategory(categories, "unknown", -1)?.id, "pdf");
+
+  // 空列表
+  assert.equal(getNextCyclicCategory([], "all", 1), undefined);
 });
 
 test("getRestoredSelectedPath keeps existing visible selection or picks sorted first item", () => {

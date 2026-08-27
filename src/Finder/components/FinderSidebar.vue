@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { nextTick, ref, watch } from "vue";
 import { Settings } from "@lucide/vue";
 import type { FinderCategory } from "../core/finderLogic";
 
-defineProps<{
+const props = defineProps<{
   categories: FinderCategory[];
   activeCategoryId: string;
 }>();
@@ -11,11 +12,25 @@ const emit = defineEmits<{
   select: [category: FinderCategory];
   openSettings: [];
 }>();
+
+const categoryListRef = ref<HTMLElement | null>(null);
+
+watch(
+  () => props.activeCategoryId,
+  () => {
+    nextTick(() => {
+      const activeBtn = categoryListRef.value?.querySelector(".category-button.active");
+      if (activeBtn instanceof HTMLElement) {
+        activeBtn.scrollIntoView({ block: "nearest" });
+      }
+    });
+  },
+);
 </script>
 
 <template>
   <aside class="finder-sidebar">
-    <div class="sidebar-category-list">
+    <div ref="categoryListRef" class="sidebar-category-list">
       <button
         v-for="category in categories"
         :key="category.id"

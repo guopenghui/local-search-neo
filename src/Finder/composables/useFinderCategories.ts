@@ -2,6 +2,7 @@ import { computed, ref, watch } from "vue";
 import {
   DEFAULT_CATEGORIES,
   type FinderCategory,
+  getNextCyclicCategory,
   normalizeCategoryOrder,
   reorderArray,
 } from "../core/finderLogic";
@@ -56,6 +57,7 @@ export function useFinderCategories() {
     allCategories,
     selectCategory,
     resetActiveCategory,
+    cycleCategory,
     handleReorderCategories,
     handleResetCategoryOrder,
     handleAddCustomCategory,
@@ -67,6 +69,13 @@ export function useFinderCategories() {
 
 function selectCategory(category: FinderCategory) {
   activeCategoryId.value = category.id;
+}
+
+function cycleCategory(direction: -1 | 1) {
+  const next = getNextCyclicCategory(enabledCategories.value, activeCategoryId.value, direction);
+  if (next) {
+    selectCategory(next);
+  }
 }
 
 function resetActiveCategory() {

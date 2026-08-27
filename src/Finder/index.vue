@@ -93,6 +93,7 @@ const {
   enabledCategories,
   allCategories,
   selectCategory,
+  cycleCategory,
   handleReorderCategories,
   handleResetCategoryOrder,
   handleAddCustomCategory,
@@ -146,6 +147,10 @@ useFinderKeyboard({
   closeTransientOverlays: contextMenu.close,
   focusSubInput,
   moveSelection: finderSearch.moveSelection,
+  cycleCategory: (direction) => {
+    cycleCategory(direction);
+    releaseFinderFocus();
+  },
   openSelection: () => resultActions.open(finderSearch.selectedItems.value),
   showSelectionInFolder: () => resultActions.showInFolder(finderSearch.selectedItems.value),
   scrollSelectedIntoView: finderSearch.scrollSelectedIntoView,
