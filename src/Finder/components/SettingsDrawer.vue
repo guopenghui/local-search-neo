@@ -7,6 +7,7 @@ const props = defineProps<{
   open: boolean;
   categories: FinderCategory[];
   matchPathEnabled: boolean;
+  autoPlayAudio: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -16,6 +17,7 @@ const emit = defineEmits<{
   removeCategory: [category: FinderCategory];
   setCategoryEnabled: [id: string, enabled: boolean];
   setMatchPathEnabled: [enabled: boolean];
+  setAutoPlayAudio: [enabled: boolean];
   reorderCategories: [fromIndex: number, toIndex: number];
   resetCategoryOrder: [];
 }>();
@@ -102,6 +104,10 @@ function handleCategoryEnabledChange(category: FinderCategory, event: Event) {
 
 function handleMatchPathEnabledChange(event: Event) {
   emit("setMatchPathEnabled", readChecked(event));
+}
+
+function handleAutoPlayAudioChange(event: Event) {
+  emit("setAutoPlayAudio", readChecked(event));
 }
 
 function readChecked(event: Event) {
@@ -213,6 +219,18 @@ function resetDragState() {
               />
               <span class="switch-track"></span>
               <span>同时搜索路径</span>
+            </label>
+          </section>
+
+          <section class="settings-card audio-autoplay-settings">
+            <div>
+              <h3>音频自动播放</h3>
+              <p>启用后，预览音频文件时将自动开始播放。</p>
+            </div>
+            <label class="settings-switch">
+              <input type="checkbox" :checked="autoPlayAudio" @change="handleAutoPlayAudioChange" />
+              <span class="switch-track"></span>
+              <span>自动播放</span>
             </label>
           </section>
 
@@ -522,7 +540,8 @@ function resetDragState() {
   border-radius: 8px;
 }
 
-.search-settings {
+.search-settings,
+.audio-autoplay-settings {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -826,11 +845,13 @@ function resetDragState() {
 
   .settings-header h2,
   .search-settings h3,
+  .audio-autoplay-settings h3,
   .category-section-header h3 {
     color: #111827;
   }
 
   .search-settings p,
+  .audio-autoplay-settings p,
   .category-section-header p,
   .category-list-header,
   .category-group-arrow,
