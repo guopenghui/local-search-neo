@@ -706,6 +706,7 @@ function resetDragState() {
 
 .category-switch {
   display: inline-flex;
+  align-items: center;
   justify-self: start;
   cursor: pointer;
 }
@@ -717,25 +718,30 @@ function resetDragState() {
 }
 
 .switch-track {
-  position: relative;
-  width: 32px;
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 0 2px;
+  width: 30px;
   height: 16px;
   flex: 0 0 auto;
   border-radius: 999px;
   background: #6c7178;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.18s ease;
 }
 
 .switch-track::after {
   content: "";
-  position: absolute;
-  top: 2px;
-  left: 2px;
+  display: block;
   width: 12px;
   height: 12px;
+  flex-shrink: 0;
   border-radius: 50%;
-  background: #f2f4f7;
-  transition: transform 0.15s ease;
+  background: #ffffff;
+  box-shadow:
+    0 0 2px rgba(0, 0, 0, 0.35),
+    0 0 1px rgba(0, 0, 0, 0.2);
+  transition: transform 0.18s ease;
 }
 
 .settings-switch input:checked + .switch-track,
@@ -745,7 +751,7 @@ function resetDragState() {
 
 .settings-switch input:checked + .switch-track::after,
 .category-switch input:checked + .switch-track::after {
-  transform: translateX(16px);
+  transform: translateX(14px);
 }
 
 .category-name,
@@ -925,6 +931,12 @@ function resetDragState() {
 
   .switch-track {
     background: #b9c2ce;
+  }
+
+  .switch-track::after {
+    box-shadow:
+      0 0 2px rgba(0, 0, 0, 0.22),
+      0 0 1px rgba(0, 0, 0, 0.12);
   }
 
   .settings-switch input:checked + .switch-track,
