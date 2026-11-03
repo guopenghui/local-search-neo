@@ -392,8 +392,7 @@ function resetDragState() {
   position: fixed;
   inset: 0;
   z-index: 500;
-  display: grid;
-  align-items: end;
+  overflow: hidden;
 }
 
 .settings-backdrop {
@@ -403,13 +402,14 @@ function resetDragState() {
 }
 
 .settings-drawer {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  position: absolute;
+  top: 48px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
-  position: relative;
-  width: 100%;
-  height: calc(100% - 48px);
-  max-height: calc(100% - 48px);
   box-sizing: border-box;
   padding: 18px 4px 0 0;
   overflow: hidden;
@@ -466,6 +466,7 @@ function resetDragState() {
 }
 
 .settings-header {
+  flex-shrink: 0;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -516,6 +517,7 @@ function resetDragState() {
 }
 
 .settings-section {
+  flex: 1;
   display: grid;
   align-content: start;
   gap: 14px;
@@ -548,6 +550,12 @@ function resetDragState() {
   gap: 16px;
 }
 
+.search-settings > div,
+.audio-autoplay-settings > div {
+  min-width: 0;
+  word-break: break-word;
+}
+
 .category-settings {
   display: grid;
   gap: 12px;
@@ -574,6 +582,8 @@ function resetDragState() {
 }
 
 .settings-switch {
+  position: relative;
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -585,6 +595,10 @@ function resetDragState() {
 
 .settings-switch input {
   position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
   opacity: 0;
   pointer-events: none;
 }
@@ -705,6 +719,7 @@ function resetDragState() {
 }
 
 .category-switch {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-self: start;
@@ -713,6 +728,10 @@ function resetDragState() {
 
 .category-switch input {
   position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
   opacity: 0;
   pointer-events: none;
 }
