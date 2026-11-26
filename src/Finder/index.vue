@@ -23,6 +23,7 @@ import { useFinderSettings } from "./composables/useFinderSettings";
 import { usePersistStorage } from "./composables/usePersistStorage";
 import { useResultActions } from "./composables/useResultActions";
 import { useSubInput } from "./composables/useSubInput";
+import { resetMediaAutoplayUnlock } from "./composables/useMediaAutoplayGate";
 import type { FinderCategory, FinderResult, SelectionMode } from "./core/finderLogic";
 import { useEverything } from "./composables/useEverything";
 
@@ -43,7 +44,7 @@ const {
   previewEnabled,
   sortMode,
   matchPathEnabled,
-  autoPlayAudio,
+  mediaAutoplayMode,
   resultListWidth,
   setResultListWidth,
   sidebarWidth,
@@ -197,6 +198,8 @@ function closeTransientState(isKill = false) {
   contextMenu.close();
   closeSettingsDrawer({ restoreFocus: false });
   confirmDialog.cancel();
+  // 每次打开插件都重新要求一次「主动播放」授权，避免下次打开就自动出声
+  resetMediaAutoplayUnlock();
   window.services.everything.handlePluginOut(isKill);
 }
 
@@ -286,7 +289,7 @@ function setActiveCategory(category: FinderCategory) {
     >
       <FinderPreviewPane
         :active-item="finderSearch.activeItem"
-        :auto-play-audio="autoPlayAudio"
+        :media-autoplay-mode="mediaAutoplayMode"
         @context-menu="contextMenu.open"
       />
     </FloatingZoom>
@@ -295,14 +298,14 @@ function setActiveCategory(category: FinderCategory) {
       :open="showSettingsDrawer"
       :categories="allCategories"
       :match-path-enabled="matchPathEnabled"
-      :auto-play-audio="autoPlayAudio"
+      :media-autoplay-mode="mediaAutoplayMode"
       @close="closeSettingsDrawer"
       @add-category="handleAddCustomCategory"
       @update-category="handleUpdateCustomCategory"
       @remove-category="handleRemoveCustomCategory"
       @set-category-enabled="handleSetCategoryEnabled"
       @set-match-path-enabled="matchPathEnabled = $event"
-      @set-auto-play-audio="autoPlayAudio = $event"
+      @set-media-autoplay-mode="mediaAutoplayMode = $event"
       @reorder-categories="handleReorderCategories"
       @reset-category-order="handleResetCategoryOrder"
     />

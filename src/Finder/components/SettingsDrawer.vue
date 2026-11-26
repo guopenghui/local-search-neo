@@ -2,12 +2,13 @@
 import { GripVertical, RotateCcw } from "@lucide/vue";
 import { ref, watch } from "vue";
 import type { FinderCategory } from "../core/finderLogic";
+import { MEDIA_AUTOPLAY_OPTIONS, type MediaAutoplayMode } from "../core/mediaAutoplay";
 
 const props = defineProps<{
   open: boolean;
   categories: FinderCategory[];
   matchPathEnabled: boolean;
-  autoPlayAudio: boolean;
+  mediaAutoplayMode: MediaAutoplayMode;
 }>();
 
 const emit = defineEmits<{
@@ -17,7 +18,7 @@ const emit = defineEmits<{
   removeCategory: [category: FinderCategory];
   setCategoryEnabled: [id: string, enabled: boolean];
   setMatchPathEnabled: [enabled: boolean];
-  setAutoPlayAudio: [enabled: boolean];
+  setMediaAutoplayMode: [mode: MediaAutoplayMode];
   reorderCategories: [fromIndex: number, toIndex: number];
   resetCategoryOrder: [];
 }>();
@@ -106,8 +107,8 @@ function handleMatchPathEnabledChange(event: Event) {
   emit("setMatchPathEnabled", readChecked(event));
 }
 
-function handleAutoPlayAudioChange(event: Event) {
-  emit("setAutoPlayAudio", readChecked(event));
+function handleAutoPlayModeChange(mode: MediaAutoplayMode) {
+  emit("setMediaAutoplayMode", mode);
 }
 
 function readChecked(event: Event) {
@@ -222,16 +223,29 @@ function resetDragState() {
             </label>
           </section>
 
-          <section class="settings-card audio-autoplay-settings">
+          <section class="settings-card media-autoplay-settings">
             <div>
-              <h3>音频自动播放</h3>
-              <p>启用后，预览音频文件时将自动开始播放。</p>
+              <h3>音视频自动播放</h3>
+              <p>
+                预览音频、视频时是否自动开始播放。默认需要先手动点击播放一次，之后用 ↑ ↓
+                切换结果才会自动播放；重新打开插件后会再次等待一次点击。
+              </p>
             </div>
-            <label class="settings-switch">
-              <input type="checkbox" :checked="autoPlayAudio" @change="handleAutoPlayAudioChange" />
-              <span class="switch-track"></span>
-              <span>自动播放</span>
-            </label>
+            <div class="media-autoplay-options" role="radiogroup" aria-label="音视频自动播放">
+              <button
+                v-for="option in MEDIA_AUTOPLAY_OPTIONS"
+                :key="option.value"
+                type="button"
+                role="radio"
+                class="media-autoplay-option"
+                :class="{ active: mediaAutoplayMode === option.value }"
+                :aria-checked="mediaAutoplayMode === option.value"
+                @click="handleAutoPlayModeChange(option.value)"
+              >
+                <span class="media-autoplay-option-label">{{ option.label }}</span>
+                <span class="media-autoplay-option-desc">{{ option.description }}</span>
+              </button>
+            </div>
           </section>
 
           <section class="settings-card category-settings">
@@ -542,18 +556,82 @@ function resetDragState() {
   border-radius: 8px;
 }
 
-.search-settings,
-.audio-autoplay-settings {
+.search-settings {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
 }
 
-.search-settings > div,
-.audio-autoplay-settings > div {
+.search-settings > div {
   min-width: 0;
   word-break: break-word;
+}
+
+.media-autoplay-settings {
+  display: grid;
+  gap: 10px;
+}
+
+.media-autoplay-settings > div {
+  min-width: 0;
+  word-break: break-word;
+}
+
+.media-autoplay-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.media-autoplay-option {
+  display: grid;
+  gap: 3px;
+  padding: 8px 10px;
+  border: 1px solid #47494c;
+  border-radius: 8px;
+  background: #2a2c2e;
+  color: #cbd1d8;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.media-autoplay-option:hover {
+  background: #313437;
+  border-color: #5a5e63;
+}
+
+.media-autoplay-option:focus,
+.media-autoplay-option:focus-visible {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-color-alpha-50);
+}
+
+.media-autoplay-option.active {
+  border-color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 16%, #2a2c2e);
+  color: #ffffff;
+}
+
+.media-autoplay-option-label {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.media-autoplay-option-desc {
+  color: #8f959c;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.media-autoplay-option.active .media-autoplay-option-desc {
+  color: #d6dbe1;
 }
 
 .category-settings {
@@ -870,13 +948,13 @@ function resetDragState() {
 
   .settings-header h2,
   .search-settings h3,
-  .audio-autoplay-settings h3,
+  .media-autoplay-settings h3,
   .category-section-header h3 {
     color: #111827;
   }
 
   .search-settings p,
-  .audio-autoplay-settings p,
+  .media-autoplay-settings p,
   .category-section-header p,
   .category-list-header,
   .category-group-arrow,
@@ -885,6 +963,31 @@ function resetDragState() {
   .built-in-note,
   .category-add-marker {
     color: #667085;
+  }
+
+  .media-autoplay-option {
+    border-color: #d6dde8;
+    background: #f8fafc;
+    color: #475467;
+  }
+
+  .media-autoplay-option:hover {
+    border-color: #bcc7d4;
+    background: #eef2f7;
+  }
+
+  .media-autoplay-option.active {
+    border-color: var(--primary-color);
+    background: var(--primary-color-subtle-bg);
+    color: #111827;
+  }
+
+  .media-autoplay-option-desc {
+    color: #8a94a6;
+  }
+
+  .media-autoplay-option.active .media-autoplay-option-desc {
+    color: #575f6e;
   }
 
   .drawer-close {
@@ -996,6 +1099,10 @@ function resetDragState() {
 @media (max-width: 760px) {
   .category-list-header,
   .category-row {
+    grid-template-columns: 1fr;
+  }
+
+  .media-autoplay-options {
     grid-template-columns: 1fr;
   }
 

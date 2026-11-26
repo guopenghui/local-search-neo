@@ -5,17 +5,25 @@ import {
   type FinderSortMode,
   normalizeCategoryOrder,
 } from "../core/finderLogic";
+import {
+  DEFAULT_MEDIA_AUTOPLAY_MODE,
+  normalizeMediaAutoplayMode,
+  type MediaAutoplayMode,
+} from "../core/mediaAutoplay";
 
 interface FinderPreferences {
   previewEnabled: boolean;
   sortMode: FinderSortMode;
   matchPathEnabled: boolean;
-  autoPlayAudio: boolean;
+  mediaAutoplayMode: MediaAutoplayMode;
   resultListWidth: number;
   sidebarWidth: number;
   categoryEnabled: Record<string, boolean>;
   categoryOrder: string[];
 }
+
+/** 旧版本只有布尔开关 `autoPlayAudio`，读取时用于平滑迁移。 */
+type StoredPreferences = Partial<FinderPreferences> & { autoPlayAudio?: boolean };
 
 const PREFERENCES_STORAGE_KEY = "preferences";
 const CUSTOM_CATEGORIES_STORAGE_KEY = "customCategories";
@@ -24,7 +32,7 @@ const DEFAULT_PREFERENCES: FinderPreferences = {
   previewEnabled: false,
   sortMode: "modified-desc",
   matchPathEnabled: true,
-  autoPlayAudio: true,
+  mediaAutoplayMode: DEFAULT_MEDIA_AUTOPLAY_MODE,
   resultListWidth: 315,
   sidebarWidth: 64,
   categoryEnabled: {},
@@ -46,9 +54,9 @@ const matchPathEnabled = computed({
   get: () => preferences.value.matchPathEnabled,
   set: setMatchPathEnabled,
 });
-const autoPlayAudio = computed({
-  get: () => preferences.value.autoPlayAudio,
-  set: setAutoPlayAudio,
+const mediaAutoplayMode = computed({
+  get: () => preferences.value.mediaAutoplayMode,
+  set: setMediaAutoplayMode,
 });
 const resultListWidth = computed({
   get: () => preferences.value.resultListWidth,
@@ -68,8 +76,8 @@ export function usePersistStorage() {
     previewEnabled,
     sortMode,
     matchPathEnabled,
-    autoPlayAudio,
-    setAutoPlayAudio,
+    mediaAutoplayMode,
+    setMediaAutoplayMode,
     resultListWidth,
     setResultListWidth,
     sidebarWidth,
@@ -96,8 +104,7 @@ function loadPersistStorage() {
 
 function loadPreferences() {
   try {
-    const stored =
-      window.ztools.dbStorage.getItem<Partial<FinderPreferences>>(PREFERENCES_STORAGE_KEY);
+    const stored = window.ztools.dbStorage.getItem<StoredPreferences>(PREFERENCES_STORAGE_KEY);
     if (!stored) {
       preferences.value = { ...DEFAULT_PREFERENCES };
       savePreferences();
@@ -151,10 +158,10 @@ function setMatchPathEnabled(value: boolean) {
   savePreferences();
 }
 
-function setAutoPlayAudio(value: boolean) {
+function setMediaAutoplayMode(value: MediaAutoplayMode) {
   preferences.value = {
     ...preferences.value,
-    autoPlayAudio: value,
+    mediaAutoplayMode: normalizeMediaAutoplayMode(value),
   };
   savePreferences();
 }
@@ -259,7 +266,7 @@ function setCategoryEnabled(categoryId: string, enabled: boolean) {
   savePreferences();
 }
 
-function normalizePreferences(stored: Partial<FinderPreferences>): FinderPreferences {
+function normalizePreferences(stored: StoredPreferences): FinderPreferences {
   const rawOrder = Array.isArray(stored.categoryOrder)
     ? stored.categoryOrder.filter((item): item is string => typeof item === "string")
     : [...DEFAULT_CATEGORY_ORDER];
@@ -268,7 +275,7 @@ function normalizePreferences(stored: Partial<FinderPreferences>): FinderPrefere
     previewEnabled: stored.previewEnabled ?? DEFAULT_PREFERENCES.previewEnabled,
     sortMode: stored.sortMode ?? DEFAULT_PREFERENCES.sortMode,
     matchPathEnabled: stored.matchPathEnabled ?? DEFAULT_PREFERENCES.matchPathEnabled,
-    autoPlayAudio: stored.autoPlayAudio ?? DEFAULT_PREFERENCES.autoPlayAudio,
+    mediaAutoplayMode: normalizeStoredMediaAutoplayMode(stored),
     resultListWidth:
       typeof stored.resultListWidth === "number" && stored.resultListWidth >= 200
         ? stored.resultListWidth
@@ -280,6 +287,19 @@ function normalizePreferences(stored: Partial<FinderPreferences>): FinderPrefere
     categoryEnabled: { ...DEFAULT_PREFERENCES.categoryEnabled, ...stored.categoryEnabled },
     categoryOrder: rawOrder,
   };
+}
+
+/**
+ * 读取音视频自动播放策略，并兼容旧版本的布尔开关 `autoPlayAudio`。
+ *
+ * 旧版默认开启且语义是「选中即播放」，正是用户反馈的打扰来源，因此旧值 true 一律升级为
+ * 新的默认策略（首次点击后自动播放）；只有明确关掉过的用户继续保留「仅点击播放」。
+ */
+function normalizeStoredMediaAutoplayMode(stored: StoredPreferences): MediaAutoplayMode {
+  if (stored.mediaAutoplayMode !== undefined) {
+    return normalizeMediaAutoplayMode(stored.mediaAutoplayMode);
+  }
+  return stored.autoPlayAudio === false ? "click" : DEFAULT_MEDIA_AUTOPLAY_MODE;
 }
 
 function normalizeCustomCategory(category: FinderCategory): FinderCategory {

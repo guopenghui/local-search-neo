@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ComputedRef } from "vue";
+import { computed } from "vue";
 import type { FinderResult } from "../core/finderLogic";
 import AudioPreview from "../preview/AudioPreview.vue";
 import CodePreview from "../preview/CodePreview.vue";
@@ -12,10 +13,11 @@ import TreePreview from "../preview/TreePreview.vue";
 import VideoPreview from "../preview/VideoPreview.vue";
 import { useFilePreview } from "../composables/useFilePreview";
 import type { ContextMenuItem } from "../composables/useContextMenu";
+import { DEFAULT_MEDIA_AUTOPLAY_MODE, type MediaAutoplayMode } from "../core/mediaAutoplay";
 
-const { activeItem, autoPlayAudio = true } = defineProps<{
+const { activeItem, mediaAutoplayMode = DEFAULT_MEDIA_AUTOPLAY_MODE } = defineProps<{
   activeItem: ComputedRef<FinderResult | undefined>;
-  autoPlayAudio?: boolean;
+  mediaAutoplayMode?: MediaAutoplayMode;
 }>();
 
 const emit = defineEmits<{
@@ -32,6 +34,9 @@ const {
 } = useFilePreview({
   activeItem,
 });
+
+/** 音频波形需要真实磁盘路径读取字节（previewSource 是 file:// URL）。 */
+const activeFilePath = computed(() => activeItem.value?.fullPath ?? "");
 
 function openImagePreviewMenu(event: MouseEvent) {
   const imagePath = activeItem.value?.fullPath;
@@ -78,11 +83,16 @@ function openImagePreviewMenu(event: MouseEvent) {
         :source="previewSource"
         @context-menu="openImagePreviewMenu"
       />
-      <VideoPreview v-else-if="previewKind === 'video' && previewSource" :source="previewSource" />
+      <VideoPreview
+        v-else-if="previewKind === 'video' && previewSource"
+        :source="previewSource"
+        :autoplay-mode="mediaAutoplayMode"
+      />
       <AudioPreview
         v-else-if="previewKind === 'audio' && previewSource"
         :source="previewSource"
-        :autoplay="autoPlayAudio"
+        :file-path="activeFilePath"
+        :autoplay-mode="mediaAutoplayMode"
       />
       <EmptyPreview v-else :status="previewStatus" />
     </div>
